@@ -1,6 +1,6 @@
 import { Suspense, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { KeyboardControls, AdaptiveDpr } from '@react-three/drei'
+import { KeyboardControls } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import * as THREE from 'three'
 import AudioDirector from './components/AudioDirector'
@@ -8,7 +8,6 @@ import Livia from './components/Livia'
 import WorldMap from './components/WorldMap'
 import Lighting from './components/Lighting'
 import Weather from './components/Weather'
-import Effects from './components/Effects'
 import Hud from './components/Hud'
 import GuideBeacon from './components/GuideBeacon'
 import FinaleDirector from './components/FinaleDirector'
@@ -60,24 +59,16 @@ function GameCanvas() {
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.0,
         stencil: false,
-        preserveDrawingBuffer: true,
       }}
-      onCreated={({ gl, scene }) => {
+      onCreated={({ gl }) => {
         gl.setClearColor('#87a8c0', 1)
-        scene.background = new THREE.Color('#87a8c0')
+        gl.outputColorSpace = THREE.SRGBColorSpace
       }}
     >
       <Lighting />
 
-      {/* Cubo de sanidade: se isto não aparece, o WebGL não está pintando */}
-      <mesh position={[0, 2.2, 96]} castShadow={false}>
-        <boxGeometry args={[1.2, 1.2, 1.2]} />
-        <meshBasicMaterial color="#ff2244" />
-      </mesh>
-
       <ErrorBoundary name="GameScene">
         <Suspense fallback={null}>
-          {/* timeStep="vary": 1 passo de física por frame de render */}
           <Physics gravity={[0, -24, 0]} paused={paused} timeStep="vary">
             <WorldMap />
             <Livia />
@@ -87,8 +78,6 @@ function GameCanvas() {
           <Weather />
         </Suspense>
       </ErrorBoundary>
-
-      <Effects />
     </Canvas>
   )
 }

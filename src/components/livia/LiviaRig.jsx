@@ -81,7 +81,8 @@ export default function LiviaRig({ stateRef }) {
     if (hairFrontRef.current) hairFrontRef.current.visible = !hoodOn
   }, [hoodOn])
 
-  // priority 1: depois da Livia (0) — riding já está atualizado
+  // Depois da Livia (priority -1) — riding já está atualizado.
+  // NÃO usar priority > 0 — isso desliga o auto-render do R3F.
   useFrame((_, delta) => {
     const mixer = mixerRef.current
     const actions = actionsRef.current
@@ -158,7 +159,7 @@ export default function LiviaRig({ stateRef }) {
       if (armR) armR.rotation.set(-2.15, 0.12, 0.42)
       if (foreR) foreR.rotation.set(-0.35, 0.1, 0)
     }
-  }, 1)
+  })
 
   return (
     <group ref={root}>

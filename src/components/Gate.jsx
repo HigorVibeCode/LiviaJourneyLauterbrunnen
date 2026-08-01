@@ -57,7 +57,8 @@ export default function Gate({
     [],
   )
 
-  // priority 1: depois da Livia (0), consome tapPending no mesmo frame do release
+  // Depois da Livia (priority -1): consome tapPending no mesmo frame do release.
+  // NÃO usar priority > 0 — isso desliga o auto-render do R3F.
   useFrame((state, delta) => {
     // ── animação de abertura ──
     if (open && openT.current < 1) {
@@ -171,7 +172,7 @@ export default function Gate({
         }, 3000)
       }
     }
-  }, 1)
+  })
 
   const leafW = width / 2
 

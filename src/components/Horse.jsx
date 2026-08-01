@@ -66,7 +66,8 @@ export default function Horse() {
     [],
   )
 
-  // priority 1: depois da Livia (0), para ver tapPending no mesmo frame do E
+  // Depois da Livia (priority -1): vê tapPending no mesmo frame do E.
+  // NÃO usar priority > 0 — isso desliga o auto-render do R3F.
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05)
     const unlocked = useProgressStore.getState().unlockedGates.includes('gate_pasture')
@@ -126,7 +127,7 @@ export default function Horse() {
     horseRide.nearMount =
       !horseRide.mounted && !horseRide.finished && greetDone.current && dist < HORSE_MOUNT_DIST
 
-    // backup: se a Livia não montou no hold, o tap ainda chega aqui (priority 1)
+    // backup: se a Livia não montou no hold, o tap ainda chega aqui
     if (horseRide.nearMount && guideInput.tapPending && !horseRide.mounted) {
       guideInput.tapPending = false
       guideInput.holding = false
@@ -290,7 +291,7 @@ export default function Horse() {
       hoofCd.current = 0
       hoofBeat.current = 0
     }
-  }, 1)
+  })
 
   return (
     <group ref={root} position={[HORSE_WAIT.x, 0, HORSE_WAIT.z]}>

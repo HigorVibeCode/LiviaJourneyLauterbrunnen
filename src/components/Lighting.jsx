@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Sky, Environment, Lightformer, SoftShadows } from '@react-three/drei'
+import { SoftShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import { playerPosition } from '../store/playerStore'
 import { PHASES } from '../config/world'
@@ -64,7 +64,8 @@ function moodAt(z) {
 
 /**
  * Iluminação alpina.
- * Sombra: frustum pequeno seguindo a Livia; no medium fica desligada.
+ * Sem Sky do drei (em vários contextos GL ele “lava” / impede o draw).
+ * Céu = clearColor + fog.
  */
 export default function Lighting() {
   const quality = useGameStore((s) => s.quality)
@@ -76,37 +77,6 @@ export default function Lighting() {
   const shadowTick = useRef(0)
 
   useFrame((state, delta) => {
-    if (typeof window !== 'undefined') {
-      window.__sceneOk = true
-      window.__gl = state.gl
-      window.__cam = {
-        x: state.camera.position.x,
-        y: state.camera.position.y,
-        z: state.camera.position.z,
-      }
-      if ((window.__meshTick = (window.__meshTick || 0) + 1) % 120 === 1) {
-        let meshes = 0
-        let inst = 0
-        let sample = null
-        state.scene.traverse((o) => {
-          if (o.isInstancedMesh) inst++
-          else if (o.isMesh) {
-            meshes++
-            if (!sample && o.visible) {
-              sample = {
-                name: o.name || o.type,
-                pos: o.position.toArray().map((n) => +n.toFixed(2)),
-                count: o.isInstancedMesh ? o.count : 1,
-              }
-            }
-          }
-        })
-        window.__meshCount = meshes
-        window.__instCount = inst
-        window.__meshSample = sample
-      }
-    }
-
     const light = lightRef.current
     const target = targetRef.current
     if (!light || !target) return
@@ -122,7 +92,6 @@ export default function Lighting() {
     if (light.shadow && preset.shadows) {
       light.shadow.autoUpdate = false
       shadowTick.current += 1
-      // Alta: todo frame; Medium (se sombra on): a cada 2
       if (preset.id === 'high' || shadowTick.current % 2 === 0) {
         light.shadow.needsUpdate = true
       }
@@ -139,9 +108,13 @@ export default function Lighting() {
       hemiRef.current.intensity += (mood.hemi - hemiRef.current.intensity) * k
     }
     if (state.scene.fog) {
-      state.scene.fog.density += (mood.fog - state.scene.fog.density) * k
+      const nextDensity = mood.fog
+      if (Number.isFinite(nextDensity)) {
+        state.scene.fog.density += (nextDensity - state.scene.fog.density) * k
+        if (!Number.isFinite(state.scene.fog.density)) state.scene.fog.density = nextDensity
+      }
       state.scene.fog.color.lerp(mood.fogColor, k)
-      if (state.scene.background?.isColor) state.scene.background.lerp(mood.fogColor, k * 0.6)
+      if (state.scene.background?.isColor) state.scene.background.lerp(mood.fogColor, k * 0.55)
     }
   })
 
@@ -149,16 +122,6 @@ export default function Lighting() {
     <>
       {preset.softShadows && <SoftShadows size={22} samples={8} focus={0.6} />}
 
-      <Sky
-        distance={800}
-        sunPosition={[SUN_DIR.x * 3, SUN_DIR.y * 2, SUN_DIR.z * 3]}
-        turbidity={4.2}
-        rayleigh={1.1}
-        mieCoefficient={0.004}
-        mieDirectionalG={0.85}
-      />
-
-      {/* rebote do vale mais acinzentado / menos “neon green” */}
       <hemisphereLight ref={hemiRef} args={['#b8cce0', '#5a6e52', 0.48]} />
       <ambientLight ref={ambientRef} intensity={0.28} color="#c8d8e4" />
 
@@ -181,20 +144,6 @@ export default function Lighting() {
       />
 
       <directionalLight position={[-30, 26, -18]} intensity={0.32} color="#9ab0c4" />
-
-      {preset.id === 'high' && (
-        <Environment resolution={64} frames={1} background={false}>
-          <Lightformer intensity={1.4} color="#e4eef8" position={[0, 12, -8]} scale={[24, 12, 1]} />
-          <Lightformer intensity={0.8} color="#f0e4c8" position={[10, 8, 10]} scale={[14, 8, 1]} />
-          <Lightformer
-            intensity={0.4}
-            color="#6a7a58"
-            position={[0, -6, 0]}
-            scale={[30, 10, 1]}
-            rotation={[Math.PI / 2, 0, 0]}
-          />
-        </Environment>
-      )}
 
       <fogExp2 attach="fog" args={['#a8c0d4', 0.00135]} />
       <color attach="background" args={['#87a8c0']} />

@@ -836,7 +836,7 @@ export default function Livia() {
     animState.current.speed = Math.hypot(nextX, nextZ)
     animState.current.grounded = groundedRef.current
     animState.current.jumping = jumpTimerRef.current > 0
-  })
+  }, -1)
 
   return (
     <RigidBody
