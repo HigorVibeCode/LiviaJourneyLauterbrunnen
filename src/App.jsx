@@ -19,6 +19,7 @@ import BootWarmup from './components/ui/BootWarmup'
 import { LoaderReporter } from './components/ui/LoaderReporter'
 import ErrorBoundary from './components/ErrorBoundary'
 import Effects from './components/Effects'
+import PhysicsTicker from './components/PhysicsTicker'
 import { QUALITY_PRESETS, useGameStore } from './store/gameStore'
 import { useLoadingStore, markIntroDone } from './store/loadingStore'
 import { preloadGameAssets } from './lib/preloadAssets'
@@ -83,7 +84,9 @@ function GameCanvas() {
 
         <ErrorBoundary name="GameScene">
           <Suspense fallback={null}>
-            <Physics gravity={[0, -24, 0]} paused={paused} timeStep="vary">
+            {/* paused=true desliga o stepper interno; PhysicsTicker limita o dt */}
+            <Physics gravity={[0, -24, 0]} paused timeStep="vary">
+              <PhysicsTicker paused={paused} />
               <WorldMap />
               <Select enabled={preset.id === 'high'}>
                 <Livia />

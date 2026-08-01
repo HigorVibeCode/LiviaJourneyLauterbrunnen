@@ -29,7 +29,6 @@ function GiftProp({ itemId }) {
           <sphereGeometry args={[0.04, 5, 4]} />
           <ToonMat color="#c8ffe0" emissive="#80ffb0" emissiveIntensity={0.8} />
         </mesh>
-        <pointLight color="#6ef0a0" intensity={2.2} distance={2.4} decay={2} />
       </group>
     )
   }
@@ -62,7 +61,6 @@ function GiftProp({ itemId }) {
         <octahedronGeometry args={[0.1, 0]} />
         <ToonMat color="#e8f8ff" emissive="#90e0ff" emissiveIntensity={0.7} />
       </mesh>
-      <pointLight color="#70d8f0" intensity={2.6} distance={2.8} decay={2} />
     </group>
   )
 }
@@ -275,7 +273,6 @@ function RoleExtras({ p, role }) {
             <sphereGeometry args={[0.055, 6, 5]} />
             <ToonMat color="#ffcc66" emissive="#ffaa33" emissiveIntensity={1.2} />
           </mesh>
-          <pointLight color="#ffaa55" intensity={1.4} distance={2.2} decay={2} />
         </group>
       </group>
     )

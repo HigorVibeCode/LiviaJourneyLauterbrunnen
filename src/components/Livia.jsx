@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useKeyboardControls } from '@react-three/drei'
-import { RigidBody, CapsuleCollider, useRapier, useAfterPhysicsStep } from '@react-three/rapier'
+import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier'
 import * as THREE from 'three'
 import { usePlayerStore, INITIAL_SPAWN, updatePlayerPosition } from '../store/playerStore'
 import { useWaterfallStore } from '../store/waterfallStore'
@@ -48,7 +48,7 @@ const CAM_SKIN = 0.65
 const CAM_PITCH_MIN = 0.12
 const CAM_PITCH_MAX = 1.15
 const CAM_MOUSE_SENS = 0.0022
-const CAM_TOUCH_SENS = 0.0028
+const CAM_TOUCH_SENS = 0.0042
 /** Correção lenta ao corpo — filtra jitter; a velocidade carrega o follow (sem lag ao strafear) */
 const CAM_FOLLOW_CORRECT = 5.5
 const CAM_FOLLOW_CORRECT_AIR = 14
@@ -57,13 +57,10 @@ const CAM_DIST_RELEASE = 2.2
 const CAM_ORBIT_SMOOTH = 22
 const CAM_OCCLUDE_HOLD = 5
 const CAM_OCCLUDE_CLEAR = 12
-const CAM_GROUND_NORMAL_Y = 0.62
 const HORSE_CAM_STAND_CLEAR = 1.35
 const HORSE_CAM_ORBIT_SMOOTH = 16
 const TURN_SPEED = 14
 const GUIDE_TURN_SPEED = 7
-/** No jogo o body.y assenta ≈ no chão analítico (não subtrair o fundo da capsule). */
-const standBodyY = (groundY) => groundY
 const complaintIdx = { i: 0 }
 
 function expSmooth(current, target, speed, dt) {
@@ -77,37 +74,17 @@ function expSmooth(current, target, speed, dt) {
  */
 function springArmWanted(world, rapier, body, camRay, idealDist, occlude) {
   let rawHit = idealDist
-
-  if (typeof world.castRayAndGetNormal === 'function') {
-    const hit = world.castRayAndGetNormal(
-      camRay,
-      idealDist,
-      true,
-      rapier.QueryFilterFlags.EXCLUDE_SENSORS,
-      CAM_RAY_WORLD,
-      undefined,
-      body,
-    )
-    if (hit) {
-      const ny = typeof hit.normal?.y === 'number' ? hit.normal.y : 0
-      if (ny < CAM_GROUND_NORMAL_Y) {
-        const toi = hit.timeOfImpact ?? idealDist
-        rawHit = Math.max(CAM_MIN_DIST, toi - CAM_SKIN)
-      }
-    }
-  } else {
-    const toiHit = world.castRay(
-      camRay,
-      idealDist,
-      true,
-      rapier.QueryFilterFlags.EXCLUDE_SENSORS,
-      CAM_RAY_WORLD,
-      undefined,
-      body,
-    )
-    if (toiHit) {
-      rawHit = Math.max(CAM_MIN_DIST, toiHit.timeOfImpact - CAM_SKIN)
-    }
+  const toiHit = world.castRay(
+    camRay,
+    idealDist,
+    true,
+    rapier.QueryFilterFlags.EXCLUDE_SENSORS,
+    CAM_RAY_WORLD,
+    undefined,
+    body,
+  )
+  if (toiHit) {
+    rawHit = Math.max(CAM_MIN_DIST, toiHit.timeOfImpact - CAM_SKIN)
   }
 
   const occluded = rawHit < idealDist - 0.25
@@ -169,6 +146,7 @@ export default function Livia() {
   const camAirFrames = useRef(0)
   const camQuat = useRef(new THREE.Quaternion())
   const camQuatReady = useRef(false)
+  const gravityStuckRef = useRef(false)
   /** Órbita da câmera: yaw 0 = atrás no +Z (visão inicial do mapa) */
   const camOrbit = useRef({ yaw: 0, pitch: 0.42 })
   const camOrbitTarget = useRef({ yaw: 0, pitch: 0.42 })
@@ -298,32 +276,45 @@ export default function Livia() {
     }
   }, [])
 
-  // Mobile: arrastar o dedo no canvas gira a câmera (sem pointer lock)
+  // Mobile: arrastar o dedo (fora do joystick/botões) gira a câmera
   useEffect(() => {
-    if (!detectMobile()) return undefined
+    camMobileRef.current = detectMobile()
+    if (!camMobileRef.current) return undefined
 
     let lookId = null
     let lastX = 0
     let lastY = 0
 
-    const isCanvas = (el) => el?.tagName === 'CANVAS'
+    const isUiTouch = (x, y) => {
+      const el = document.elementFromPoint(x, y)
+      if (!el) return false
+      return Boolean(
+        el.closest(
+          '.touch-joy-base, .touch-actions, .touch-btn, .pause-overlay, button, a, input, select',
+        ),
+      )
+    }
 
     const applyLook = (dx, dy) => {
       const o = camOrbitTarget.current
+      const orbit = camOrbit.current
       o.yaw -= dx * CAM_TOUCH_SENS
       o.pitch = THREE.MathUtils.clamp(
         o.pitch + dy * CAM_TOUCH_SENS,
         CAM_PITCH_MIN,
         CAM_PITCH_MAX,
       )
+      // resposta imediata no touch (sem esperar o smooth do frame)
+      orbit.yaw = o.yaw
+      orbit.pitch = o.pitch
     }
 
     const onTouchStart = (e) => {
       if (useGameStore.getState().paused) return
       if (lookId != null) return
       for (const t of e.changedTouches) {
-        const el = document.elementFromPoint(t.clientX, t.clientY)
-        if (!isCanvas(el)) continue
+        // joystick / botões à parte — o resto da tela olha a câmera
+        if (isUiTouch(t.clientX, t.clientY)) continue
         lookId = t.identifier
         lastX = t.clientX
         lastY = t.clientY
@@ -340,7 +331,6 @@ export default function Livia() {
       const dy = t.clientY - lastY
       lastX = t.clientX
       lastY = t.clientY
-      if (Math.abs(dx) + Math.abs(dy) < 2) return
       applyLook(dx, dy)
     }
 
@@ -350,15 +340,17 @@ export default function Livia() {
       }
     }
 
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchmove', onTouchMove, { passive: false })
-    window.addEventListener('touchend', clearLook)
-    window.addEventListener('touchcancel', clearLook)
+    const optsMove = { passive: false }
+    const optsStart = { passive: true }
+    window.addEventListener('touchstart', onTouchStart, optsStart)
+    window.addEventListener('touchmove', onTouchMove, optsMove)
+    window.addEventListener('touchend', clearLook, optsStart)
+    window.addEventListener('touchcancel', clearLook, optsStart)
     return () => {
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchmove', onTouchMove)
-      window.removeEventListener('touchend', clearLook)
-      window.removeEventListener('touchcancel', clearLook)
+      window.removeEventListener('touchstart', onTouchStart, optsStart)
+      window.removeEventListener('touchmove', onTouchMove, optsMove)
+      window.removeEventListener('touchend', clearLook, optsStart)
+      window.removeEventListener('touchcancel', clearLook, optsStart)
     }
   }, [])
 
@@ -366,7 +358,8 @@ export default function Livia() {
     const body = bodyRef.current
     if (!body) return
 
-    const dt = Math.min(delta, 0.05)
+    // Mesmo teto do PhysicsTicker — input/câmera não aceleram em hitch
+    const dt = Math.min(delta, 1 / 30)
     const finalePhase = useProgressStore.getState().finalePhase
     const inFinale = Boolean(finalePhase && finalePhase !== 'done')
 
@@ -837,6 +830,12 @@ export default function Livia() {
     let nextX = lerp(vel.x, worldX * maxSpeed, blend)
     let nextZ = lerp(vel.z, worldZ * maxSpeed, blend)
     let nextY = vel.y
+    // Impede overshoot se a vel residual veio de um hitch / nudge
+    const horiz = Math.hypot(nextX, nextZ)
+    if (horiz > maxSpeed) {
+      nextX = (nextX / horiz) * maxSpeed
+      nextZ = (nextZ / horiz) * maxSpeed
+    }
 
     if (field) {
       const f = field.force
@@ -856,20 +855,18 @@ export default function Livia() {
       sfxJump()
     }
 
-    // No chão: sem gravidade + vy=0. NÃO setTranslation aqui —
-    // a física do Rapier corre DEPOIS deste useFrame(-1) e desfazia o snap (bounce).
+    // No chão: só zera vy (sem toggle de gravityScale — oscilação causava hops)
     const sticking =
       groundedRef.current && jumpTimerRef.current === 0 && !field && nextY <= JUMP_FORCE * 0.5
-    if (sticking) {
-      nextY = 0
-      body.setGravityScale(0)
-    } else if (!horseRide.mounted) {
+    if (sticking) nextY = 0
+    if (gravityStuckRef.current) {
+      gravityStuckRef.current = false
       body.setGravityScale(1)
     }
 
     body.setLinvel({ x: nextX, y: nextY, z: nextZ }, true)
 
-    // ── Anti-stuck: input forte + quase parado no chão → empurra pra trilha ──
+    // ── Anti-stuck: input forte + quase parado → impulso horizontal (sem teleporte/Y) ──
     const wantMove = length > 0.2
     const horizSpeed = Math.hypot(vel.x, vel.z)
     if (groundedRef.current && wantMove && !field && horizSpeed < STUCK_SPEED) {
@@ -884,12 +881,7 @@ export default function Livia() {
             ? Math.sign(toPathX) * UNSTUCK_NUDGE
             : worldX * UNSTUCK_NUDGE
         const nudgeZ = alongZ * UNSTUCK_NUDGE * 0.85
-        const nx = pos.x + nudgeX * 0.08
-        const nz = pos.z + nudgeZ * 0.08
-        const ny = Math.max(pos.y, groundHeightAt(nx, nz))
-        body.setTranslation({ x: nx, y: ny, z: nz }, true)
-        body.setLinvel({ x: nudgeX, y: Math.max(nextY, 1.2), z: nudgeZ }, true)
-        updatePlayerPosition({ x: nx, y: ny, z: nz })
+        body.setLinvel({ x: nudgeX, y: nextY, z: nudgeZ }, true)
       }
     } else {
       stuckTimerRef.current = 0
@@ -1085,34 +1077,6 @@ export default function Livia() {
     animState.current.jumping = jumpTimerRef.current > 0
   }, -1)
 
-  /**
-   * Depois do step do Rapier (NÃO useFrame priority>0 — isso desliga o auto-render do R3F
-   * e deixa a tela azul/#87a8c0). Trava Y no chão antes do sync do mesh.
-   */
-  useAfterPhysicsStep(() => {
-    const body = bodyRef.current
-    if (!body) return
-    if (horseRide.mounted || cowChase.dragging) return
-    if (jumpTimerRef.current > 0) {
-      if (modelRef.current) modelRef.current.position.y = 0
-      return
-    }
-    if (!groundedRef.current) {
-      if (modelRef.current) modelRef.current.position.y = 0
-      return
-    }
-
-    const p = body.translation()
-    const gY = standBodyY(groundHeightAt(p.x, p.z))
-    if (p.y > gY + 0.85 || p.y < gY - 0.35) return
-    if (useWaterfallStore.getState().getActiveFieldAt(p)) return
-
-    const v = body.linvel()
-    body.setLinvel({ x: v.x, y: 0, z: v.z }, true)
-    body.setTranslation({ x: p.x, y: gY, z: p.z }, true)
-    if (modelRef.current) modelRef.current.position.y = 0
-  })
-
   return (
     <RigidBody
       ref={bodyRef}
@@ -1124,7 +1088,7 @@ export default function Livia() {
       restitution={0}
       linearDamping={0.08}
       angularDamping={1}
-      ccd
+      ccd={false}
       canSleep={false}
     >
       <CapsuleCollider

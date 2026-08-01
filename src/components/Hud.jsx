@@ -321,9 +321,9 @@ export default function Hud() {
             <div className="pause-help">
               <span className="hud-panel-label">Controles (toque)</span>
               <ul className="pause-help-tips">
-                <li>Joystick esquerdo — andar</li>
-                <li>Arraste o dedo no centro/direita — girar a câmera</li>
-                <li>Correr / Pular / E — botões à direita</li>
+                <li>Joystick esquerdo — andar (empurre ao máximo para correr)</li>
+                <li>Arraste o dedo na tela — girar a câmera</li>
+                <li>Pular e E — botões à direita</li>
                 <li>Segure E — guia luminosa</li>
               </ul>
             </div>
