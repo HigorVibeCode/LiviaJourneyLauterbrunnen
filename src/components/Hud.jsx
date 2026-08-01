@@ -8,6 +8,7 @@ import { NPCS } from '../config/npcs'
 import { npcInteractHint, npcDialogueLine } from './NPC'
 import { GUIDE_MAX_CHARGE, guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
+import MultiplayerPanel from './ui/MultiplayerPanel'
 
 function useObjectiveHint() {
   const inventory = useProgressStore((s) => s.inventory)
@@ -201,6 +202,10 @@ export default function Hud() {
         </div>
       )}
 
+      <div className="mp-hud-slot">
+        <MultiplayerPanel compact={isMobile} />
+      </div>
+
       <div className="hud-panel hud-eggs hud-magic">
         <span className="hud-panel-label">Segredos {foundEggs.length}/{EASTER_EGGS.length}</span>
         <div className="hud-egg-row">
@@ -337,6 +342,7 @@ export default function Hud() {
                 <li>No pasto, monte o cavalo com E e cavalque até o Vale Noturno.</li>
                 <li>A guia luminosa gasta carga, mas recarrega lentamente quando não está em uso.</li>
                 <li>Evite cair na água gelada e na cachoeira — a Livia volta ao último lugar seguro.</li>
+                <li>Multijogador: use “Jogar com amigos”, partilhe o link da sala e vejam-se no vale.</li>
               </ul>
             </div>
 

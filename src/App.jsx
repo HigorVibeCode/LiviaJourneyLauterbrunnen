@@ -20,6 +20,8 @@ import { LoaderReporter } from './components/ui/LoaderReporter'
 import ErrorBoundary from './components/ErrorBoundary'
 import Effects from './components/Effects'
 import PhysicsTicker from './components/PhysicsTicker'
+import RemotePlayers from './components/RemotePlayers'
+import MultiplayerBridge from './multiplayer/MultiplayerBridge'
 import { QUALITY_PRESETS, useGameStore } from './store/gameStore'
 import { useLoadingStore, markIntroDone } from './store/loadingStore'
 import { preloadGameAssets } from './lib/preloadAssets'
@@ -92,6 +94,7 @@ function GameCanvas() {
                 <Livia />
               </Select>
             </Physics>
+            <RemotePlayers />
             <GuideBeacon />
             <FinaleDirector />
             <Weather />
@@ -122,6 +125,7 @@ export default function App() {
       <div className="game-root">
         <PauseListener />
         <AudioDirector />
+        <MultiplayerBridge />
         <GameCanvas />
         {gameUnlocked && <Hud />}
         {gameUnlocked && <TouchControls />}

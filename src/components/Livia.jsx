@@ -27,6 +27,7 @@ import { sfxFootstep, sfxJump, sfxLand, sfxComplaintSplash, surfaceAt } from '..
 import { touchInput, detectMobile } from '../lib/touchInput'
 import { groundHeightAt, pathXAt } from '../config/world'
 import { LiviaLanternLight } from './LanternPickup'
+import { updatePlayerPose } from '../multiplayer/playerPose'
 
 const WALK_SPEED = 7.4
 const RUN_SPEED = 12.4
@@ -596,6 +597,14 @@ export default function Livia() {
       state.camera.lookAt(camLook)
       camQuat.current.copy(state.camera.quaternion)
       camQuatReady.current = true
+      updatePlayerPose({
+        x: seatX,
+        y: seatY,
+        z: seatZ,
+        yaw: horseRide.yaw,
+        speed,
+        grounded: true,
+      })
       return
     }
 
@@ -1078,6 +1087,16 @@ export default function Livia() {
     animState.current.speed = Math.hypot(nextX, nextZ)
     animState.current.grounded = groundedRef.current
     animState.current.jumping = jumpTimerRef.current > 0
+
+    const pose = body.translation()
+    updatePlayerPose({
+      x: pose.x,
+      y: pose.y,
+      z: pose.z,
+      yaw: modelRef.current?.rotation.y ?? 0,
+      speed: animState.current.speed,
+      grounded: groundedRef.current,
+    })
   }, -1)
 
   return (
