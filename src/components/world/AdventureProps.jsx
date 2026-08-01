@@ -13,6 +13,7 @@ import Instanced from './Instanced'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
 import { playerPosition } from '../../store/playerStore'
 import { bandForDistance, distanceToPlayer, isHeroPlacement } from '../../utils/lodBands'
+import { makeToonMaterial } from '../../materials/toonMaterial'
 
 const MODEL_URL = '/models/adventure_pack.glb'
 
@@ -79,12 +80,9 @@ function tintMeshMaterial(mesh, propName) {
     else if (/petal|flower/.test(n)) color = PACK_COLORS.flower
     else if (i > 0 && /tree|maple|pine|willow|bush/i.test(propName)) color = PACK_COLORS.pine
 
-    const c = new THREE.MeshStandardMaterial({
+    const c = makeToonMaterial({
       color,
-      flatShading: true,
-      roughness: /flame|fire|lantern/i.test(propName) ? 0.45 : 0.92,
-      metalness: 0,
-      emissive: /flame|fire/i.test(propName) ? new THREE.Color('#ff8020') : new THREE.Color('#000000'),
+      emissive: /flame|fire/i.test(propName) ? '#ff8020' : '#000000',
       emissiveIntensity: /flame|fire/i.test(propName) ? 1.2 : 0,
     })
     return c
@@ -137,6 +135,7 @@ function extractNormalized(scene, name, targetHeight) {
     // só árvores/heróis grandes projetam sombra — fill props são receive-only
     obj.castShadow = false
     obj.receiveShadow = true
+    if (obj.geometry) obj.geometry.computeVertexNormals()
     if (obj.material) tintMeshMaterial(obj, name)
   })
 

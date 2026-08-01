@@ -6,15 +6,27 @@ import {
   STAIRS,
   SUMMIT_Y,
   CORRIDOR_HALF,
+  BRIDGE_HALF_X,
   pathXAt,
   resolveOnPath,
 } from '../config/world'
 
 const PUSH = 1.85
-const PLANK_HALF_X = 2.7
+const PLANK_HALF_X = 4.2
 const COOLDOWN = 0.85
 
 let lastComplaintAt = 0
+
+/** Tabuleiro seco da ponte sobre o rio principal. */
+function onBridgeDeck(x, z) {
+  const riverCx = pathXAt((RIVER.zFrom + RIVER.zTo) / 2)
+  const zPad = 4
+  return (
+    z >= RIVER.zFrom - zPad &&
+    z <= RIVER.zTo + zPad &&
+    Math.abs(x - riverCx) <= BRIDGE_HALF_X + 0.5
+  )
+}
 
 /**
  * Testa se (x,z) está em água "profunda" / não atravessável.
@@ -22,6 +34,8 @@ let lastComplaintAt = 0
  * Retorna `{ nx, nz }` normal da margem (empurrar para fora) ou null.
  */
 export function waterHitAt(x, z) {
+  if (onBridgeDeck(x, z)) return null
+
   // desfiladeiro do rio — vão centrado na trilha
   const riverCx = pathXAt((RIVER.zFrom + RIVER.zTo) / 2)
   if (z >= RIVER.zFrom && z <= RIVER.zTo && Math.abs(x - riverCx) < RIVER.gapHalfX + 0.4) {

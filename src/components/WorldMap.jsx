@@ -1,5 +1,6 @@
 import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
+import { makeToonMaterial } from '../materials/toonMaterial'
 import Waterfall from './Waterfall'
 import Collectible from './Collectible'
 import Gate from './Gate'
@@ -102,7 +103,7 @@ export default function WorldMap() {
               z={0}
               y={g.y}
               gateWidth={g.width}
-              halfWidth={CORRIDOR_HALF + 2}
+              halfWidth={g.width / 2 + 14}
               height={g.height}
               color={g.color}
             />
@@ -209,7 +210,7 @@ export default function WorldMap() {
 function PathStones() {
   const geometry = useMemo(() => new THREE.CylinderGeometry(0.6, 0.52, 0.14, 6), [])
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
+    () => makeToonMaterial({ color: '#ffffff',}),
     [],
   )
 

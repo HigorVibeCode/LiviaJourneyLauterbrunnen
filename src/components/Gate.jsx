@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
+import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { useProgressStore, QUESTS, ITEMS, missingItems } from '../store/progressStore'
 import { playerPosition } from '../store/playerStore'
 import { guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
+import PackProp from './world/PackProp'
 
 const INTERACT_DIST = 8
 const OPEN_ANGLE = 1.85
@@ -178,13 +180,24 @@ export default function Gate({
 
   return (
     <group position={position}>
+      <Suspense fallback={null}>
+        <PackProp
+          name="Gate"
+          position={[0, 0, -0.12]}
+          rotation={0}
+          scale={Math.min(width / 6.5, 1.25)}
+          collider={false}
+          snapGround={false}
+        />
+      </Suspense>
+
       <Post x={-width / 2 - 0.1} height={height} />
       <Post x={width / 2 + 0.1} height={height} />
 
       {/* travessa superior fixa */}
       <mesh position={[0, height + 0.1, 0]} castShadow>
         <boxGeometry args={[width + 0.6, 0.25, 0.5]} />
-        <meshStandardMaterial color="#3d2914" flatShading />
+        <ToonMat color="#3d2914"/>
       </mesh>
 
       {landmark && <GateLandmark width={width} height={height} color={color} />}
@@ -211,16 +224,14 @@ export default function Gate({
       <group ref={lockRef} position={[0, height * 0.45, 0.28]}>
         <mesh castShadow>
           <boxGeometry args={[0.35, 0.35, 0.14]} />
-          <meshStandardMaterial
-            color="#e8c84a"
-            flatShading
-            emissive="#a08020"
+          <ToonMat
+            color="#e8c84a"emissive="#a08020"
             emissiveIntensity={0.4}
           />
         </mesh>
         <mesh position={[0, 0.24, 0]}>
           <torusGeometry args={[0.12, 0.035, 5, 8]} />
-          <meshStandardMaterial color="#c8a83a" flatShading metalness={0.5} />
+          <ToonMat color="#c8a83a"/>
         </mesh>
       </group>
 
@@ -254,7 +265,7 @@ function DoorLeaf({ width, height, color, hingeSide }) {
     <group>
       <mesh position={[cx, height / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[width - 0.06, height * 0.94, 0.32]} />
-        <meshStandardMaterial color={color} flatShading />
+        <ToonMat color={color}/>
       </mesh>
 
       {/* tala central na folha direita: cobre a fresta entre as folhas
@@ -262,7 +273,7 @@ function DoorLeaf({ width, height, color, hingeSide }) {
       {hingeSide < 0 && (
         <mesh position={[hingeSide * (width - 0.04), height / 2, 0]} castShadow>
           <boxGeometry args={[0.26, height * 0.94, 0.42]} />
-          <meshStandardMaterial color="#4a2c14" flatShading />
+          <ToonMat color="#4a2c14"/>
         </mesh>
       )}
 
@@ -274,21 +285,21 @@ function DoorLeaf({ width, height, color, hingeSide }) {
           castShadow
         >
           <boxGeometry args={[0.14, height * 0.88, 0.08]} />
-          <meshStandardMaterial color="#3a2210" flatShading />
+          <ToonMat color="#3a2210"/>
         </mesh>
       ))}
 
       {/* reforço diagonal */}
       <mesh position={[cx, height / 2, 0.2]} rotation={[0, 0, hingeSide * 0.62]} castShadow>
         <boxGeometry args={[0.16, height * 0.9, 0.06]} />
-        <meshStandardMaterial color="#4a2c14" flatShading />
+        <ToonMat color="#4a2c14"/>
       </mesh>
 
       {/* dobradiças de ferro */}
       {[height * 0.22, height * 0.78].map((y) => (
         <mesh key={y} position={[hingeSide * 0.22, y, 0.2]} castShadow>
           <boxGeometry args={[0.44, 0.16, 0.08]} />
-          <meshStandardMaterial color="#4a4a48" flatShading metalness={0.4} roughness={0.6} />
+          <ToonMat color="#4a4a48"/>
         </mesh>
       ))}
     </group>
@@ -311,12 +322,12 @@ function GateLandmark({ width, height, color }) {
       {/* arco alto acima do vão */}
       <mesh position={[0, height + 1.55, 0]} castShadow>
         <boxGeometry args={[width + 2.2, 0.35, 0.55]} />
-        <meshStandardMaterial color="#2a1a0c" flatShading />
+        <ToonMat color="#2a1a0c"/>
       </mesh>
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (width / 2 + 0.55), height + 0.85, 0]} castShadow>
           <boxGeometry args={[0.35, 1.5, 0.35]} />
-          <meshStandardMaterial color="#3a2210" flatShading />
+          <ToonMat color="#3a2210"/>
         </mesh>
       ))}
       {/* bandeiras laterais */}
@@ -324,14 +335,12 @@ function GateLandmark({ width, height, color }) {
         <group key={`f${s}`} position={[s * (width / 2 + 1.1), height + 0.2, 0.15]}>
           <mesh castShadow position={[0, 1.1, 0]}>
             <cylinderGeometry args={[0.05, 0.06, 2.4, 5]} />
-            <meshStandardMaterial color="#2a1a0c" flatShading />
+            <ToonMat color="#2a1a0c"/>
           </mesh>
           <mesh position={[s * 0.35, 1.7, 0.05]} castShadow>
             <boxGeometry args={[0.7, 0.45, 0.04]} />
-            <meshStandardMaterial
-              color="#e8c04a"
-              flatShading
-              emissive="#c09020"
+            <ToonMat
+              color="#e8c04a"emissive="#c09020"
               emissiveIntensity={0.55}
             />
           </mesh>
@@ -340,14 +349,9 @@ function GateLandmark({ width, height, color }) {
       {/* brasão dourado no centro */}
       <mesh position={[0, height + 1.55, 0.35]} castShadow>
         <octahedronGeometry args={[0.38, 0]} />
-        <meshStandardMaterial
-          color="#f0d060"
-          flatShading
-          emissive="#e8b030"
-          emissiveIntensity={0.85}
-          metalness={0.55}
-          roughness={0.35}
-        />
+        <ToonMat
+          color="#f0d060"emissive="#e8b030"
+          emissiveIntensity={0.85}/>
       </mesh>
       <pointLight
         ref={glowRef}
@@ -362,14 +366,12 @@ function GateLandmark({ width, height, color }) {
         <group key={`torch${s}`} position={[s * (width / 2 + 0.15), height + 0.55, 0.4]}>
           <mesh castShadow>
             <cylinderGeometry args={[0.08, 0.1, 0.5, 5]} />
-            <meshStandardMaterial color="#3a2210" flatShading />
+            <ToonMat color="#3a2210"/>
           </mesh>
           <mesh position={[0, 0.35, 0]}>
             <sphereGeometry args={[0.16, 6, 5]} />
-            <meshStandardMaterial
-              color="#ffb040"
-              flatShading
-              emissive="#ff9020"
+            <ToonMat
+              color="#ffb040"emissive="#ff9020"
               emissiveIntensity={1.4}
             />
           </mesh>
@@ -395,21 +397,19 @@ function Post({ x, height }) {
       <CuboidCollider args={[0.2, height / 2 + 0.15, 0.2]} />
       <mesh castShadow>
         <boxGeometry args={[0.35, height + 0.3, 0.35]} />
-        <meshStandardMaterial color="#3a2210" flatShading />
+        <ToonMat color="#3a2210"/>
       </mesh>
       {/* lampião no topo do poste: marca o portão de longe */}
       <mesh position={[0, height / 2 + 0.35, 0]} castShadow>
         <boxGeometry args={[0.28, 0.34, 0.28]} />
-        <meshStandardMaterial
-          color="#ffd98a"
-          flatShading
-          emissive="#ffb84a"
+        <ToonMat
+          color="#ffd98a"emissive="#ffb84a"
           emissiveIntensity={0.9}
         />
       </mesh>
       <mesh position={[0, height / 2 + 0.56, 0]} castShadow>
         <coneGeometry args={[0.26, 0.22, 4]} />
-        <meshStandardMaterial color="#3a2210" flatShading />
+        <ToonMat color="#3a2210"/>
       </mesh>
     </RigidBody>
   )

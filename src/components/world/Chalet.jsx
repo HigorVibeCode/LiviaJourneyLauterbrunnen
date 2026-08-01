@@ -1,4 +1,5 @@
 import { useRef, useMemo } from 'react'
+import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
@@ -60,7 +61,7 @@ export default function Chalet({
       {(kind === 'chalet' || kind === 'cabin' || kind === 'barn') && (
         <mesh position={[0, 0.55, 0]} receiveShadow castShadow>
           <boxGeometry args={[HALF_W * 2 + 0.35, 1.15, HALF_D * 2 + 0.35]} />
-          <meshStandardMaterial color="#8a8680" flatShading roughness={1} />
+          <ToonMat color="#8a8680"/>
         </mesh>
       )}
 
@@ -88,22 +89,22 @@ export default function Chalet({
         receiveShadow
       >
         <boxGeometry args={[DOOR_W, WALL_H - DOOR_H, WALL_T * 2]} />
-        <meshStandardMaterial color={shade(body, -18)} flatShading />
+        <ToonMat color={shade(body, -18)}/>
       </mesh>
 
       {/* Moldura da porta */}
       <mesh position={[-DOOR_W / 2 - 0.15, DOOR_H / 2, HALF_D + 0.3]} castShadow>
         <boxGeometry args={[0.3, DOOR_H, 0.3]} />
-        <meshStandardMaterial color="#3a2210" flatShading />
+        <ToonMat color="#3a2210"/>
       </mesh>
       <mesh position={[DOOR_W / 2 + 0.15, DOOR_H / 2, HALF_D + 0.3]} castShadow>
         <boxGeometry args={[0.3, DOOR_H, 0.3]} />
-        <meshStandardMaterial color="#3a2210" flatShading />
+        <ToonMat color="#3a2210"/>
       </mesh>
       {/* porta aberta encostada */}
       <mesh position={[-DOOR_W / 2 - 0.5, DOOR_H / 2, HALF_D + 0.9]} rotation={[0, 0.9, 0]} castShadow>
         <boxGeometry args={[0.16, DOOR_H - 0.1, DOOR_W * 0.9]} />
-        <meshStandardMaterial color="#4a2c14" flatShading />
+        <ToonMat color="#4a2c14"/>
       </mesh>
 
       {/* Janelas */}
@@ -111,38 +112,33 @@ export default function Chalet({
         <group key={x} position={[x, 3.6, HALF_D + 0.42]}>
           <mesh castShadow>
             <boxGeometry args={[1.7, 1.5, 0.14]} />
-            <meshStandardMaterial color="#5c3a1e" flatShading />
+            <ToonMat color="#5c3a1e"/>
           </mesh>
           <mesh position={[0, 0, 0.08]}>
             <boxGeometry args={[1.4, 1.2, 0.06]} />
-            <meshStandardMaterial
-              color="#bcd8ea"
-              flatShading
-              emissive="#ffd9a0"
-              emissiveIntensity={0.25}
-              roughness={0.2}
-              metalness={0.1}
-            />
+            <ToonMat
+              color="#bcd8ea"emissive="#ffd9a0"
+              emissiveIntensity={0.25}/>
           </mesh>
           {/* floreira */}
           <mesh position={[0, -0.95, 0.25]} castShadow>
             <boxGeometry args={[1.8, 0.3, 0.5]} />
-            <meshStandardMaterial color="#6a3f22" flatShading />
+            <ToonMat color="#6a3f22"/>
           </mesh>
           <mesh position={[-0.45, -0.68, 0.3]}>
             <sphereGeometry args={[0.22, 5, 5]} />
-            <meshStandardMaterial color="#d94a6a" flatShading />
+            <ToonMat color="#d94a6a"/>
           </mesh>
           <mesh position={[0.45, -0.68, 0.3]}>
             <sphereGeometry args={[0.22, 5, 5]} />
-            <meshStandardMaterial color="#e8c84a" flatShading />
+            <ToonMat color="#e8c84a"/>
           </mesh>
         </group>
       ))}
       {/* janela lateral */}
       <mesh position={[HALF_W + 0.4, 3.4, -1.5]} castShadow>
         <boxGeometry args={[0.14, 1.4, 1.6]} />
-        <meshStandardMaterial color="#bcd8ea" flatShading emissive="#ffd9a0" emissiveIntensity={0.2} />
+        <ToonMat color="#bcd8ea"emissive="#ffd9a0" emissiveIntensity={0.2} />
       </mesh>
 
       {/* ── Telhado em duas águas, com ripas ── */}
@@ -157,7 +153,7 @@ export default function Chalet({
       {/* Chaminé */}
       <mesh position={[HALF_W - 2, WALL_H + 3.2, -2]} castShadow>
         <boxGeometry args={[1.1, 2.6, 1.1]} />
-        <meshStandardMaterial color="#7a7168" flatShading />
+        <ToonMat color="#7a7168"/>
       </mesh>
       {home && <Smoke position={[HALF_W - 2, WALL_H + 4.8, -2]} />}
 
@@ -183,7 +179,7 @@ function Wall({ position, size, color, panels = 3, axis = 'x' }) {
         receiveShadow
       >
         <boxGeometry args={[pw, h, pd]} />
-        <meshStandardMaterial color={i % 2 ? shade(color, -10) : color} flatShading roughness={0.9} />
+        <ToonMat color={i % 2 ? shade(color, -10) : color}/>
       </mesh>,
     )
   }
@@ -208,11 +204,8 @@ function Roof({ color, snowy = false }) {
                   receiveShadow
                 >
                   <boxGeometry args={[len, 0.35, (HALF_D * 2) / 4 + 0.1]} />
-                  <meshStandardMaterial
-                    color={i % 2 ? shade(color, -12) : color}
-                    flatShading
-                    roughness={0.95}
-                  />
+                  <ToonMat
+                    color={i % 2 ? shade(color, -12) : color}/>
                 </mesh>
                 {snowy && (
                   <mesh
@@ -221,7 +214,7 @@ function Roof({ color, snowy = false }) {
                     castShadow
                   >
                     <boxGeometry args={[len * 0.96, 0.28, (HALF_D * 2) / 4 + 0.05]} />
-                    <meshStandardMaterial color="#f2f8fc" flatShading roughness={0.7} />
+                    <ToonMat color="#f2f8fc"/>
                   </mesh>
                 )}
               </group>
@@ -232,16 +225,16 @@ function Roof({ color, snowy = false }) {
       {/* cumeeira */}
       <mesh position={[0, 3.55, 0]} castShadow>
         <boxGeometry args={[0.7, 0.35, HALF_D * 2 + 1.4]} />
-        <meshStandardMaterial color={shade(color, -25)} flatShading />
+        <ToonMat color={shade(color, -25)}/>
       </mesh>
       {/* beirais */}
       <mesh position={[0, 0.1, HALF_D + 0.9]} castShadow>
         <boxGeometry args={[HALF_W * 2 + 3, 0.25, 0.6]} />
-        <meshStandardMaterial color={shade(color, -20)} flatShading />
+        <ToonMat color={shade(color, -20)}/>
       </mesh>
       <mesh position={[0, 0.1, -HALF_D - 0.9]} castShadow>
         <boxGeometry args={[HALF_W * 2 + 3, 0.25, 0.6]} />
-        <meshStandardMaterial color={shade(color, -20)} flatShading />
+        <ToonMat color={shade(color, -20)}/>
       </mesh>
     </group>
   )
@@ -255,31 +248,31 @@ function Balcony() {
     <group>
       <mesh position={[0, y, out - 0.75]} castShadow receiveShadow>
         <boxGeometry args={[HALF_W * 2 + 1, 0.22, 3]} />
-        <meshStandardMaterial color="#6b4a2c" flatShading roughness={0.95} />
+        <ToonMat color="#6b4a2c"/>
       </mesh>
       {/* mão-corrente */}
       <mesh position={[0, y + 1.1, out + 0.6]} castShadow>
         <boxGeometry args={[HALF_W * 2 + 1, 0.18, 0.18]} />
-        <meshStandardMaterial color="#54381f" flatShading />
+        <ToonMat color="#54381f"/>
       </mesh>
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (HALF_W + 0.4), y + 1.1, out - 0.75]} castShadow>
           <boxGeometry args={[0.18, 0.18, 3]} />
-          <meshStandardMaterial color="#54381f" flatShading />
+          <ToonMat color="#54381f"/>
         </mesh>
       ))}
       {/* balaústres */}
       {Array.from({ length: 13 }, (_, i) => (
         <mesh key={i} position={[-HALF_W - 0.4 + i * ((HALF_W * 2 + 0.8) / 12), y + 0.6, out + 0.6]}>
           <boxGeometry args={[0.12, 1.1, 0.12]} />
-          <meshStandardMaterial color="#5c3f22" flatShading />
+          <ToonMat color="#5c3f22"/>
         </mesh>
       ))}
       {/* mãos francesas */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (HALF_W - 1), y - 0.8, out - 0.2]} rotation={[0.7, 0, 0]} castShadow>
           <boxGeometry args={[0.2, 2.4, 0.2]} />
-          <meshStandardMaterial color="#54381f" flatShading />
+          <ToonMat color="#54381f"/>
         </mesh>
       ))}
       {/* gerânios na sacada */}
@@ -287,12 +280,12 @@ function Balcony() {
         <group key={x} position={[x, y + 0.35, out + 0.45]}>
           <mesh castShadow>
             <boxGeometry args={[1.5, 0.36, 0.5]} />
-            <meshStandardMaterial color="#6a3f22" flatShading />
+            <ToonMat color="#6a3f22"/>
           </mesh>
           {[-0.4, 0, 0.4].map((dx) => (
             <mesh key={dx} position={[dx, 0.32, 0]}>
               <sphereGeometry args={[0.2, 5, 4]} />
-              <meshStandardMaterial color={dx === 0 ? '#e8c84a' : '#d94a6a'} flatShading />
+              <ToonMat color={dx === 0 ? '#e8c84a' : '#d94a6a'}/>
             </mesh>
           ))}
         </group>
@@ -309,7 +302,7 @@ function Shutters() {
         [-1, 1].map((s) => (
           <mesh key={`${x}${s}`} position={[x + s * 1.15, 3.6, HALF_D + 0.5]} castShadow>
             <boxGeometry args={[0.55, 1.6, 0.12]} />
-            <meshStandardMaterial color="#3f6b4a" flatShading />
+            <ToonMat color="#3f6b4a"/>
           </mesh>
         )),
       )}
@@ -326,40 +319,40 @@ function Steeple() {
       </RigidBody>
       <mesh position={[0, 7, 0]} castShadow receiveShadow>
         <boxGeometry args={[3.4, 14, 3.4]} />
-        <meshStandardMaterial color="#e8e2d4" flatShading roughness={0.9} />
+        <ToonMat color="#e8e2d4"/>
       </mesh>
       {/* relógio */}
       <mesh position={[0, 12.2, 1.78]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.9, 0.9, 0.14, 14]} />
-        <meshStandardMaterial color="#f4efe2" flatShading />
+        <ToonMat color="#f4efe2"/>
       </mesh>
       <mesh position={[0, 12.2, 1.86]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.78, 0.78, 0.06, 14]} />
-        <meshStandardMaterial color="#2f3338" flatShading />
+        <ToonMat color="#2f3338"/>
       </mesh>
       {/* arcos do sino */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * 1.2, 10, 1.75]}>
           <boxGeometry args={[0.8, 1.8, 0.2]} />
-          <meshStandardMaterial color="#4a4a48" flatShading />
+          <ToonMat color="#4a4a48"/>
         </mesh>
       ))}
       {/* agulha */}
       <mesh position={[0, 15.6, 0]} castShadow>
         <coneGeometry args={[2.5, 5.6, 4]} />
-        <meshStandardMaterial color="#4a5560" flatShading roughness={0.85} />
+        <ToonMat color="#4a5560"/>
       </mesh>
       <mesh position={[0, 18.9, 0]}>
         <sphereGeometry args={[0.28, 6, 5]} />
-        <meshStandardMaterial color="#d8b64a" metalness={0.7} roughness={0.3} />
+        <ToonMat color="#d8b64a"/>
       </mesh>
       <mesh position={[0, 19.5, 0]}>
         <boxGeometry args={[0.1, 1.1, 0.1]} />
-        <meshStandardMaterial color="#d8b64a" metalness={0.7} roughness={0.3} />
+        <ToonMat color="#d8b64a"/>
       </mesh>
       <mesh position={[0, 19.7, 0]}>
         <boxGeometry args={[0.6, 0.1, 0.1]} />
-        <meshStandardMaterial color="#d8b64a" metalness={0.7} roughness={0.3} />
+        <ToonMat color="#d8b64a"/>
       </mesh>
     </group>
   )
@@ -372,17 +365,17 @@ function BarnDoors() {
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * 1.6, DOOR_H / 2, HALF_D + 0.45]} castShadow>
           <boxGeometry args={[2.9, DOOR_H, 0.18]} />
-          <meshStandardMaterial color="#8a3f2c" flatShading roughness={0.95} />
+          <ToonMat color="#8a3f2c"/>
         </mesh>
       ))}
       <mesh position={[0, DOOR_H + 0.25, HALF_D + 0.5]}>
         <boxGeometry args={[6.4, 0.22, 0.18]} />
-        <meshStandardMaterial color="#e8dcc4" flatShading />
+        <ToonMat color="#e8dcc4"/>
       </mesh>
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * 1.6, DOOR_H / 2, HALF_D + 0.56]} rotation={[0, 0, s * 0.9]}>
           <boxGeometry args={[4.4, 0.18, 0.1]} />
-          <meshStandardMaterial color="#e8dcc4" flatShading />
+          <ToonMat color="#e8dcc4"/>
         </mesh>
       ))}
     </group>
@@ -396,45 +389,45 @@ function Interior({ home }) {
       {/* piso de madeira — rente ao terreno, sem degrau na porta */}
       <mesh position={[0, 0.03, 0]} receiveShadow>
         <boxGeometry args={[HALF_W * 2 - 0.8, 0.06, HALF_D * 2 - 0.8]} />
-        <meshStandardMaterial color="#6b4a2c" flatShading roughness={0.9} />
+        <ToonMat color="#6b4a2c"/>
       </mesh>
       {/* tapete */}
       <mesh position={[0.5, 0.075, 0.5]} receiveShadow>
         <boxGeometry args={[4, 0.03, 3]} />
-        <meshStandardMaterial color="#8a3a44" flatShading />
+        <ToonMat color="#8a3a44"/>
       </mesh>
       {/* mesa + bancos */}
       <mesh position={[-2.5, 1.05, -1.5]} castShadow>
         <boxGeometry args={[2.6, 0.18, 1.6]} />
-        <meshStandardMaterial color="#7a5230" flatShading />
+        <ToonMat color="#7a5230"/>
       </mesh>
       {[[-3.5, -2.1], [-1.5, -2.1], [-3.5, -0.9], [-1.5, -0.9]].map(([x, z], i) => (
         <mesh key={i} position={[x, 0.55, z]} castShadow>
           <boxGeometry args={[0.16, 1, 0.16]} />
-          <meshStandardMaterial color="#5c3a1e" flatShading />
+          <ToonMat color="#5c3a1e"/>
         </mesh>
       ))}
       {/* cama */}
       <mesh position={[3.4, 0.55, -2.6]} castShadow>
         <boxGeometry args={[2.4, 0.8, 3.4]} />
-        <meshStandardMaterial color="#6b4a2c" flatShading />
+        <ToonMat color="#6b4a2c"/>
       </mesh>
       <mesh position={[3.4, 1.05, -2.2]} castShadow>
         <boxGeometry args={[2.3, 0.3, 2.4]} />
-        <meshStandardMaterial color="#c9d6e2" flatShading />
+        <ToonMat color="#c9d6e2"/>
       </mesh>
       <mesh position={[3.4, 1.15, -3.8]} castShadow>
         <boxGeometry args={[1.6, 0.35, 0.7]} />
-        <meshStandardMaterial color="#f0f0e6" flatShading />
+        <ToonMat color="#f0f0e6"/>
       </mesh>
       {/* lareira */}
       <mesh position={[5.1, 1.2, -2]} castShadow>
         <boxGeometry args={[1.6, 2.4, 2.2]} />
-        <meshStandardMaterial color="#7a7168" flatShading />
+        <ToonMat color="#7a7168"/>
       </mesh>
       <mesh position={[4.4, 0.7, -2]}>
         <boxGeometry args={[0.3, 0.9, 1.3]} />
-        <meshStandardMaterial color="#ff8830" emissive="#ff7020" emissiveIntensity={1.6} />
+        <ToonMat color="#ff8830" emissive="#ff7020" emissiveIntensity={1.6} />
       </mesh>
       {home && <pointLight position={[3.4, 2.4, -1]} intensity={9} distance={16} decay={2} color="#ffb060" />}
     </group>
@@ -466,7 +459,7 @@ function Smoke({ position }) {
       {puffs.map((p, i) => (
         <mesh key={i}>
           <sphereGeometry args={[0.5, 5, 5]} />
-          <meshStandardMaterial color="#e6e6e6" transparent opacity={0.35} depthWrite={false} flatShading />
+          <ToonMat color="#e6e6e6" transparent opacity={0.35} depthWrite={false}/>
         </mesh>
       ))}
     </group>

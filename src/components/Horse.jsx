@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { makeToonMaterial } from '../materials/toonMaterial'
 import {
   horseRide,
   HORSE_MOUNT_DIST,
@@ -44,24 +45,19 @@ export default function Horse() {
 
   const mats = useMemo(
     () => ({
-      coat: new THREE.MeshStandardMaterial({ color: '#8a6238', flatShading: true, roughness: 0.9 }),
-      coatDark: new THREE.MeshStandardMaterial({ color: '#6b4a28', flatShading: true, roughness: 0.9 }),
-      coatDeep: new THREE.MeshStandardMaterial({ color: '#5a381c', flatShading: true, roughness: 0.88 }),
-      coatLight: new THREE.MeshStandardMaterial({ color: '#a07848', flatShading: true, roughness: 0.9 }),
-      mane: new THREE.MeshStandardMaterial({ color: '#2a1a0e', flatShading: true, roughness: 0.95 }),
-      muzzle: new THREE.MeshStandardMaterial({ color: '#3a2818', flatShading: true, roughness: 0.85 }),
-      hoof: new THREE.MeshStandardMaterial({ color: '#1a1410', flatShading: true, roughness: 0.65 }),
-      saddle: new THREE.MeshStandardMaterial({ color: '#4a2c14', flatShading: true, roughness: 0.85 }),
-      leather: new THREE.MeshStandardMaterial({ color: '#3a2210', flatShading: true, roughness: 0.88 }),
-      blanket: new THREE.MeshStandardMaterial({ color: '#6a3a28', flatShading: true, roughness: 0.9 }),
-      eye: new THREE.MeshStandardMaterial({ color: '#1a1008', flatShading: true }),
-      white: new THREE.MeshStandardMaterial({ color: '#e8dcc8', flatShading: true, roughness: 0.85 }),
-      metal: new THREE.MeshStandardMaterial({
-        color: '#c0a060',
-        flatShading: true,
-        metalness: 0.55,
-        roughness: 0.4,
-      }),
+      coat: makeToonMaterial({ color: '#a87848' }),
+      coatDark: makeToonMaterial({ color: '#7a5428' }),
+      coatDeep: makeToonMaterial({ color: '#6a401c' }),
+      coatLight: makeToonMaterial({ color: '#b88858' }),
+      mane: makeToonMaterial({ color: '#3a2410' }),
+      muzzle: makeToonMaterial({ color: '#4a3020' }),
+      hoof: makeToonMaterial({ color: '#2a2018' }),
+      saddle: makeToonMaterial({ color: '#5a3418' }),
+      leather: makeToonMaterial({ color: '#4a2810' }),
+      blanket: makeToonMaterial({ color: '#7a4230' }),
+      eye: makeToonMaterial({ color: '#1a1008' }),
+      white: makeToonMaterial({ color: '#f0e4d0' }),
+      metal: makeToonMaterial({ color: '#d0b070' }),
     }),
     [],
   )
@@ -294,8 +290,8 @@ export default function Horse() {
   })
 
   return (
-    <group ref={root} position={[HORSE_WAIT.x, 0, HORSE_WAIT.z]}>
-      <group ref={body}>
+    <group ref={root} position={[HORSE_WAIT.x, 0, HORSE_WAIT.z]} frustumCulled={false}>
+      <group ref={body} frustumCulled={false}>
         {/* ── tronco alongado (menos “dois blobs”) ── */}
         <mesh castShadow position={[0, 1.15, 0.05]} rotation={[0.05, 0, 0]} material={mats.coat}>
           <capsuleGeometry args={[0.34, 1.25, 6, 12]} />

@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react'
+import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
@@ -9,88 +10,89 @@ import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
 import { playerPosition } from '../../store/playerStore'
 import { bandForDistance, distanceToPlayer } from '../../utils/lodBands'
+import { makeToonMaterial } from '../../materials/toonMaterial'
 
 /** Geometrias compartilhadas por todas as zonas (criadas uma vez) */
 function useSharedGeometries() {
   return useMemo(() => {
-    const trunk = new THREE.CylinderGeometry(0.42, 0.78, 6, 6, 1)
+    const trunk = new THREE.CylinderGeometry(0.42, 0.78, 6, 8, 1)
     trunk.translate(0, 3, 0)
 
-    const canopyA = new THREE.ConeGeometry(3.6, 6.5, 7, 1)
+    const canopyA = new THREE.ConeGeometry(3.6, 6.5, 9, 1)
     canopyA.translate(0, 6.75, 0)
-    const canopyB = new THREE.ConeGeometry(2.7, 5.5, 7, 1)
+    const canopyB = new THREE.ConeGeometry(2.7, 5.5, 9, 1)
     canopyB.translate(0, 11.25, 0)
-    const canopyC = new THREE.ConeGeometry(1.7, 4.5, 6, 1)
+    const canopyC = new THREE.ConeGeometry(1.7, 4.5, 8, 1)
     canopyC.translate(0, 14.75, 0)
 
     // Capas de neve: cada cone repete o topo da copa correspondente
     // (um pouco mais largo), então a neve fica "sobre" os galhos.
-    const snowA = new THREE.ConeGeometry(1.85, 3.1, 7, 1)
+    const snowA = new THREE.ConeGeometry(1.85, 3.1, 9, 1)
     snowA.translate(0, 8.55, 0)
-    const snowB = new THREE.ConeGeometry(1.4, 2.6, 7, 1)
+    const snowB = new THREE.ConeGeometry(1.4, 2.6, 9, 1)
     snowB.translate(0, 12.8, 0)
-    const snowC = new THREE.ConeGeometry(0.9, 2.15, 6, 1)
+    const snowC = new THREE.ConeGeometry(0.9, 2.15, 8, 1)
     snowC.translate(0, 16.05, 0)
 
-    const bush = new THREE.SphereGeometry(1, 6, 5)
+    const bush = new THREE.SphereGeometry(1, 8, 6)
     // touca de neve nos arbustos: meia esfera achatada
-    const bushCap = new THREE.SphereGeometry(1, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2)
-    const fruit = new THREE.SphereGeometry(0.11, 6, 5)
+    const bushCap = new THREE.SphereGeometry(1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2)
+    const fruit = new THREE.SphereGeometry(0.11, 8, 6)
 
     // Tufo de grama: baixo e fino. Livia tem 1.7 — a moita precisa bater
     // no tornozelo, não na cintura.
-    const blade = new THREE.ConeGeometry(0.13, 0.5, 4, 1)
+    const blade = new THREE.ConeGeometry(0.13, 0.5, 6, 1)
     blade.translate(0, 0.25, 0)
 
-    const stem = new THREE.CylinderGeometry(0.026, 0.034, 0.62, 4)
+    const stem = new THREE.CylinderGeometry(0.026, 0.034, 0.62, 6)
     stem.translate(0, 0.31, 0)
     // folhinhas na base: é o que faz a flor parecer flor e não pedra colorida
-    const leaves = new THREE.ConeGeometry(0.22, 0.16, 5, 1)
+    const leaves = new THREE.ConeGeometry(0.22, 0.16, 8, 1)
     leaves.translate(0, 0.09, 0)
-    const bloom = new THREE.SphereGeometry(0.06, 5, 4)
+    const bloom = new THREE.SphereGeometry(0.06, 8, 6)
     bloom.translate(0, 0.66, 0)
-    const petals = new THREE.CylinderGeometry(0.13, 0.04, 0.05, 6)
+    const petals = new THREE.CylinderGeometry(0.13, 0.04, 0.05, 8)
     petals.translate(0, 0.63, 0)
 
     // samambaia: leque baixo e largo
-    const fern = new THREE.ConeGeometry(0.95, 0.55, 6, 1)
+    const fern = new THREE.ConeGeometry(0.95, 0.55, 8, 1)
     fern.translate(0, 0.27, 0)
 
     // junco: haste fina e alta
-    const reed = new THREE.ConeGeometry(0.075, 1.7, 4, 1)
+    const reed = new THREE.ConeGeometry(0.075, 1.7, 6, 1)
     reed.translate(0, 0.85, 0)
 
     const rock = new THREE.DodecahedronGeometry(1, 0)
 
-    const capMush = new THREE.SphereGeometry(0.3, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2)
+    const capMush = new THREE.SphereGeometry(0.3, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2)
     capMush.translate(0, 0.3, 0)
-    const stemMush = new THREE.CylinderGeometry(0.07, 0.09, 0.3, 5)
+    const stemMush = new THREE.CylinderGeometry(0.07, 0.09, 0.3, 8)
     stemMush.translate(0, 0.15, 0)
 
-    const log = new THREE.CylinderGeometry(0.5, 0.5, 3.2, 6)
-    const hay = new THREE.CylinderGeometry(0.95, 0.95, 2.6, 8)
+    const log = new THREE.CylinderGeometry(0.5, 0.5, 3.2, 8)
+    const hay = new THREE.CylinderGeometry(0.95, 0.95, 2.6, 10)
     const crate = new THREE.BoxGeometry(1.3, 1.3, 1.3)
-    const barrel = new THREE.CylinderGeometry(0.6, 0.7, 1.3, 8)
+    const barrel = new THREE.CylinderGeometry(0.6, 0.7, 1.3, 10)
 
     const post = new THREE.BoxGeometry(0.24, 1.6, 0.24)
     post.translate(0, 0.8, 0)
     const rail = new THREE.BoxGeometry(2.7, 0.16, 0.1)
 
-    const lampPost = new THREE.CylinderGeometry(0.1, 0.14, 3, 6)
+    const lampPost = new THREE.CylinderGeometry(0.1, 0.14, 3, 8)
     lampPost.translate(0, 1.5, 0)
     const lampGlass = new THREE.BoxGeometry(0.26, 0.32, 0.26)
     lampGlass.translate(0, 3.15, 0)
 
     // mancha de neve no chão
-    const snowPatch = new THREE.CylinderGeometry(1, 1.15, 0.14, 7)
+    const snowPatch = new THREE.CylinderGeometry(1, 1.15, 0.14, 9)
     snowPatch.translate(0, 0.07, 0)
 
     // estalactite de gelo apontando para baixo
-    const icicle = new THREE.ConeGeometry(0.28, 1.5, 5)
+    const icicle = new THREE.ConeGeometry(0.28, 1.5, 8)
     icicle.rotateX(Math.PI)
     icicle.translate(0, 0.75, 0)
 
-    return {
+    const geos = {
       trunk,
       canopyA,
       canopyB,
@@ -122,44 +124,35 @@ function useSharedGeometries() {
       snowPatch,
       icicle,
     }
+    for (const g of Object.values(geos)) g.computeVertexNormals()
+    return geos
   }, [])
 }
 
 function useSharedMaterials() {
   return useMemo(() => {
-    const mk = (opts) => new THREE.MeshStandardMaterial({ flatShading: true, ...opts })
+    const mk = (opts) => makeToonMaterial(opts)
     return {
-      bark: mk({ color: '#5b3a22', roughness: 1 }),
-      canopy: mk({ color: '#ffffff', roughness: 0.95 }),
-      snow: mk({ color: '#f4f8fc', roughness: 0.75 }),
-      ice: mk({
-        color: '#cfe8f4',
-        roughness: 0.15,
-        metalness: 0.1,
-        transparent: true,
-        opacity: 0.85,
-      }),
-      fruit: mk({ color: '#ffffff', roughness: 0.4 }),
-      bloom: mk({ color: '#ffffff', roughness: 0.6 }),
-      bloomCenter: mk({ color: '#e8b830', roughness: 0.6 }),
+      bark: mk({ color: '#5b3a22' }),
+      canopy: mk({ color: '#ffffff' }),
+      snow: mk({ color: '#f4f8fc' }),
+      ice: mk({ color: '#cfe8f4', transparent: true, opacity: 0.85 }),
+      fruit: mk({ color: '#ffffff' }),
+      bloom: mk({ color: '#ffffff' }),
+      bloomCenter: mk({ color: '#e8b830' }),
       stem: mk({ color: '#3f7a3f' }),
       leaf: mk({ color: '#347a3c' }),
-      rock: mk({ color: '#ffffff', roughness: 1 }),
-      mushCap: mk({ color: '#ffffff', roughness: 0.7 }),
+      rock: mk({ color: '#ffffff' }),
+      mushCap: mk({ color: '#ffffff' }),
       mushStem: mk({ color: '#efe6d2' }),
-      wood: mk({ color: '#6b4a2c', roughness: 1 }),
-      woodDark: mk({ color: '#54381f', roughness: 1 }),
-      hay: mk({ color: '#d0a94e', roughness: 1 }),
-      metal: mk({ color: '#4a4a48', roughness: 0.6, metalness: 0.4 }),
-      grass: mk({ color: '#ffffff', roughness: 0.95 }),
-      bush: mk({ color: '#ffffff', roughness: 0.95 }),
-      reed: mk({ color: '#ffffff', roughness: 0.95 }),
-      lamp: mk({
-        color: '#ffd79a',
-        emissive: new THREE.Color('#ffb24a'),
-        emissiveIntensity: 1.35,
-        roughness: 0.3,
-      }),
+      wood: mk({ color: '#6b4a2c' }),
+      woodDark: mk({ color: '#54381f' }),
+      hay: mk({ color: '#d0a94e' }),
+      metal: mk({ color: '#4a4a48' }),
+      grass: mk({ color: '#ffffff' }),
+      bush: mk({ color: '#ffffff' }),
+      reed: mk({ color: '#ffffff' }),
+      lamp: mk({ color: '#ffd79a', emissive: '#ffb24a', emissiveIntensity: 1.35 }),
     }
   }, [])
 }
@@ -440,21 +433,21 @@ function Snowman({ position, rotation = 0, scale = 1 }) {
     <group position={position} rotation={[0, rotation, 0]} scale={scale}>
       <mesh position={[0, 0.62, 0]} castShadow receiveShadow>
         <sphereGeometry args={[0.66, 8, 7]} />
-        <meshStandardMaterial color="#f6fafd" flatShading roughness={0.8} />
+        <ToonMat color="#f6fafd"/>
       </mesh>
       <mesh position={[0, 1.42, 0]} castShadow>
         <sphereGeometry args={[0.46, 8, 7]} />
-        <meshStandardMaterial color="#f2f7fb" flatShading roughness={0.8} />
+        <ToonMat color="#f2f7fb"/>
       </mesh>
       <mesh position={[0, 2.02, 0]} castShadow>
         <sphereGeometry args={[0.33, 8, 7]} />
-        <meshStandardMaterial color="#f6fafd" flatShading roughness={0.8} />
+        <ToonMat color="#f6fafd"/>
       </mesh>
 
       {/* cenoura */}
       <mesh position={[0, 2.04, 0.34]} rotation={[Math.PI / 2, 0, 0]} castShadow>
         <coneGeometry args={[0.07, 0.34, 5]} />
-        <meshStandardMaterial color="#e8802a" flatShading />
+        <ToonMat color="#e8802a"/>
       </mesh>
       {/* olhos e botões */}
       {[
@@ -465,33 +458,33 @@ function Snowman({ position, rotation = 0, scale = 1 }) {
       ].map((p, i) => (
         <mesh key={i} position={p}>
           <sphereGeometry args={[0.045, 5, 4]} />
-          <meshStandardMaterial color="#22201c" flatShading />
+          <ToonMat color="#22201c"/>
         </mesh>
       ))}
       {/* cachecol */}
       <mesh position={[0, 1.75, 0]}>
         <cylinderGeometry args={[0.37, 0.37, 0.16, 9]} />
-        <meshStandardMaterial color="#c8433c" flatShading />
+        <ToonMat color="#c8433c"/>
       </mesh>
       <mesh position={[0.16, 1.5, 0.3]} rotation={[0.3, 0, 0.2]}>
         <boxGeometry args={[0.16, 0.5, 0.06]} />
-        <meshStandardMaterial color="#c8433c" flatShading />
+        <ToonMat color="#c8433c"/>
       </mesh>
       {/* braços de galho */}
       {[1, -1].map((side) => (
         <mesh key={side} position={[side * 0.6, 1.5, 0]} rotation={[0, 0, side * -0.7]} castShadow>
           <cylinderGeometry args={[0.04, 0.05, 0.9, 4]} />
-          <meshStandardMaterial color="#4a3220" flatShading />
+          <ToonMat color="#4a3220"/>
         </mesh>
       ))}
       {/* cartola */}
       <mesh position={[0, 2.34, 0]} castShadow>
         <cylinderGeometry args={[0.42, 0.42, 0.06, 10]} />
-        <meshStandardMaterial color="#2a2b30" flatShading />
+        <ToonMat color="#2a2b30"/>
       </mesh>
       <mesh position={[0, 2.5, 0]} castShadow>
         <cylinderGeometry args={[0.26, 0.28, 0.34, 10]} />
-        <meshStandardMaterial color="#2a2b30" flatShading />
+        <ToonMat color="#2a2b30"/>
       </mesh>
     </group>
   )

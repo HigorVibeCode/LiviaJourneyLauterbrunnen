@@ -1,4 +1,5 @@
 import { useRef, useState, useMemo, useEffect } from 'react'
+import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
@@ -187,14 +188,10 @@ export default function Collectible({ itemId }) {
       {isCurrent && !bursting && !dead && (
         <mesh position={[0, 1.55, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.55, 0.06, 6, 16]} />
-          <meshStandardMaterial
+          <ToonMat
             color="#d4b060"
             emissive="#b89440"
-            emissiveIntensity={0.65}
-            flatShading
-            metalness={0.35}
-            roughness={0.5}
-          />
+            emissiveIntensity={0.65}/>
         </mesh>
       )}
 
@@ -227,22 +224,17 @@ function ItemModel({ itemId, color }) {
         <>
           <mesh castShadow>
             <torusGeometry args={[0.22, 0.06, 6, 12]} />
-            <meshStandardMaterial
-              color={color}
-              flatShading
-              emissive={color}
-              emissiveIntensity={0.8}
-              metalness={0.5}
-              roughness={0.3}
-            />
+            <ToonMat
+              color={color}emissive={color}
+              emissiveIntensity={0.8}/>
           </mesh>
           <mesh castShadow position={[0.3, 0, 0]}>
             <boxGeometry args={[0.36, 0.08, 0.08]} />
-            <meshStandardMaterial color={color} flatShading emissive={color} emissiveIntensity={0.5} metalness={0.5} />
+            <ToonMat color={color}emissive={color} emissiveIntensity={0.5}/>
           </mesh>
           <mesh castShadow position={[0.44, -0.1, 0]}>
             <boxGeometry args={[0.09, 0.14, 0.08]} />
-            <meshStandardMaterial color={color} flatShading metalness={0.5} />
+            <ToonMat color={color}/>
           </mesh>
         </>
       )
@@ -253,20 +245,20 @@ function ItemModel({ itemId, color }) {
         <>
           <mesh castShadow position={[0, -0.05, 0]}>
             <coneGeometry args={[0.34, 0.72, 8]} />
-            <meshStandardMaterial color={color} flatShading roughness={0.5} emissive={color} emissiveIntensity={0.25} />
+            <ToonMat color={color}emissive={color} emissiveIntensity={0.25} />
           </mesh>
           <mesh castShadow position={[0, 0.36, -0.06]}>
             <sphereGeometry args={[0.2, 8, 6, 0, Math.PI * 2, 0, Math.PI / 1.6]} />
-            <meshStandardMaterial color={shade(color, -22)} flatShading roughness={0.5} />
+            <ToonMat color={shade(color, -22)}/>
           </mesh>
           <mesh position={[0, 0.16, 0]}>
             <torusGeometry args={[0.2, 0.03, 5, 10]} />
-            <meshStandardMaterial color="#4a4438" flatShading />
+            <ToonMat color="#4a4438"/>
           </mesh>
           {[-1, 1].map((s) => (
             <mesh key={s} castShadow position={[s * 0.3, 0.02, 0]} rotation={[0, 0, s * 0.5]}>
               <capsuleGeometry args={[0.07, 0.3, 3, 6]} />
-              <meshStandardMaterial color={color} flatShading roughness={0.5} />
+              <ToonMat color={color}/>
             </mesh>
           ))}
         </>
@@ -277,18 +269,13 @@ function ItemModel({ itemId, color }) {
         <>
           <mesh castShadow rotation={[0, 0, 0.35]}>
             <boxGeometry args={[0.11, 0.7, 0.11]} />
-            <meshStandardMaterial color="#5c3a1e" flatShading />
+            <ToonMat color="#5c3a1e"/>
           </mesh>
           <mesh castShadow position={[0.14, 0.34, 0]} rotation={[0, 0, 0.35]}>
             <boxGeometry args={[0.42, 0.16, 0.12]} />
-            <meshStandardMaterial
-              color={color}
-              flatShading
-              emissive={color}
-              emissiveIntensity={0.5}
-              metalness={0.6}
-              roughness={0.3}
-            />
+            <ToonMat
+              color={color}emissive={color}
+              emissiveIntensity={0.5}/>
           </mesh>
         </>
       )
@@ -299,20 +286,20 @@ function ItemModel({ itemId, color }) {
         <>
           <mesh castShadow>
             <boxGeometry args={[0.62, 0.34, 0.4]} />
-            <meshStandardMaterial color={color} flatShading roughness={0.95} />
+            <ToonMat color={color}/>
           </mesh>
           <mesh castShadow position={[0, 0.25, 0]}>
             <boxGeometry args={[0.56, 0.2, 0.36]} />
-            <meshStandardMaterial color={shade(color, 22)} flatShading roughness={0.95} />
+            <ToonMat color={shade(color, 22)}/>
           </mesh>
           <mesh castShadow position={[0, 0.4, 0.02]}>
             <sphereGeometry args={[0.22, 7, 5]} />
-            <meshStandardMaterial color="#efe6d8" flatShading roughness={1} />
+            <ToonMat color="#efe6d8"/>
           </mesh>
           {[-0.18, 0.06].map((y) => (
             <mesh key={y} position={[0, y, 0.21]}>
               <sphereGeometry args={[0.045, 5, 4]} />
-              <meshStandardMaterial color="#3a2c1e" flatShading />
+              <ToonMat color="#3a2c1e"/>
             </mesh>
           ))}
         </>
@@ -323,10 +310,8 @@ function ItemModel({ itemId, color }) {
         <>
           <mesh castShadow>
             <octahedronGeometry args={[0.3, 0]} />
-            <meshStandardMaterial
-              color={color}
-              flatShading
-              emissive={color}
+            <ToonMat
+              color={color}emissive={color}
               emissiveIntensity={1.2}
               transparent
               opacity={0.92}
@@ -334,7 +319,7 @@ function ItemModel({ itemId, color }) {
           </mesh>
           <mesh castShadow scale={0.55} rotation={[0.6, 0.4, 0]}>
             <octahedronGeometry args={[0.3, 0]} />
-            <meshStandardMaterial color="#dff4ff" flatShading emissive="#bfe8ff" emissiveIntensity={0.9} />
+            <ToonMat color="#dff4ff"emissive="#bfe8ff" emissiveIntensity={0.9} />
           </mesh>
         </>
       )
@@ -345,28 +330,24 @@ function ItemModel({ itemId, color }) {
           {[-1, 1].map((s) => (
             <mesh key={s} castShadow position={[s * 0.14, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.12, 0.14, 0.5, 10]} />
-              <meshStandardMaterial color={color} flatShading roughness={0.5} metalness={0.35} />
+              <ToonMat color={color}/>
             </mesh>
           ))}
           <mesh position={[0, 0, 0]}>
             <boxGeometry args={[0.16, 0.14, 0.24]} />
-            <meshStandardMaterial color={shade(color, -14)} flatShading />
+            <ToonMat color={shade(color, -14)}/>
           </mesh>
           {[-1, 1].map((s) => (
             <mesh key={s} position={[s * 0.14, 0, 0.26]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.1, 0.1, 0.04, 10]} />
-              <meshStandardMaterial
-                color="#9fe8f4"
-                flatShading
-                emissive="#7fd8ee"
-                emissiveIntensity={0.7}
-                roughness={0.15}
-              />
+              <ToonMat
+                color="#9fe8f4"emissive="#7fd8ee"
+                emissiveIntensity={0.7}/>
             </mesh>
           ))}
           <mesh position={[0, -0.1, 0]} rotation={[0.4, 0, 0]}>
             <torusGeometry args={[0.22, 0.02, 4, 10]} />
-            <meshStandardMaterial color="#3a3228" flatShading />
+            <ToonMat color="#3a3228"/>
           </mesh>
         </>
       )
@@ -376,14 +357,12 @@ function ItemModel({ itemId, color }) {
         <>
           <mesh castShadow position={[0, -0.12, 0]}>
             <cylinderGeometry args={[0.08, 0.12, 0.28, 6]} />
-            <meshStandardMaterial color="#d8c8a0" flatShading />
+            <ToonMat color="#d8c8a0"/>
           </mesh>
           <mesh castShadow position={[0, 0.12, 0]}>
             <sphereGeometry args={[0.28, 8, 6, 0, Math.PI * 2, 0, Math.PI / 1.7]} />
-            <meshStandardMaterial
-              color={color}
-              flatShading
-              emissive={color}
+            <ToonMat
+              color={color}emissive={color}
               emissiveIntensity={1.1}
             />
           </mesh>
@@ -393,7 +372,7 @@ function ItemModel({ itemId, color }) {
               position={[Math.cos(i) * 0.12, 0.18, Math.sin(i) * 0.12]}
             >
               <sphereGeometry args={[0.04, 5, 4]} />
-              <meshStandardMaterial color="#e8ffe8" emissive="#a0ffb0" emissiveIntensity={1.2} />
+              <ToonMat color="#e8ffe8" emissive="#a0ffb0" emissiveIntensity={1.2} />
             </mesh>
           ))}
         </>
@@ -404,15 +383,15 @@ function ItemModel({ itemId, color }) {
         <>
           <mesh castShadow rotation={[0.4, 0.2, 0.5]}>
             <boxGeometry args={[0.18, 0.7, 0.06]} />
-            <meshStandardMaterial color={color} flatShading emissive="#c8b070" emissiveIntensity={0.35} />
+            <ToonMat color={color}emissive="#c8b070" emissiveIntensity={0.35} />
           </mesh>
           <mesh castShadow position={[0.05, 0.1, 0]} rotation={[0.5, -0.3, 0.2]}>
             <boxGeometry args={[0.12, 0.55, 0.04]} />
-            <meshStandardMaterial color="#f0e6c8" flatShading />
+            <ToonMat color="#f0e6c8"/>
           </mesh>
           <mesh position={[0, -0.32, 0]}>
             <sphereGeometry args={[0.06, 5, 4]} />
-            <meshStandardMaterial color="#5a4030" flatShading />
+            <ToonMat color="#5a4030"/>
           </mesh>
         </>
       )
@@ -421,7 +400,7 @@ function ItemModel({ itemId, color }) {
       return (
         <mesh castShadow>
           <octahedronGeometry args={[0.3, 0]} />
-          <meshStandardMaterial color={color} flatShading emissive={color} emissiveIntensity={1} />
+          <ToonMat color={color}emissive={color} emissiveIntensity={1} />
         </mesh>
       )
   }

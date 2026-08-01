@@ -1,7 +1,9 @@
 import { useMemo, useRef } from 'react'
+import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
+import { makeToonMaterial } from '../../materials/toonMaterial'
 import {
   RIVER,
   STAIRS,
@@ -51,11 +53,11 @@ export function BarrierWall({ z, gateWidth, halfWidth, height = 6, y = 0, color 
             <group key={`${side}-${i}`}>
               <mesh position={[x, y + h / 2, z]} castShadow receiveShadow>
                 <boxGeometry args={[segLen / panels + 0.1, h, 1]} />
-                <meshStandardMaterial color={i % 2 ? shade(color, -16) : color} flatShading roughness={0.95} />
+                <ToonMat color={i % 2 ? shade(color, -16) : color}/>
               </mesh>
               <mesh position={[x, y + h + 0.25, z]} castShadow>
                 <boxGeometry args={[segLen / panels + 0.4, 0.4, 1.5]} />
-                <meshStandardMaterial color={shade(color, -30)} flatShading />
+                <ToonMat color={shade(color, -30)}/>
               </mesh>
             </group>
           )
@@ -96,7 +98,7 @@ export function WoodenBridge() {
           castShadow
         >
           <boxGeometry args={[halfX * 2, 0.16, 1.45]} />
-          <meshStandardMaterial color={i % 2 ? '#8a5a32' : '#6b4a2c'} flatShading roughness={0.95} />
+          <ToonMat color={i % 2 ? '#8a5a32' : '#6b4a2c'}/>
         </mesh>
       ))}
 
@@ -104,7 +106,7 @@ export function WoodenBridge() {
       {[-halfX + 0.6, halfX - 0.6].map((x) => (
         <mesh key={x} position={[x, -0.22, zMid]} castShadow>
           <boxGeometry args={[0.5, 0.4, halfZ * 2]} />
-          <meshStandardMaterial color="#54381f" flatShading />
+          <ToonMat color="#54381f"/>
         </mesh>
       ))}
 
@@ -114,14 +116,14 @@ export function WoodenBridge() {
         return [-1, 1].map((side) => (
           <mesh key={`${i}-${side}`} position={[side * (halfX + 0.2), 0.75, z]} castShadow>
             <boxGeometry args={[0.28, 1.5, 0.28]} />
-            <meshStandardMaterial color="#54381f" flatShading />
+            <ToonMat color="#54381f"/>
           </mesh>
         ))
       })}
       {[-1, 1].map((side) => (
         <mesh key={side} position={[side * (halfX + 0.2), 1.45, zMid]} castShadow>
           <boxGeometry args={[0.34, 0.22, halfZ * 2 - 1]} />
-          <meshStandardMaterial color="#6b4a2c" flatShading />
+          <ToonMat color="#6b4a2c"/>
         </mesh>
       ))}
 
@@ -129,7 +131,7 @@ export function WoodenBridge() {
       {[-0.45, 0.45].map((f) => (
         <mesh key={f} position={[0, -1.8, zMid + f * halfZ * 0.9]} castShadow>
           <boxGeometry args={[halfX * 1.6, 3.2, 1.4]} />
-          <meshStandardMaterial color="#5c4028" flatShading />
+          <ToonMat color="#5c4028"/>
         </mesh>
       ))}
     </group>
@@ -156,21 +158,16 @@ export function RiverWater() {
     <group position={[px, 0, 0]}>
       <mesh position={[0, RIVER.waterY, zMid]} receiveShadow>
         <boxGeometry args={[RIVER.gapHalfX * 2, 1.2, len]} />
-        <meshStandardMaterial
-          color="#4a8ea8"
-          flatShading
-          transparent
-          opacity={0.88}
-          roughness={0.12}
-          metalness={0.22}
-        />
+        <ToonMat
+          color="#4a8ea8"transparent
+          opacity={0.88}/>
       </mesh>
       {/* espuma correndo */}
       <group ref={ref} position={[0, RIVER.waterY, zMid]}>
         {Array.from({ length: 8 }, (_, i) => (
           <mesh key={i} position={[(i % 3 - 1) * 3.5, 0.65, 0]}>
             <boxGeometry args={[2.4, 0.14, 3.5]} />
-            <meshStandardMaterial color="#e8f6ff" flatShading transparent opacity={0.55} depthWrite={false} />
+            <ToonMat color="#e8f6ff"transparent opacity={0.55} depthWrite={false} />
           </mesh>
         ))}
       </group>
@@ -178,7 +175,7 @@ export function RiverWater() {
       {[-1, 1].map((side) => (
         <mesh key={side} position={[side * (RIVER.gapHalfX + 0.6), -1.6, zMid]} receiveShadow>
           <boxGeometry args={[1.6, 4, len - 20]} />
-          <meshStandardMaterial color="#6a7078" flatShading roughness={1} />
+          <ToonMat color="#6a7078"/>
         </mesh>
       ))}
     </group>
@@ -195,12 +192,13 @@ const RAMP = (() => {
   const zBottom = STAIRS.zStart + STAIRS.stepDepth * 0.72
   const zTop = STAIRS.zStart - (STAIRS.steps - 1) * STAIRS.stepDepth
   const slope = SUMMIT_Y / (zBottom - zTop)
-  const pad = 2
+  const padBottom = 2
+  const padTop = 8
 
-  const az = zBottom + pad
-  const ay = -slope * pad
-  const bz = zTop
-  const by = SUMMIT_Y
+  const az = zBottom + padBottom
+  const ay = -slope * padBottom
+  const bz = zTop - padTop
+  const by = SUMMIT_Y + slope * padTop
 
   const len = Math.hypot(bz - az, by - ay)
   const angle = Math.asin((by - ay) / len)
@@ -212,6 +210,7 @@ const RAMP = (() => {
     halfLen: len / 2,
     y: (ay + by) / 2 - halfY * Math.cos(angle),
     z: (az + bz) / 2 - halfY * Math.sin(angle),
+    zTop,
   }
 })()
 
@@ -247,25 +246,23 @@ export function SummitStairs() {
   // materiais base brancos quando há instanceColor — evita tint errado / z-fight
   const mats = useMemo(
     () => ({
-      step: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
-      landing: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
-      dirt: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
-      snow: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 0.72 }),
-      pillar: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
-      cap: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
-      lantern: new THREE.MeshStandardMaterial({
+      step: makeToonMaterial({ color: '#ffffff',}),
+      landing: makeToonMaterial({ color: '#ffffff',}),
+      dirt: makeToonMaterial({ color: '#ffffff',}),
+      snow: makeToonMaterial({ color: '#ffffff',}),
+      pillar: makeToonMaterial({ color: '#ffffff',}),
+      cap: makeToonMaterial({ color: '#ffffff',}),
+      lantern: makeToonMaterial({
         color: '#ffcc88',
         emissive: '#ffaa44',
-        emissiveIntensity: 1.35,
-        flatShading: true,
-      }),
-      rock: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
-      tuft: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 0.95 }),
-      flagPole: new THREE.MeshStandardMaterial({ color: '#6a5a3a', flatShading: true }),
-      flag: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true }),
-      wood: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 0.9 }),
-      rope: new THREE.MeshStandardMaterial({ color: '#c4a574', flatShading: true, roughness: 0.85 }),
-      shrine: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
+        emissiveIntensity: 1.35,}),
+      rock: makeToonMaterial({ color: '#ffffff',}),
+      tuft: makeToonMaterial({ color: '#ffffff',}),
+      flagPole: makeToonMaterial({ color: '#6a5a3a',}),
+      flag: makeToonMaterial({ color: '#ffffff',}),
+      wood: makeToonMaterial({ color: '#ffffff',}),
+      rope: makeToonMaterial({ color: '#c4a574',}),
+      shrine: makeToonMaterial({ color: '#ffffff',}),
     }),
     [],
   )
@@ -548,6 +545,11 @@ export function SummitStairs() {
           rotation={[RAMP.angle, 0, 0]}
           args={[STAIRS.halfWidth, RAMP.halfY, RAMP.halfLen]}
         />
+        {/* platô de chegada — evita queda no limbo entre rampa e chão do mirante */}
+        <CuboidCollider
+          position={[0, SUMMIT_Y - 0.5, RAMP.zTop - 5]}
+          args={[STAIRS.halfWidth + 2, 1.2, 10]}
+        />
         <CuboidCollider
           position={[-STAIRS.halfWidth - 0.7, SUMMIT_Y / 2 + 0.8, midZ]}
           args={[0.7, SUMMIT_Y / 2 + 0.8, stairsLen / 2 + 2]}
@@ -612,7 +614,7 @@ export function SummitStairs() {
           receiveShadow
         >
           <boxGeometry args={[1.4, SUMMIT_Y + 1.6, stairsLen + 4]} />
-          <meshStandardMaterial color="#75787d" flatShading roughness={1} />
+          <ToonMat color="#75787d"/>
         </mesh>
       ))}
 
@@ -623,7 +625,7 @@ export function SummitStairs() {
           rotation={[RAMP.angle, 0, 0]}
         >
           <boxGeometry args={[0.22, 0.2, stairsLen + 2]} />
-          <meshStandardMaterial color="#8a6a3a" flatShading roughness={0.75} />
+          <ToonMat color="#8a6a3a"/>
         </mesh>
       ))}
 
@@ -637,33 +639,33 @@ export function SummitStairs() {
               <group key={side}>
                 <mesh castShadow={isTop} position={[side * (STAIRS.halfWidth - 1.2), 4.2, 0]}>
                   <boxGeometry args={[1.6, 8.4, 2.0]} />
-                  <meshStandardMaterial color="#5c6066" flatShading roughness={1} />
+                  <ToonMat color="#5c6066"/>
                 </mesh>
                 <mesh position={[side * (STAIRS.halfWidth - 1.2), 8.6, 0]}>
                   <boxGeometry args={[2.2, 0.7, 2.4]} />
-                  <meshStandardMaterial color="#4a4e54" flatShading roughness={1} />
+                  <ToonMat color="#4a4e54"/>
                 </mesh>
               </group>
             ))}
             <mesh position={[0, 8.8, 0]}>
               <boxGeometry args={[STAIRS.halfWidth * 2 - 0.4, 1.4, 2.2]} />
-              <meshStandardMaterial color="#4a4e54" flatShading roughness={1} />
+              <ToonMat color="#4a4e54"/>
             </mesh>
             {isTop && (
-              <mesh position={[0, 10.4, 0]}>
-                <coneGeometry args={[STAIRS.halfWidth * 0.55, 2.4, 3]} />
-                <meshStandardMaterial color="#3e4248" flatShading roughness={1} />
+              <mesh position={[0, 10.2, 0]}>
+                <boxGeometry args={[STAIRS.halfWidth * 0.5, 0.55, 1.8]} />
+                <ToonMat color="#3e4248"/>
               </mesh>
             )}
             {[-1, 1].map((side) => (
               <group key={`flag-${side}`} position={[side * (STAIRS.halfWidth - 1.2), 9.2, 0.3]}>
                 <mesh>
                   <cylinderGeometry args={[0.08, 0.1, 3.2, 5]} />
-                  <meshStandardMaterial color="#6a5a3a" flatShading />
+                  <ToonMat color="#6a5a3a"/>
                 </mesh>
                 <mesh position={[side * 0.7, 0.9, 0]}>
                   <boxGeometry args={[1.4, 0.9, 0.06]} />
-                  <meshStandardMaterial color={isTop ? '#c43a3a' : '#3a6a9a'} flatShading />
+                  <ToonMat color={isTop ? '#c43a3a' : '#3a6a9a'}/>
                 </mesh>
               </group>
             ))}
@@ -674,16 +676,37 @@ export function SummitStairs() {
       <pointLight
         position={[STAIRS.halfWidth + 1.6, midLightY, midLightZ]}
         color="#ffcc88"
-        intensity={4}
-        distance={22}
-        decay={2}
+        intensity={6}
+        distance={32}
+        decay={1.6}
+      />
+      <pointLight
+        position={[-STAIRS.halfWidth - 1.6, midLightY, midLightZ - 18]}
+        color="#ffcc88"
+        intensity={5}
+        distance={28}
+        decay={1.6}
+      />
+      <pointLight
+        position={[0, SUMMIT_Y * 0.25 + 2, STAIRS.zStart - stairsLen * 0.22]}
+        color="#ffd898"
+        intensity={5}
+        distance={26}
+        decay={1.6}
+      />
+      <pointLight
+        position={[0, SUMMIT_Y * 0.62 + 2, STAIRS.zStart - stairsLen * 0.68]}
+        color="#ffd898"
+        intensity={5}
+        distance={26}
+        decay={1.6}
       />
       <pointLight
         position={[0, topArchY + 6.5, topArchZ + 1.5]}
         color="#ffcc88"
-        intensity={5}
-        distance={20}
-        decay={2}
+        intensity={7}
+        distance={34}
+        decay={1.5}
       />
     </group>
   )
@@ -732,16 +755,11 @@ function ClimbStream({ stairsLen }) {
   )
   const mats = useMemo(
     () => ({
-      water: new THREE.MeshStandardMaterial({
-        color: '#ffffff',
-        flatShading: true,
-        transparent: true,
-        opacity: 0.82,
-        roughness: 0.12,
-        metalness: 0.35,
-        depthWrite: false,
+      water: makeToonMaterial({
+        color: '#ffffff',transparent: true,
+        opacity: 0.82,depthWrite: false,
       }),
-      bed: new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
+      bed: makeToonMaterial({ color: '#ffffff',}),
     }),
     [],
   )
@@ -764,10 +782,8 @@ function ClimbStream({ stairsLen }) {
           i % 2 === 0 ? (
             <mesh key={i} position={[s.x, s.y + 0.1, s.z]}>
               <boxGeometry args={[CLIMB_STREAM.halfWidth * 1.2, 0.06, 1.2]} />
-              <meshStandardMaterial
-                color="#e4f6fc"
-                flatShading
-                transparent
+              <ToonMat
+                color="#e4f6fc"transparent
                 opacity={0.45}
                 depthWrite={false}
               />
@@ -887,34 +903,32 @@ export function SummitTreasure() {
       </RigidBody>
       <mesh position={[0, 0.3, 0]} receiveShadow castShadow>
         <boxGeometry args={[4, 0.6, 3.2]} />
-        <meshStandardMaterial color="#8d9096" flatShading roughness={1} />
+        <ToonMat color="#8d9096"/>
       </mesh>
 
       {/* baú */}
       <mesh position={[0, 1.1, 0]} castShadow>
         <boxGeometry args={[2.2, 1.1, 1.5]} />
-        <meshStandardMaterial color="#6b4a2c" flatShading />
+        <ToonMat color="#6b4a2c"/>
       </mesh>
       <group ref={lidRef} position={[0, 1.65, -0.75]}>
         <mesh position={[0, 0.12, 0.75]} castShadow>
           <boxGeometry args={[2.25, 0.3, 1.55]} />
-          <meshStandardMaterial color="#54381f" flatShading />
+          <ToonMat color="#54381f"/>
         </mesh>
       </group>
       <mesh position={[0, 1.1, 0.78]} castShadow>
         <boxGeometry args={[0.4, 0.5, 0.12]} />
-        <meshStandardMaterial color="#e8c84a" flatShading metalness={0.6} roughness={0.3} />
+        <ToonMat color="#e8c84a"/>
       </mesh>
 
       {/* brilho do tesouro */}
       <mesh ref={glowRef} position={[0, 1.8, 0]}>
         <octahedronGeometry args={[0.42, 0]} />
-        <meshStandardMaterial
+        <ToonMat
           color="#ffe08a"
           emissive="#ffc84a"
-          emissiveIntensity={1.8}
-          flatShading
-        />
+          emissiveIntensity={1.8}/>
       </mesh>
       <pointLight position={[0, 2.2, 0]} color="#ffcc66" intensity={7} distance={12} decay={2} />
 
@@ -943,11 +957,11 @@ export function SummitTreasure() {
       <group position={[8, 0, 4]}>
         <mesh position={[0, 0.7, 0]} castShadow>
           <cylinderGeometry args={[0.12, 0.2, 1.4, 6]} />
-          <meshStandardMaterial color="#4a4a48" flatShading metalness={0.5} roughness={0.5} />
+          <ToonMat color="#4a4a48"/>
         </mesh>
         <mesh position={[0, 1.5, 0.3]} rotation={[0.5, 0, 0]} castShadow>
           <cylinderGeometry args={[0.16, 0.24, 1.1, 8]} />
-          <meshStandardMaterial color="#2f2f2e" flatShading metalness={0.6} roughness={0.4} />
+          <ToonMat color="#2f2f2e"/>
         </mesh>
       </group>
       {[
@@ -958,15 +972,15 @@ export function SummitTreasure() {
         <group key={`flag-${i}`} position={[fx, 0, fz]}>
           <mesh position={[0, 3.2, 0]} castShadow>
             <cylinderGeometry args={[0.1, 0.13, 6.4, 6]} />
-            <meshStandardMaterial color="#8a8a86" flatShading metalness={0.4} />
+            <ToonMat color="#8a8a86"/>
           </mesh>
           <mesh position={[1.15, 5.5, 0]} castShadow>
             <boxGeometry args={[2.2, 1.35, 0.08]} />
-            <meshStandardMaterial color={i === 1 ? '#3a6a9a' : '#d43a3a'} flatShading />
+            <ToonMat color={i === 1 ? '#3a6a9a' : '#d43a3a'}/>
           </mesh>
           <mesh position={[1.15, 5.5, 0.06]}>
             <boxGeometry args={[0.85, 0.28, 0.05]} />
-            <meshStandardMaterial color="#f4f4f0" flatShading />
+            <ToonMat color="#f4f4f0"/>
           </mesh>
         </group>
       ))}
@@ -984,20 +998,18 @@ export function SummitTreasure() {
         <group key={`pillar-${i}`} position={[px, 0, pz]}>
           <mesh position={[0, 2.4, 0]}>
             <cylinderGeometry args={[0.55, 0.7, 4.8, 6]} />
-            <meshStandardMaterial color="#6e7278" flatShading roughness={1} />
+            <ToonMat color="#6e7278"/>
           </mesh>
           <mesh position={[0, 5.0, 0]}>
             <boxGeometry args={[1.5, 0.4, 1.5]} />
-            <meshStandardMaterial color="#5a5e64" flatShading roughness={1} />
+            <ToonMat color="#5a5e64"/>
           </mesh>
           <mesh position={[0, 5.55, 0]}>
             <sphereGeometry args={[0.32, 5, 4]} />
-            <meshStandardMaterial
+            <ToonMat
               color="#ffcc88"
               emissive="#ffaa44"
-              emissiveIntensity={1.5}
-              flatShading
-            />
+              emissiveIntensity={1.5}/>
           </mesh>
         </group>
       ))}
@@ -1009,16 +1021,16 @@ export function SummitTreasure() {
         {[-1, 1].map((side) => (
           <mesh key={side} castShadow position={[side * 5.5, 4.5, 0]}>
             <boxGeometry args={[1.8, 9, 1.8]} />
-            <meshStandardMaterial color="#5c6066" flatShading roughness={1} />
+            <ToonMat color="#5c6066"/>
           </mesh>
         ))}
         <mesh position={[0, 9.4, 0]}>
           <boxGeometry args={[13, 1.5, 2.0]} />
-          <meshStandardMaterial color="#4a4e54" flatShading roughness={1} />
+          <ToonMat color="#4a4e54"/>
         </mesh>
         <mesh position={[0, 11.2, 0]}>
           <coneGeometry args={[4.5, 2.6, 3]} />
-          <meshStandardMaterial color="#3e4248" flatShading roughness={1} />
+          <ToonMat color="#3e4248"/>
         </mesh>
       </group>
 
@@ -1038,7 +1050,7 @@ export function SummitTreasure() {
           scale={[1.1 + (i % 3) * 0.25, 0.55 + (i % 2) * 0.2, 0.9]}
         >
           <dodecahedronGeometry args={[1.1, 0]} />
-          <meshStandardMaterial color="#7a8086" flatShading roughness={1} />
+          <ToonMat color="#7a8086"/>
         </mesh>
       ))}
 
@@ -1058,8 +1070,8 @@ function SummitBalustrade() {
   )
   const mats = useMemo(
     () => ({
-      post: new THREE.MeshStandardMaterial({ color: '#8d9096', flatShading: true }),
-      rail: new THREE.MeshStandardMaterial({ color: '#7f8288', flatShading: true }),
+      post: makeToonMaterial({ color: '#8d9096',}),
+      rail: makeToonMaterial({ color: '#7f8288',}),
     }),
     [],
   )
@@ -1098,29 +1110,29 @@ export function VillageWell({ position = [0, 0, -30] }) {
       </RigidBody>
       <mesh position={[0, 1, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[1.8, 2, 2, 10]} />
-        <meshStandardMaterial color="#8a8a7a" flatShading roughness={1} />
+        <ToonMat color="#8a8a7a"/>
       </mesh>
       <mesh position={[0, 1.95, 0]}>
         <cylinderGeometry args={[1.5, 1.5, 0.2, 10]} />
-        <meshStandardMaterial color="#2f4d5a" flatShading metalness={0.3} roughness={0.2} />
+        <ToonMat color="#2f4d5a"/>
       </mesh>
       {[-1.5, 1.5].map((x) => (
         <mesh key={x} position={[x, 3.2, 0]} castShadow>
           <boxGeometry args={[0.3, 3.2, 0.3]} />
-          <meshStandardMaterial color="#5c3a1e" flatShading />
+          <ToonMat color="#5c3a1e"/>
         </mesh>
       ))}
       <mesh position={[0, 5, 0]} castShadow>
         <coneGeometry args={[2.6, 1.6, 4]} />
-        <meshStandardMaterial color="#4a2814" flatShading />
+        <ToonMat color="#4a2814"/>
       </mesh>
       <mesh position={[0, 3.1, 0]} castShadow>
         <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial color="#6b4a2c" flatShading />
+        <ToonMat color="#6b4a2c"/>
       </mesh>
       <mesh position={[0, 2.6, 0]} castShadow>
         <cylinderGeometry args={[0.4, 0.45, 0.6, 8]} />
-        <meshStandardMaterial color="#54381f" flatShading />
+        <ToonMat color="#54381f"/>
       </mesh>
     </group>
   )
@@ -1168,27 +1180,22 @@ export function Streams() {
           <group key={i}>
             <mesh position={[cx, -0.06, s.z]} receiveShadow>
               <boxGeometry args={[width, 0.2, s.halfZ * 2 + 1.6]} />
-              <meshStandardMaterial color="#6a6f66" flatShading roughness={1} />
+              <ToonMat color="#6a6f66"/>
             </mesh>
             <mesh position={[cx, 0.04, s.z]}>
               <boxGeometry args={[width, 0.14, s.halfZ * 2]} />
-              <meshStandardMaterial
-                color="#2aa0e0"
-                flatShading
-                transparent
-                opacity={0.82}
-                roughness={0.1}
-                metalness={0.28}
-              />
+              <ToonMat
+                color="#2aa0e0"transparent
+                opacity={0.82}/>
             </mesh>
             <mesh position={[cx, 0.16, s.z]} castShadow receiveShadow>
               <boxGeometry args={[5.2, 0.18, s.halfZ * 2 + 2.4]} />
-              <meshStandardMaterial color="#7a5230" flatShading roughness={0.95} />
+              <ToonMat color="#7a5230"/>
             </mesh>
             {[-2.4, 2.4].map((x) => (
               <mesh key={x} position={[cx + x, 0.5, s.z]} castShadow>
                 <boxGeometry args={[0.2, 0.8, s.halfZ * 2 + 2.4]} />
-                <meshStandardMaterial color="#54381f" flatShading />
+                <ToonMat color="#54381f"/>
               </mesh>
             ))}
           </group>
@@ -1199,10 +1206,8 @@ export function Streams() {
         {STREAMS.map((s, i) => (
           <mesh key={i} position={[pathXAt(s.z), 0.1, s.z]}>
             <boxGeometry args={[3.2, 0.06, s.halfZ * 1.1]} />
-            <meshStandardMaterial
-              color="#e8f6ff"
-              flatShading
-              transparent
+            <ToonMat
+              color="#e8f6ff"transparent
               opacity={0.55}
               depthWrite={false}
             />
@@ -1213,7 +1218,7 @@ export function Streams() {
       {decor.map((d) => (
         <mesh key={d.key} position={[d.x, d.y, d.z]} rotation={[d.rot, d.rot, 0]} castShadow={false}>
           <dodecahedronGeometry args={[d.r, 0]} />
-          <meshStandardMaterial color="#77807a" flatShading roughness={1} />
+          <ToonMat color="#77807a"/>
         </mesh>
       ))}
     </group>
@@ -1230,18 +1235,13 @@ export function Ponds() {
         <group key={i} position={[x, 0, z]}>
           <mesh position={[0, -0.08, 0]} receiveShadow>
             <cylinderGeometry args={[p.r + 1.2, p.r + 1.6, 0.3, 14]} />
-            <meshStandardMaterial color={p.frozen ? '#c4d6de' : '#6a6f66'} flatShading roughness={1} />
+            <ToonMat color={p.frozen ? '#c4d6de' : '#6a6f66'}/>
           </mesh>
           <mesh position={[0, 0.05, 0]}>
             <cylinderGeometry args={[p.r, p.r, 0.16, 14]} />
-            <meshStandardMaterial
-              color={p.frozen ? '#d6ecf4' : '#2a9ad4'}
-              flatShading
-              transparent
-              opacity={p.frozen ? 0.95 : 0.84}
-              roughness={p.frozen ? 0.18 : 0.1}
-              metalness={0.28}
-            />
+            <ToonMat
+              color={p.frozen ? '#d6ecf4' : '#2a9ad4'}transparent
+              opacity={p.frozen ? 0.95 : 0.84}/>
           </mesh>
           {/* pedras na margem */}
           {Array.from({ length: 9 }, (_, k) => {
@@ -1254,11 +1254,8 @@ export function Ponds() {
                 castShadow
               >
                 <dodecahedronGeometry args={[0.5 + (k % 3) * 0.35, 0]} />
-                <meshStandardMaterial
-                  color={p.frozen ? '#a9bcc6' : '#68746c'}
-                  flatShading
-                  roughness={1}
-                />
+                <ToonMat
+                  color={p.frozen ? '#a9bcc6' : '#68746c'}/>
               </mesh>
             )
           })}
@@ -1278,7 +1275,7 @@ export function Signpost({ position = [0, 0, 0], rotation = 0, label = 0 }) {
     <group position={position} rotation={[0, rotation, 0]}>
       <mesh position={[0, 1.4, 0]} castShadow>
         <cylinderGeometry args={[0.16, 0.2, 2.8, 6]} />
-        <meshStandardMaterial color="#5c3a1e" flatShading />
+        <ToonMat color="#5c3a1e"/>
       </mesh>
       {Array.from({ length: 2 }, (_, i) => (
         <mesh
@@ -1288,12 +1285,12 @@ export function Signpost({ position = [0, 0, 0], rotation = 0, label = 0 }) {
           castShadow
         >
           <boxGeometry args={[1.9, 0.42, 0.12]} />
-          <meshStandardMaterial color={i ? '#7a5230' : '#8a6238'} flatShading />
+          <ToonMat color={i ? '#7a5230' : '#8a6238'}/>
         </mesh>
       ))}
       <mesh position={[0, 2.75, 0]} castShadow>
         <coneGeometry args={[0.26, 0.4, 5]} />
-        <meshStandardMaterial color={label % 2 ? '#4a2814' : '#3d2914'} flatShading />
+        <ToonMat color={label % 2 ? '#4a2814' : '#3d2914'}/>
       </mesh>
       {text && (
         <mesh position={[0, 2.05, 0.08]}>

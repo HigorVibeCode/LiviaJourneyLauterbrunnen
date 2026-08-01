@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { PROP_HEIGHTS, PROP_COLLIDERS } from '../../config/adventureDecor'
 import { groundHeightAt } from '../../config/world'
 import { ADVENTURE_GLB } from '../../lib/preloadAssets'
+import { makeToonMaterial } from '../../materials/toonMaterial'
 
 const _box = new THREE.Box3()
 const _center = new THREE.Vector3()
@@ -55,11 +56,8 @@ function extractProp(scene, name, targetHeight) {
     if (!obj.isMesh) return
     obj.castShadow = false
     obj.receiveShadow = true
-    obj.material = new THREE.MeshStandardMaterial({
-      color: colorForProp(name),
-      flatShading: true,
-      roughness: 0.92,
-    })
+    if (obj.geometry) obj.geometry.computeVertexNormals()
+    obj.material = makeToonMaterial({ color: colorForProp(name) })
   })
 
   cache.set(key, pivot)
@@ -75,6 +73,7 @@ export default function PackProp({
   rotation = 0,
   scale = 1,
   collider = true,
+  snapGround = true,
 }) {
   const { scene } = useGLTF(ADVENTURE_GLB)
   const groupRef = useRef(null)
@@ -84,8 +83,8 @@ export default function PackProp({
   const visual = useMemo(() => extractProp(scene, name, height), [scene, name, height])
 
   const y =
-    position[1] !== undefined && position[1] !== 0
-      ? position[1]
+    !snapGround || (position[1] !== undefined && position[1] !== 0)
+      ? position[1] ?? 0
       : groundHeightAt(position[0], position[2])
 
   if (!visual) return null

@@ -18,9 +18,9 @@ export default function AlpsBackdrop() {
     // Camadas próximas ao vale ficam só nas laterais (flank) — senão um
     // cone verde enorme tapa a vista da neve/escadaria no meio do caminho.
     const layers = [
-      { z: -980, scale: 3.2, color: '#a8c4dc', snow: '#f8fcff', count: 11 },
-      { z: -820, scale: 2.6, color: '#9eb8d0', snow: '#f4f9fd', count: 10 },
-      { z: -740, scale: 2.1, color: '#94adc4', snow: '#f0f6fa', count: 9 },
+      { z: -980, scale: 2.4, color: '#a8c4dc', snow: '#f8fcff', count: 8, flank: true },
+      { z: -820, scale: 2.0, color: '#9eb8d0', snow: '#f4f9fd', count: 7, flank: true },
+      { z: -740, scale: 1.7, color: '#94adc4', snow: '#f0f6fa', count: 6, flank: true },
       { z: -500, scale: 1.35, color: '#8eb0a0', snow: '#eaf4f8', count: 6, flank: true },
       { z: -360, scale: 1.1, color: '#88a898', snow: '#e6f0f6', count: 6, flank: true },
       { z: 320, scale: 1.8, color: '#9cb4cc', snow: '#f2f8fc', count: 7 },

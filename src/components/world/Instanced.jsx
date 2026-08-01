@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { getToonGradientMap } from '../../materials/toonMaterial'
 
 const tmpMatrix = new THREE.Matrix4()
 const tmpQuat = new THREE.Quaternion()
@@ -78,10 +79,9 @@ export function useWindMaterial({ color, strength = 0.16, speed = 1.4 }) {
   const uniforms = useMemo(() => ({ uTime: { value: 0 }, uStrength: { value: strength } }), [strength])
 
   const material = useMemo(() => {
-    const mat = new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshToonMaterial({
       color,
-      flatShading: true,
-      roughness: 0.95,
+      gradientMap: getToonGradientMap(),
     })
 
     mat.onBeforeCompile = (shader) => {

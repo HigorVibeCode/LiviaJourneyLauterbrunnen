@@ -226,6 +226,9 @@ export const SCATTER_ZONES = {
   },
 }
 
+/** Meio-largura do tabuleiro da ponte procedural (Structures.WoodenBridge). */
+export const BRIDGE_HALF_X = 5.4
+
 /** Desfiladeiro da fase água */
 export const RIVER = {
   zFrom: -600,
@@ -263,8 +266,8 @@ export const SUMMIT_Y = STAIRS.steps * STAIRS.stepRise // 19.8
 export const SUMMIT_HALF_X = 52
 
 /** Landmarks do mirante */
-export const TREASURE_POS = { x: 0, y: SUMMIT_Y, z: -1090 }
-export const PHOENIX_PIVOT = { x: 0, y: SUMMIT_Y + 10, z: -1096 }
+export const TREASURE_POS = { x: 0, y: SUMMIT_Y, z: -1045 }
+export const PHOENIX_PIVOT = { x: 0, y: SUMMIT_Y + 10, z: -1051 }
 
 export const CLIMB_STREAM = {
   side: -1,
@@ -379,7 +382,7 @@ export const GROUND_SEGMENTS = [
   {
     id: 'summit',
     zFrom: -1110,
-    zTo: STAIRS_Z_TOP - 2,
+    zTo: STAIRS_Z_TOP + 4,
     halfX: SUMMIT_HALF_X,
     y: SUMMIT_Y,
     biome: 'alpine',

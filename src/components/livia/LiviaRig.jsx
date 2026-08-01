@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
+import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { guideHand } from '../../lib/guideInput'
@@ -168,38 +169,38 @@ export default function LiviaRig({ stateRef }) {
           <group key={side} name={side > 0 ? 'LegR' : 'LegL'} position={[side * 0.11, 0, 0]}>
             <mesh castShadow position={[0, -0.16, 0]}>
               <cylinderGeometry args={[0.1, 0.086, 0.34, 8]} />
-              <meshStandardMaterial color={PANTS} flatShading />
+              <ToonMat color={PANTS}/>
             </mesh>
             <group name={side > 0 ? 'KneeR' : 'KneeL'} position={[0, -0.34, 0]}>
               <mesh castShadow>
                 <sphereGeometry args={[0.072, 6, 5]} />
-                <meshStandardMaterial color={PANTS} flatShading />
+                <ToonMat color={PANTS}/>
               </mesh>
               <mesh castShadow position={[0, -0.175, 0]}>
                 <cylinderGeometry args={[0.072, 0.056, 0.34, 7]} />
-                <meshStandardMaterial color={PANTS} flatShading />
+                <ToonMat color={PANTS}/>
               </mesh>
               {/* bota mais definida */}
               <mesh castShadow position={[0, -0.38, 0.06]}>
                 <boxGeometry args={[0.155, 0.155, 0.3]} />
-                <meshStandardMaterial color={BOOT} flatShading />
+                <ToonMat color={BOOT}/>
               </mesh>
               <mesh castShadow position={[0, -0.3, 0]}>
                 <cylinderGeometry args={[0.088, 0.094, 0.12, 7]} />
-                <meshStandardMaterial color={BOOT_DARK} flatShading />
+                <ToonMat color={BOOT_DARK}/>
               </mesh>
               <mesh castShadow position={[0, -0.44, 0.13]}>
                 <boxGeometry args={[0.135, 0.07, 0.12]} />
-                <meshStandardMaterial color={BOOT_DARK} flatShading />
+                <ToonMat color={BOOT_DARK}/>
               </mesh>
               <mesh castShadow position={[0, -0.475, 0.05]}>
                 <boxGeometry args={[0.16, 0.038, 0.32]} />
-                <meshStandardMaterial color="#1a100c" flatShading />
+                <ToonMat color="#1a100c"/>
               </mesh>
               {/* cadarço vermelho — detalhe da referência */}
               <mesh position={[0, -0.36, 0.18]}>
                 <boxGeometry args={[0.04, 0.02, 0.08]} />
-                <meshStandardMaterial color="#c43838" flatShading />
+                <ToonMat color="#c43838"/>
               </mesh>
             </group>
           </group>
@@ -207,18 +208,18 @@ export default function LiviaRig({ stateRef }) {
 
         <mesh castShadow position={[0, 0.02, 0]}>
           <cylinderGeometry args={[0.175, 0.205, 0.18, 10]} />
-          <meshStandardMaterial color={TUNIC_DARK} flatShading />
+          <ToonMat color={TUNIC_DARK}/>
         </mesh>
         {/* saia oculta — visual da referência usa casaco + calças */}
         {false && !hoodOn && (
           <group position={[0, -0.02, 0]}>
             <mesh castShadow position={[0, -0.14, 0]}>
               <cylinderGeometry args={[0.2, 0.3, 0.36, 12, 1, true]} />
-              <meshStandardMaterial color={SKIRT} flatShading side={THREE.DoubleSide} />
+              <ToonMat color={SKIRT}side={THREE.DoubleSide} />
             </mesh>
             <mesh castShadow position={[0, -0.3, 0]}>
               <cylinderGeometry args={[0.3, 0.34, 0.08, 12, 1, true]} />
-              <meshStandardMaterial color="#4a2038" flatShading side={THREE.DoubleSide} />
+              <ToonMat color="#4a2038"side={THREE.DoubleSide} />
             </mesh>
           </group>
         )}
@@ -227,51 +228,51 @@ export default function LiviaRig({ stateRef }) {
           {/* ombros / clavícula */}
           <mesh castShadow position={[0, 0.46, 0.01]} rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[0.055, 0.055, 0.42, 6]} />
-            <meshStandardMaterial color={SHIRT} flatShading />
+            <ToonMat color={SHIRT}/>
           </mesh>
           <mesh castShadow position={[0, 0.44, 0.02]}>
             <cylinderGeometry args={[0.095, 0.135, 0.1, 8]} />
-            <meshStandardMaterial color={SHIRT} flatShading />
+            <ToonMat color={SHIRT}/>
           </mesh>
           {/* túnica vermelha some sob capa/casaco (evita “casca” amarela + vermelho) */}
           <mesh castShadow position={[0, 0.27, 0]} visible={!hoodOn}>
             <capsuleGeometry args={[0.165, 0.28, 4, 10]} />
-            <meshStandardMaterial color={TUNIC} flatShading />
+            <ToonMat color={TUNIC}/>
           </mesh>
           <mesh castShadow position={[0, 0.29, -0.012]} scale={[1.03, 0.88, 1.05]} visible={!hoodOn}>
             <capsuleGeometry args={[0.158, 0.2, 3, 9]} />
-            <meshStandardMaterial color={TUNIC_DARK} flatShading />
+            <ToonMat color={TUNIC_DARK}/>
           </mesh>
           {!hoodOn &&
             [0.36, 0.28, 0.2].map((y) => (
               <mesh key={y} position={[0, y, 0.17]}>
                 <sphereGeometry args={[0.017, 5, 4]} />
-                <meshStandardMaterial color={SASH} flatShading metalness={0.45} roughness={0.4} />
+                <ToonMat color={SASH}/>
               </mesh>
             ))}
           <mesh castShadow position={[0, 0.1, 0]} visible={!hoodOn}>
             <cylinderGeometry args={[0.185, 0.185, 0.052, 10]} />
-            <meshStandardMaterial color={STRAP} flatShading roughness={0.7} />
+            <ToonMat color={STRAP}/>
           </mesh>
           <mesh castShadow position={[0, 0.1, 0.18]} visible={!hoodOn}>
             <boxGeometry args={[0.065, 0.05, 0.03]} />
-            <meshStandardMaterial color={SASH} flatShading metalness={0.5} roughness={0.35} />
+            <ToonMat color={SASH}/>
           </mesh>
           {!hoodOn &&
             [-1, 1].map((side) => (
               <mesh key={side} castShadow position={[side * 0.165, 0.07, 0.085]} rotation={[0.1, side * 0.3, 0]}>
                 <boxGeometry args={[0.085, 0.095, 0.055]} />
-                <meshStandardMaterial color={POUCH} flatShading />
+                <ToonMat color={POUCH}/>
               </mesh>
             ))}
           <mesh castShadow position={[0, 0.3, -0.22]}>
             <boxGeometry args={[0.25, 0.32, 0.14]} />
-            <meshStandardMaterial color="#5c3a1e" flatShading />
+            <ToonMat color="#5c3a1e"/>
           </mesh>
           {[-1, 1].map((side) => (
             <mesh key={side} castShadow position={[side * 0.105, 0.42, -0.085]} rotation={[0.5, 0, side * 0.15]}>
               <boxGeometry args={[0.04, 0.24, 0.03]} />
-              <meshStandardMaterial color={STRAP} flatShading />
+              <ToonMat color={STRAP}/>
             </mesh>
           ))}
 
@@ -287,35 +288,31 @@ export default function LiviaRig({ stateRef }) {
               {/* ombro/manga acompanham capa/casaco — evita “colete solto” amarelo */}
               <mesh castShadow position={[0, 0.02, 0]}>
                 <sphereGeometry args={[0.075, 6, 5]} />
-                <meshStandardMaterial
-                  color={outfit.furcoat ? '#8b5530' : outfit.raincoat ? '#e0c83e' : TUNIC}
-                  flatShading
-                />
+                <ToonMat
+                  color={outfit.furcoat ? '#8b5530' : outfit.raincoat ? '#e0c83e' : TUNIC}/>
               </mesh>
               <mesh castShadow position={[0, -0.115, 0]}>
                 <cylinderGeometry args={[0.058, 0.05, 0.23, 7]} />
-                <meshStandardMaterial
-                  color={outfit.furcoat ? '#8b5530' : outfit.raincoat ? '#e0c83e' : TUNIC}
-                  flatShading
-                />
+                <ToonMat
+                  color={outfit.furcoat ? '#8b5530' : outfit.raincoat ? '#e0c83e' : TUNIC}/>
               </mesh>
               <group name={side > 0 ? 'ForeR' : 'ForeL'} position={[0, -0.25, 0]}>
                 <mesh castShadow position={[0, -0.105, 0]}>
                   <cylinderGeometry args={[0.048, 0.04, 0.21, 6]} />
-                  <meshStandardMaterial color={SKIN} flatShading />
+                  <ToonMat color={SKIN}/>
                 </mesh>
                 <mesh castShadow position={[0, 0.02, 0]}>
                   <cylinderGeometry args={[0.05, 0.048, 0.048, 6]} />
-                  <meshStandardMaterial color={SHIRT} flatShading />
+                  <ToonMat color={SHIRT}/>
                 </mesh>
                 {/* mão */}
                 <mesh castShadow position={[0, -0.225, 0.01]}>
                   <sphereGeometry args={[0.052, 6, 5]} />
-                  <meshStandardMaterial color={SKIN_DARK} flatShading />
+                  <ToonMat color={SKIN_DARK}/>
                 </mesh>
                 <mesh castShadow position={[0, -0.255, 0.035]} scale={[0.85, 0.55, 1.1]}>
                   <boxGeometry args={[0.07, 0.04, 0.055]} />
-                  <meshStandardMaterial color={SKIN} flatShading />
+                  <ToonMat color={SKIN}/>
                 </mesh>
                 {side > 0 ? <RightHandItem outfit={outfit} /> : <LeftHandItem outfit={outfit} />}
               </group>
@@ -325,29 +322,29 @@ export default function LiviaRig({ stateRef }) {
           {/* pescoço mais longo / limpo */}
           <mesh castShadow position={[0, 0.535, 0.01]}>
             <cylinderGeometry args={[0.048, 0.058, 0.11, 7]} />
-            <meshStandardMaterial color={SKIN_DARK} flatShading />
+            <ToonMat color={SKIN_DARK}/>
           </mesh>
           <mesh castShadow position={[0, 0.58, 0.01]}>
             <sphereGeometry args={[0.055, 6, 5]} />
-            <meshStandardMaterial color={SKIN} flatShading />
+            <ToonMat color={SKIN}/>
           </mesh>
 
           <group name="Head" position={[0, 0.6, 0]}>
             {/* crânio / rosto — limpo na frente */}
             <mesh castShadow position={[0, 0.155, 0.015]} scale={[0.92, 1.02, 0.95]}>
               <sphereGeometry args={[0.152, 14, 12]} />
-              <meshStandardMaterial color={SKIN} flatShading />
+              <ToonMat color={SKIN}/>
             </mesh>
             {/* testa um pouco mais clara */}
             <mesh position={[0, 0.22, 0.08]} scale={[0.85, 0.45, 0.5]}>
               <sphereGeometry args={[0.08, 6, 5]} />
-              <meshStandardMaterial color={SKIN_LIGHT} flatShading />
+              <ToonMat color={SKIN_LIGHT}/>
             </mesh>
             {/* orelhas */}
             {[-1, 1].map((side) => (
               <mesh key={side} castShadow position={[side * 0.145, 0.15, -0.01]} scale={[0.28, 0.48, 0.35]}>
                 <sphereGeometry args={[0.055, 5, 4]} />
-                <meshStandardMaterial color={SKIN} flatShading />
+                <ToonMat color={SKIN}/>
               </mesh>
             ))}
 
@@ -356,19 +353,19 @@ export default function LiviaRig({ stateRef }) {
               <group key={x} position={[x, 0.168, 0.138]}>
                 <mesh scale={[1.2, 1.0, 0.5]}>
                   <sphereGeometry args={[0.027, 8, 6]} />
-                  <meshStandardMaterial color={EYE_WHITE} flatShading />
+                  <ToonMat color={EYE_WHITE}/>
                 </mesh>
                 <mesh position={[0, -0.002, 0.016]}>
                   <sphereGeometry args={[0.0135, 7, 5]} />
-                  <meshStandardMaterial color={EYE_IRIS} flatShading />
+                  <ToonMat color={EYE_IRIS}/>
                 </mesh>
                 <mesh position={[0, -0.002, 0.024]}>
                   <sphereGeometry args={[0.006, 4, 3]} />
-                  <meshStandardMaterial color="#0a0806" flatShading />
+                  <ToonMat color="#0a0806"/>
                 </mesh>
                 <mesh position={[0.005, 0.006, 0.027]}>
                   <sphereGeometry args={[0.0045, 4, 3]} />
-                  <meshStandardMaterial color="#ffffff" flatShading />
+                  <ToonMat color="#ffffff"/>
                 </mesh>
               </group>
             ))}
@@ -381,66 +378,66 @@ export default function LiviaRig({ stateRef }) {
                 scale={[1.15, 0.22, 0.35]}
               >
                 <boxGeometry args={[0.05, 0.014, 0.014]} />
-                <meshStandardMaterial color={HAIR_DARK} flatShading />
+                <ToonMat color={HAIR_DARK}/>
               </mesh>
             ))}
             {/* nariz */}
             <mesh position={[0, 0.145, 0.155]} rotation={[Math.PI / 2, 0, 0]}>
               <coneGeometry args={[0.015, 0.038, 4]} />
-              <meshStandardMaterial color={SKIN_DARK} flatShading />
+              <ToonMat color={SKIN_DARK}/>
             </mesh>
             {/* boca */}
             <mesh position={[0, 0.1, 0.148]} scale={[1.1, 0.55, 0.7]}>
               <sphereGeometry args={[0.022, 6, 4]} />
-              <meshStandardMaterial color={LIP} flatShading />
+              <ToonMat color={LIP}/>
             </mesh>
             <mesh position={[0, 0.108, 0.152]} scale={[0.7, 0.25, 0.4]}>
               <sphereGeometry args={[0.018, 5, 3]} />
-              <meshStandardMaterial color="#d47880" flatShading />
+              <ToonMat color="#d47880"/>
             </mesh>
             {/* blush */}
             {[0.088, -0.088].map((x) => (
               <mesh key={x} position={[x, 0.132, 0.118]} scale={[1.1, 0.7, 0.5]}>
                 <sphereGeometry args={[0.03, 5, 4]} />
-                <meshStandardMaterial color={CHEEK} flatShading transparent opacity={0.55} />
+                <ToonMat color={CHEEK}transparent opacity={0.55} />
               </mesh>
             ))}
 
             {/* calota + occipital (receive-only: muitas esferas no shadow map) */}
             <mesh position={[0, 0.2, -0.02]} scale={[1.08, 0.92, 1.12]}>
               <sphereGeometry args={[0.155, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.58]} />
-              <meshStandardMaterial color={HAIR} flatShading side={THREE.DoubleSide} />
+              <ToonMat color={HAIR}side={THREE.DoubleSide} />
             </mesh>
             <mesh position={[0, 0.1, -0.14]} scale={[1.15, 0.95, 1.05]}>
               <sphereGeometry args={[0.12, 7, 5]} />
-              <meshStandardMaterial color={HAIR} flatShading />
+              <ToonMat color={HAIR}/>
             </mesh>
             <mesh position={[0, 0.05, -0.16]} scale={[0.95, 0.7, 0.75]}>
               <sphereGeometry args={[0.1, 6, 4]} />
-              <meshStandardMaterial color={HAIR_DARK} flatShading />
+              <ToonMat color={HAIR_DARK}/>
             </mesh>
 
             {/* franja partida — sem cobrir o eixo dos olhos */}
             <group ref={hairFrontRef}>
               <mesh position={[0.078, 0.228, 0.09]} rotation={[0.15, 0.5, 0.28]} scale={[0.55, 0.38, 0.42]}>
                 <sphereGeometry args={[0.08, 5, 4]} />
-                <meshStandardMaterial color={HAIR} flatShading />
+                <ToonMat color={HAIR}/>
               </mesh>
               <mesh position={[-0.078, 0.228, 0.09]} rotation={[0.15, -0.5, -0.28]} scale={[0.55, 0.38, 0.42]}>
                 <sphereGeometry args={[0.08, 5, 4]} />
-                <meshStandardMaterial color={HAIR} flatShading />
+                <ToonMat color={HAIR}/>
               </mesh>
               <mesh position={[0.1, 0.19, 0.1]} rotation={[0.35, 0.3, 0.4]} scale={[0.35, 0.55, 0.3]}>
                 <sphereGeometry args={[0.06, 4, 3]} />
-                <meshStandardMaterial color={HAIR_DARK} flatShading />
+                <ToonMat color={HAIR_DARK}/>
               </mesh>
               <mesh position={[-0.1, 0.19, 0.1]} rotation={[0.35, -0.3, -0.4]} scale={[0.35, 0.55, 0.3]}>
                 <sphereGeometry args={[0.06, 4, 3]} />
-                <meshStandardMaterial color={HAIR_DARK} flatShading />
+                <ToonMat color={HAIR_DARK}/>
               </mesh>
               <mesh position={[0, 0.268, 0.055]} scale={[0.85, 0.32, 0.45]}>
                 <sphereGeometry args={[0.072, 5, 3]} />
-                <meshStandardMaterial color={HAIR_LIGHT} flatShading />
+                <ToonMat color={HAIR_LIGHT}/>
               </mesh>
             </group>
 
@@ -448,16 +445,16 @@ export default function LiviaRig({ stateRef }) {
             <group ref={hairOpenRef}>
               <mesh position={[0, 0.29, -0.02]} scale={[1.05, 0.7, 1.0]}>
                 <sphereGeometry args={[0.125, 6, 5]} />
-                <meshStandardMaterial color={HAIR} flatShading />
+                <ToonMat color={HAIR}/>
               </mesh>
               <mesh position={[0, 0.26, 0.04]} scale={[0.95, 0.45, 0.55]}>
                 <sphereGeometry args={[0.1, 5, 4]} />
-                <meshStandardMaterial color={HAIR_LIGHT} flatShading />
+                <ToonMat color={HAIR_LIGHT}/>
               </mesh>
               {[0.145, -0.145].map((x) => (
                 <mesh key={x} position={[x, 0.14, -0.02]} scale={[0.55, 1.15, 0.85]}>
                   <sphereGeometry args={[0.11, 5, 4]} />
-                  <meshStandardMaterial color={HAIR} flatShading />
+                  <ToonMat color={HAIR}/>
                 </mesh>
               ))}
               {/* tranças laterais */}
@@ -465,11 +462,11 @@ export default function LiviaRig({ stateRef }) {
                 <group key={`braid${side}`} position={[side * 0.15, 0.05, -0.04]}>
                   <mesh position={[0, -0.12, -0.02]} rotation={[0.15, 0, side * 0.08]}>
                     <capsuleGeometry args={[0.042, 0.38, 3, 5]} />
-                    <meshStandardMaterial color={HAIR_DARK} flatShading />
+                    <ToonMat color={HAIR_DARK}/>
                   </mesh>
                   <mesh position={[0, -0.38, -0.03]} rotation={[0.2, 0, side * 0.1]}>
                     <capsuleGeometry args={[0.038, 0.32, 3, 5]} />
-                    <meshStandardMaterial color={HAIR} flatShading />
+                    <ToonMat color={HAIR}/>
                   </mesh>
                 </group>
               ))}
@@ -481,20 +478,20 @@ export default function LiviaRig({ stateRef }) {
                   scale={[0.45, 1.35, 0.55]}
                 >
                   <sphereGeometry args={[0.09, 4, 4]} />
-                  <meshStandardMaterial color={HAIR_DARK} flatShading />
+                  <ToonMat color={HAIR_DARK}/>
                 </mesh>
               ))}
               <mesh position={[0.13, 0.3, 0.02]} rotation={[0, 0, 0.5]}>
                 <boxGeometry args={[0.095, 0.04, 0.04]} />
-                <meshStandardMaterial color={SASH} flatShading />
+                <ToonMat color={SASH}/>
               </mesh>
               <mesh position={[0.13, 0.3, 0.02]} rotation={[0, 0, -0.5]}>
                 <boxGeometry args={[0.095, 0.04, 0.04]} />
-                <meshStandardMaterial color={SASH} flatShading />
+                <ToonMat color={SASH}/>
               </mesh>
               <mesh position={[-0.12, 0.27, 0.055]}>
                 <sphereGeometry args={[0.03, 4, 3]} />
-                <meshStandardMaterial color={BLOOM} flatShading />
+                <ToonMat color={BLOOM}/>
               </mesh>
             </group>
 
@@ -506,19 +503,19 @@ export default function LiviaRig({ stateRef }) {
             >
               <mesh position={[0, -0.02, -0.02]} scale={[1.1, 0.75, 0.95]}>
                 <sphereGeometry args={[0.11, 6, 5]} />
-                <meshStandardMaterial color={HAIR} flatShading />
+                <ToonMat color={HAIR}/>
               </mesh>
               <mesh position={[0, -0.28, -0.03]} rotation={[0.28, 0, 0]}>
                 <capsuleGeometry args={[0.105, 0.5, 2, 5]} />
-                <meshStandardMaterial color={HAIR} flatShading />
+                <ToonMat color={HAIR}/>
               </mesh>
               <mesh position={[0.08, -0.34, 0]} rotation={[0.25, 0, 0.14]}>
                 <capsuleGeometry args={[0.058, 0.4, 2, 4]} />
-                <meshStandardMaterial color={HAIR_DARK} flatShading />
+                <ToonMat color={HAIR_DARK}/>
               </mesh>
               <mesh position={[-0.08, -0.34, 0]} rotation={[0.25, 0, -0.14]}>
                 <capsuleGeometry args={[0.058, 0.4, 2, 4]} />
-                <meshStandardMaterial color={HAIR_DARK} flatShading />
+                <ToonMat color={HAIR_DARK}/>
               </mesh>
             </group>
 

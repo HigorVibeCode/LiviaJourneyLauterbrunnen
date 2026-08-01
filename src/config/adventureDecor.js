@@ -116,6 +116,8 @@ export const HERO_PLACEMENTS = [
   // ── Pradaria / casa da Livia (bem visíveis da trilha inicial) ──
   { prop: 'Maple_Tree', x: -16, z: 96, ry: 0.4, s: 1, hero: true },
   { prop: 'House', lat: -22, z: 88, ry: 0.5, s: 1.05, hero: true },
+  { prop: 'House', lat: -26, z: 52, ry: 0.35, s: 0.92, hero: true },
+  { prop: 'House', lat: 24, z: -82, ry: -0.25, s: 0.88, hero: true },
   { prop: 'Tree1', x: 15, z: 98, ry: -0.6, s: 0.95, hero: true },
   { prop: 'PineTree_V1', x: -28, z: 104, ry: 1.1, s: 1.05 },
   { prop: 'Tree2', x: 26, z: 100, ry: 0.3, s: 0.9 },
@@ -215,7 +217,7 @@ export const HERO_PLACEMENTS = [
   { prop: 'Pond', lat: -12, z: -330, ry: 0.3, s: 1.2, hero: true },
   { prop: 'Pond_Rocks', lat: -10, z: -328, ry: 0.8, s: 1, hero: true },
   { prop: 'Duck', lat: -11, z: -329, ry: 1.2, s: 1.1, hero: true },
-  { prop: 'Woddenbridge', lat: 0, z: -565, ry: 0, s: 1.15, hero: true },
+  { prop: 'Woddenbridge', lat: 0, z: -585, ry: 0, s: 0.95, hero: true },
   { prop: 'Lamp', x: -7.5, z: -292, ry: 0, s: 1 },
   { prop: 'Lamp', x: 7.5, z: -292, ry: Math.PI, s: 1 },
   { prop: 'Barrel', x: -28, z: -306, ry: 0.3, s: 1 },

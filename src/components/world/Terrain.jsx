@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
+import ToonMat from '../../materials/ToonMat'
 import * as THREE from 'three'
+import { makeToonMaterial } from '../../materials/toonMaterial'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import {
   GROUND_SEGMENTS,
@@ -101,9 +103,13 @@ export default function Terrain() {
     return { plateItems, groundColliders }
   }, [])
 
-  const plateGeo = useMemo(() => new THREE.BoxGeometry(1, 0.2, 1), [])
+  const plateGeo = useMemo(() => {
+    const g = new THREE.BoxGeometry(1, 0.2, 1)
+    g.computeVertexNormals()
+    return g
+  }, [])
   const plateMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 0.95 }),
+    () => makeToonMaterial({ color: '#ffffff',}),
     [],
   )
 
@@ -123,7 +129,7 @@ export default function Terrain() {
 
       <mesh position={[0, SUMMIT_Y - 8, TREASURE_POS.z]} receiveShadow>
         <boxGeometry args={[SUMMIT_HALF_X * 2.2, 16, 90]} />
-        <meshStandardMaterial color="#8a9690" flatShading roughness={1} />
+        <ToonMat color="#8a9690"/>
       </mesh>
 
       <Cliffs />
@@ -231,7 +237,7 @@ function Cliffs() {
 
   const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1), [])
   const mat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true, roughness: 1 }),
+    () => makeToonMaterial({ color: '#ffffff',}),
     [],
   )
 
@@ -263,7 +269,7 @@ function Cliffs() {
           receiveShadow
         >
           <boxGeometry args={[8, 32, 100]} />
-          <meshStandardMaterial color="#8d9aa3" flatShading roughness={1} />
+          <ToonMat color="#8d9aa3"/>
         </mesh>
       ))}
     </group>

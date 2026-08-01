@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { useProgressStore } from '../store/progressStore'
@@ -40,28 +41,26 @@ export default function LanternPickup() {
       <group ref={beaconRef} position={[0, 2.8, 0]}>
         <mesh>
           <coneGeometry args={[0.28, 0.62, 5]} />
-          <meshStandardMaterial color="#f0d060" emissive="#d4a830" emissiveIntensity={1.35} flatShading />
+          <ToonMat color="#f0d060" emissive="#d4a830" emissiveIntensity={1.35}/>
         </mesh>
       </group>
 
       <group ref={groupRef}>
         <mesh>
           <cylinderGeometry args={[0.12, 0.14, 0.5, 6]} />
-          <meshStandardMaterial color="#5a4030" flatShading />
+          <ToonMat color="#5a4030"/>
         </mesh>
         <mesh position={[0, 0.38, 0]}>
           <boxGeometry args={[0.22, 0.28, 0.22]} />
-          <meshStandardMaterial
+          <ToonMat
             color="#ffd080"
             emissive="#ffb040"
-            emissiveIntensity={1.6}
-            flatShading
-          />
+            emissiveIntensity={1.6}/>
         </mesh>
       </group>
       <mesh position={[0, 2.2, 0]}>
         <coneGeometry args={[0.2, 0.45, 5]} />
-        <meshStandardMaterial color="#e8c040" emissive="#c89820" emissiveIntensity={1.1} flatShading />
+        <ToonMat color="#e8c040" emissive="#c89820" emissiveIntensity={1.1}/>
       </mesh>
       <pointLight position={[0, 1.2, 0]} color="#ffd898" intensity={4.5} distance={14} decay={1.6} />
       <RigidBody type="fixed" colliders={false} sensor>
@@ -89,7 +88,7 @@ export function LiviaLanternLight() {
     const z = playerPosition.z
     const inNight = z <= PHASES.night.zTo + 6 && z >= PHASES.night.zFrom - 6
     const on = has && inNight
-    lightRef.current.intensity += ((on ? 9.0 : 0) - lightRef.current.intensity) * 0.12
+    lightRef.current.intensity += ((on ? 12.0 : 0) - lightRef.current.intensity) * 0.12
   })
 
   return (
@@ -98,8 +97,8 @@ export function LiviaLanternLight() {
       position={[0, 1.1, 0.3]}
       color="#ffd898"
       intensity={0}
-      distance={26}
-      decay={1.4}
+      distance={78}
+      decay={1.15}
     />
   )
 }

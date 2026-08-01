@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { KeyboardControls } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
+import { Selection, Select } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import AudioDirector from './components/AudioDirector'
 import Livia from './components/Livia'
@@ -17,6 +18,7 @@ import IntroOverlay from './components/ui/IntroOverlay'
 import BootWarmup from './components/ui/BootWarmup'
 import { LoaderReporter } from './components/ui/LoaderReporter'
 import ErrorBoundary from './components/ErrorBoundary'
+import Effects from './components/Effects'
 import { QUALITY_PRESETS, useGameStore } from './store/gameStore'
 import { useLoadingStore, markIntroDone } from './store/loadingStore'
 import { preloadGameAssets } from './lib/preloadAssets'
@@ -73,21 +75,26 @@ function GameCanvas() {
         gl.outputColorSpace = THREE.SRGBColorSpace
       }}
     >
-      <Lighting />
-      <LoaderReporter />
-      <BootWarmup />
+      <Selection>
+        <Effects />
+        <Lighting />
+        <LoaderReporter />
+        <BootWarmup />
 
-      <ErrorBoundary name="GameScene">
-        <Suspense fallback={null}>
-          <Physics gravity={[0, -24, 0]} paused={paused} timeStep="vary">
-            <WorldMap />
-            <Livia />
-          </Physics>
-          <GuideBeacon />
-          <FinaleDirector />
-          <Weather />
-        </Suspense>
-      </ErrorBoundary>
+        <Select enabled={preset.id === 'high'}>
+          <ErrorBoundary name="GameScene">
+            <Suspense fallback={null}>
+              <Physics gravity={[0, -24, 0]} paused={paused} timeStep="vary">
+                <WorldMap />
+                <Livia />
+              </Physics>
+              <GuideBeacon />
+              <FinaleDirector />
+              <Weather />
+            </Suspense>
+          </ErrorBoundary>
+        </Select>
+      </Selection>
     </Canvas>
   )
 }

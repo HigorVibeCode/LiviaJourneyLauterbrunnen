@@ -14,52 +14,52 @@ const SUN_DIR = { x: 42, y: 58, z: 26 }
  */
 const MOODS = {
   default: {
-    fog: 0.00095,
-    fogColor: new THREE.Color('#7eb0d8'),
-    sun: 1.85,
-    sunColor: new THREE.Color('#ffe8c8'),
+    fog: 0.00102,
+    fogColor: new THREE.Color('#6ea8d4'),
+    sun: 2.08,
+    sunColor: new THREE.Color('#ffe0a8'),
+    ambient: 0.17,
+    hemi: 0.32,
+  },
+  night: {
+    fog: 0.0028,
+    fogColor: new THREE.Color('#2a3850'),
+    sun: 0.82,
+    sunColor: new THREE.Color('#8a9ab8'),
+    ambient: 0.21,
+    hemi: 0.34,
+  },
+  water: {
+    fog: 0.0034,
+    fogColor: new THREE.Color('#5a90a8'),
+    sun: 1.48,
+    sunColor: new THREE.Color('#ffd8a0'),
+    ambient: 0.14,
+    hemi: 0.28,
+  },
+  snow: {
+    fog: 0.0026,
+    fogColor: new THREE.Color('#a0c0dc'),
+    sun: 1.82,
+    sunColor: new THREE.Color('#faf6ee'),
     ambient: 0.22,
     hemi: 0.38,
   },
-  night: {
-    fog: 0.0032,
-    fogColor: new THREE.Color('#243048'),
-    sun: 0.72,
-    sunColor: new THREE.Color('#8a9ab8'),
-    ambient: 0.20,
-    hemi: 0.32,
-  },
-  water: {
-    fog: 0.0032,
-    fogColor: new THREE.Color('#6a98b0'),
-    sun: 1.35,
-    sunColor: new THREE.Color('#ffe0b8'),
-    ambient: 0.18,
-    hemi: 0.32,
-  },
-  snow: {
-    fog: 0.0024,
-    fogColor: new THREE.Color('#b0c8e0'),
-    sun: 1.65,
-    sunColor: new THREE.Color('#f8f4ec'),
-    ambient: 0.26,
-    hemi: 0.42,
-  },
   flower: {
-    fog: 0.00088,
-    fogColor: new THREE.Color('#98c898'),
-    sun: 1.9,
-    sunColor: new THREE.Color('#ffe8b0'),
-    ambient: 0.24,
-    hemi: 0.42,
+    fog: 0.00095,
+    fogColor: new THREE.Color('#78c078'),
+    sun: 2.12,
+    sunColor: new THREE.Color('#ffe4a0'),
+    ambient: 0.19,
+    hemi: 0.38,
   },
   pasture: {
-    fog: 0.00092,
-    fogColor: new THREE.Color('#88b898'),
-    sun: 1.82,
-    sunColor: new THREE.Color('#ffe8c0'),
-    ambient: 0.24,
-    hemi: 0.42,
+    fog: 0.00098,
+    fogColor: new THREE.Color('#70b088'),
+    sun: 2.05,
+    sunColor: new THREE.Color('#ffe8b0'),
+    ambient: 0.19,
+    hemi: 0.38,
   },
 }
 
@@ -110,10 +110,11 @@ export default function Lighting() {
     const mood = moodAt(p.z)
     const inNight =
       p.z <= PHASES.night.zTo + 4 && p.z >= PHASES.night.zFrom - 4
+    const hasLantern = useProgressStore.getState().hasLantern
     const lanternBoost =
-      inNight && useProgressStore.getState().hasLantern ? 0.10 : 0
+      inNight && hasLantern ? 0.42 : 0
     const targetAmbient = mood.ambient + lanternBoost
-    const targetHemi = mood.hemi + lanternBoost * 0.5
+    const targetHemi = mood.hemi + lanternBoost * 0.55
     const k = Math.min(1, delta * 1.6)
     light.intensity += (mood.sun - light.intensity) * k
     light.color.lerp(mood.sunColor, k)
@@ -124,7 +125,8 @@ export default function Lighting() {
       hemiRef.current.intensity += (targetHemi - hemiRef.current.intensity) * k
     }
     if (state.scene.fog) {
-      const nextDensity = mood.fog
+      let nextDensity = mood.fog
+      if (inNight && hasLantern) nextDensity *= 0.68
       if (Number.isFinite(nextDensity)) {
         state.scene.fog.density += (nextDensity - state.scene.fog.density) * k
         if (!Number.isFinite(state.scene.fog.density)) state.scene.fog.density = nextDensity
@@ -138,15 +140,15 @@ export default function Lighting() {
     <>
       {preset.softShadows && <SoftShadows size={22} samples={8} focus={0.6} />}
 
-      <hemisphereLight ref={hemiRef} args={['#88b8e8', '#4a7a42', 0.38]} />
-      <ambientLight ref={ambientRef} intensity={0.22} color="#b8d0e8" />
+      <hemisphereLight ref={hemiRef} args={['#78b0e0', '#3a6a38', 0.32]} />
+      <ambientLight ref={ambientRef} intensity={0.17} color="#a8c8e0" />
 
       <object3D ref={targetRef} />
       <directionalLight
         ref={lightRef}
         castShadow={preset.shadows}
-        intensity={1.85}
-        color="#ffe8c8"
+        intensity={2.08}
+        color="#ffe0a8"
         shadow-mapSize-width={preset.shadowMapSize}
         shadow-mapSize-height={preset.shadowMapSize}
         shadow-camera-near={1}
@@ -159,10 +161,10 @@ export default function Lighting() {
         shadow-normalBias={0.04}
       />
 
-      <directionalLight position={[-30, 26, -18]} intensity={0.32} color="#9ab0c4" />
+      <directionalLight position={[-30, 26, -18]} intensity={0.24} color="#8aa0b4" />
 
-      <fogExp2 attach="fog" args={['#7eb0d8', 0.00095]} />
-      <color attach="background" args={['#5a9ec8']} />
+      <fogExp2 attach="fog" args={['#6ea8d4', 0.00102]} />
+      <color attach="background" args={['#4a94c0']} />
     </>
   )
 }

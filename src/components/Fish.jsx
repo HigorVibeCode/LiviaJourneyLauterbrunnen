@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react'
+import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import {
   RIVER,
@@ -118,32 +119,28 @@ export default function Fish() {
           {/* corpo */}
           <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
             <capsuleGeometry args={[0.12, 0.3, 4, 6]} />
-            <meshStandardMaterial
-              color={f.color}
-              flatShading
-              roughness={0.3}
-              metalness={0.35}
-            />
+            <ToonMat
+              color={f.color}/>
           </mesh>
           {/* barriga clara */}
           <mesh position={[0, -0.05, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.8, 0.9, 0.8]}>
             <capsuleGeometry args={[0.11, 0.26, 3, 6]} />
-            <meshStandardMaterial color="#e8eef0" flatShading roughness={0.4} />
+            <ToonMat color="#e8eef0"/>
           </mesh>
           {/* cauda */}
           <mesh position={[-0.32, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <coneGeometry args={[0.11, 0.18, 4]} />
-            <meshStandardMaterial color={f.color} flatShading roughness={0.4} />
+            <ToonMat color={f.color}/>
           </mesh>
           {/* barbatana dorsal */}
           <mesh position={[0.02, 0.13, 0]} rotation={[0, 0, -0.5]}>
             <coneGeometry args={[0.05, 0.12, 4]} />
-            <meshStandardMaterial color={f.color} flatShading roughness={0.4} />
+            <ToonMat color={f.color}/>
           </mesh>
           {/* olho */}
           <mesh position={[0.2, 0.03, 0.09]}>
             <sphereGeometry args={[0.024, 5, 4]} />
-            <meshStandardMaterial color="#20242a" flatShading />
+            <ToonMat color="#20242a"/>
           </mesh>
         </group>
       ))}

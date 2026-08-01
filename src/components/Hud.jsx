@@ -136,7 +136,7 @@ export default function Hud() {
   const chargePct = Math.max(0, Math.min(100, (guideCharge / GUIDE_MAX_CHARGE) * 100))
 
   return (
-    <div className={`hud ${paused ? 'hud--paused' : ''}`}>
+    <div className={`hud ${paused ? 'hud--paused' : ''} ${isMobile ? 'hud--touch' : ''}`}>
       <div className="hud-panel hud-objective hud-magic">
         <span className="hud-ornament hud-ornament--tl" aria-hidden>
           ◆
@@ -188,7 +188,11 @@ export default function Hud() {
       {nearNpc && (
         <div className="hud-interact hud-magic">
           <kbd>E</kbd>
-          <span>{npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ?? npcInteractHint(nearNpc)}</span>
+          <span>
+            {isMobile
+              ? `Falar com ${nearNpc.name}`
+              : npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ?? npcInteractHint(nearNpc)}
+          </span>
         </div>
       )}
 

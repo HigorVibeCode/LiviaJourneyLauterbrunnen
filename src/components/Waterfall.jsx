@@ -1,4 +1,5 @@
 import { useRef, useMemo, useEffect, useId } from 'react'
+import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
@@ -139,7 +140,7 @@ export default function Waterfall({
         <CuboidCollider args={[(width + 6) / 2, 2, 2.6]} />
         <mesh castShadow receiveShadow>
           <boxGeometry args={[width + 6, 4.2, 5.2]} />
-          <meshStandardMaterial color="#6a6d70" flatShading roughness={1} />
+          <ToonMat color="#6a6d70"/>
         </mesh>
       </RigidBody>
 
@@ -147,18 +148,14 @@ export default function Waterfall({
           véu branco saltar aos olhos de longe */}
       <mesh position={[0, height * 0.5, -0.55]}>
         <boxGeometry args={[width + 2.4, height, 1]} />
-        <meshStandardMaterial color="#39424a" flatShading roughness={1} />
+        <ToonMat color="#39424a"/>
       </mesh>
       {/* rocha molhada escorrendo dos lados */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (width / 2 + 1.7), height * 0.4, -0.2]}>
           <boxGeometry args={[1.2, height * 0.8, 0.7]} />
-          <meshStandardMaterial
-            color="#4c585f"
-            flatShading
-            roughness={0.35}
-            metalness={0.15}
-          />
+          <ToonMat
+            color="#4c585f"/>
         </mesh>
       ))}
 
@@ -167,12 +164,8 @@ export default function Waterfall({
           {iceColumns.map((c, i) => (
             <mesh key={i} position={[c.x, c.h / 2, 0.3]} castShadow>
               <cylinderGeometry args={[c.w * 0.6, c.w, c.h, 6]} />
-              <meshStandardMaterial
-                color="#cfe8f4"
-                flatShading
-                roughness={0.12}
-                metalness={0.15}
-                transparent
+              <ToonMat
+                color="#cfe8f4"transparent
                 opacity={0.88}
               />
             </mesh>
@@ -193,14 +186,12 @@ export default function Waterfall({
               position={[0, veilCenterY, 0.3 + i * 0.14]}
             >
               <planeGeometry args={[width - i * 0.5, height]} />
-              <meshStandardMaterial
+              <ToonMat
                 color={i === 0 ? '#cdeaf6' : '#a9d8ec'}
                 transparent
                 opacity={0.42 - i * 0.14}
                 side={THREE.DoubleSide}
-                depthWrite={false}
-                flatShading
-              />
+                depthWrite={false}/>
             </mesh>
           ))}
 
@@ -209,15 +200,13 @@ export default function Waterfall({
             {streaks.map((s, i) => (
               <mesh key={i} position={[s.x, height, 0.55 + s.z]}>
                 <boxGeometry args={[s.w, s.len, 0.16]} />
-                <meshStandardMaterial
+                <ToonMat
                   color={['#f2fbff', '#d6f0fb', '#b9e3f4'][s.shade]}
                   emissive="#dff2fb"
                   emissiveIntensity={0.35}
                   transparent
                   opacity={0.82}
-                  depthWrite={false}
-                  flatShading
-                />
+                  depthWrite={false}/>
               </mesh>
             ))}
           </group>
@@ -229,12 +218,8 @@ export default function Waterfall({
         <CuboidCollider args={[width * 1.3, 0.25, width * 0.9]} />
         <mesh receiveShadow>
           <boxGeometry args={[width * 2.6, 0.45, width * 1.8]} />
-          <meshStandardMaterial
-            color={frozen ? '#d8ecf5' : '#4a8ea8'}
-            flatShading
-            roughness={frozen ? 0.2 : 0.15}
-            metalness={0.25}
-          />
+          <ToonMat
+            color={frozen ? '#d8ecf5' : '#4a8ea8'}/>
         </mesh>
       </RigidBody>
 
@@ -277,13 +262,11 @@ export default function Waterfall({
         {mist.map((p, i) => (
           <mesh key={i} position={[p.x, p.base, p.z]}>
             <sphereGeometry args={[1, 5, 4]} />
-            <meshStandardMaterial
+            <ToonMat
               color="#eef8fc"
               transparent
               opacity={0.3}
-              depthWrite={false}
-              flatShading
-            />
+              depthWrite={false}/>
           </mesh>
         ))}
       </group>
@@ -297,7 +280,7 @@ export default function Waterfall({
           castShadow
         >
           <dodecahedronGeometry args={[0.7 + (i % 3) * 0.4, 0]} />
-          <meshStandardMaterial color={frozen ? '#b8ccd8' : '#5e6a66'} flatShading roughness={0.9} />
+          <ToonMat color={frozen ? '#b8ccd8' : '#5e6a66'}/>
         </mesh>
       ))}
     </group>

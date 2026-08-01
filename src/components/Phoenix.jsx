@@ -2,6 +2,7 @@ import { Suspense, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { makeToonMaterial } from '../materials/toonMaterial'
 import { PHOENIX_PIVOT, SUMMIT_Y } from '../config/world'
 import { phoenixRide } from '../lib/phoenixRide'
 import { playerPosition } from '../store/playerStore'
@@ -30,13 +31,9 @@ function PhoenixGlbBird() {
     c.traverse((obj) => {
       if (!obj.isMesh) return
       obj.castShadow = false
-      obj.material = new THREE.MeshStandardMaterial({
-        color: '#e85a28',
-        flatShading: true,
-        emissive: '#c43a12',
-        emissiveIntensity: 0.4,
-        roughness: 0.55,
-      })
+      obj.material = makeToonMaterial({
+        color: '#e85a28',emissive: '#c43a12',
+        emissiveIntensity: 0.4,})
     })
     return c
   }, [scene])
@@ -63,75 +60,38 @@ export default function Phoenix() {
 
   const mats = useMemo(
     () => ({
-      body: new THREE.MeshStandardMaterial({
-        color: '#e85a28',
-        flatShading: true,
-        emissive: '#c43a12',
-        emissiveIntensity: 0.35,
-        roughness: 0.55,
+      body: makeToonMaterial({
+        color: '#e85a28',emissive: '#c43a12',
+        emissiveIntensity: 0.35,}),
+      bodyDark: makeToonMaterial({
+        color: '#b83214',emissive: '#8a2008',
+        emissiveIntensity: 0.25,}),
+      wing: makeToonMaterial({
+        color: '#ff7a2a',emissive: '#ff5510',
+        emissiveIntensity: 0.45,side: THREE.DoubleSide,
       }),
-      bodyDark: new THREE.MeshStandardMaterial({
-        color: '#b83214',
-        flatShading: true,
-        emissive: '#8a2008',
-        emissiveIntensity: 0.25,
-        roughness: 0.6,
+      wingTip: makeToonMaterial({
+        color: '#ffc040',emissive: '#ff9020',
+        emissiveIntensity: 0.55,side: THREE.DoubleSide,
       }),
-      wing: new THREE.MeshStandardMaterial({
-        color: '#ff7a2a',
-        flatShading: true,
-        emissive: '#ff5510',
-        emissiveIntensity: 0.45,
-        roughness: 0.5,
-        side: THREE.DoubleSide,
-      }),
-      wingTip: new THREE.MeshStandardMaterial({
-        color: '#ffc040',
-        flatShading: true,
-        emissive: '#ff9020',
-        emissiveIntensity: 0.55,
-        roughness: 0.45,
-        side: THREE.DoubleSide,
-      }),
-      crest: new THREE.MeshStandardMaterial({
-        color: '#ffb028',
-        flatShading: true,
-        emissive: '#ff8010',
-        emissiveIntensity: 0.5,
-        roughness: 0.4,
-      }),
-      beak: new THREE.MeshStandardMaterial({
-        color: '#f0c040',
-        flatShading: true,
-        roughness: 0.35,
-        metalness: 0.15,
-      }),
-      eye: new THREE.MeshStandardMaterial({
-        color: '#1a1008',
-        flatShading: true,
-        emissive: '#402008',
+      crest: makeToonMaterial({
+        color: '#ffb028',emissive: '#ff8010',
+        emissiveIntensity: 0.5,}),
+      beak: makeToonMaterial({
+        color: '#f0c040',}),
+      eye: makeToonMaterial({
+        color: '#1a1008',emissive: '#402008',
         emissiveIntensity: 0.2,
       }),
-      tail: new THREE.MeshStandardMaterial({
-        color: '#ff6a20',
-        flatShading: true,
-        emissive: '#e04010',
-        emissiveIntensity: 0.4,
-        roughness: 0.5,
-        side: THREE.DoubleSide,
+      tail: makeToonMaterial({
+        color: '#ff6a20',emissive: '#e04010',
+        emissiveIntensity: 0.4,side: THREE.DoubleSide,
       }),
-      tailTip: new THREE.MeshStandardMaterial({
-        color: '#ffd060',
-        flatShading: true,
-        emissive: '#ff9020',
-        emissiveIntensity: 0.6,
-        roughness: 0.4,
-      }),
-      leg: new THREE.MeshStandardMaterial({
-        color: '#d49030',
-        flatShading: true,
-        roughness: 0.5,
-      }),
+      tailTip: makeToonMaterial({
+        color: '#ffd060',emissive: '#ff9020',
+        emissiveIntensity: 0.6,}),
+      leg: makeToonMaterial({
+        color: '#d49030',}),
     }),
     [],
   )
@@ -414,15 +374,15 @@ useGLTF.preload(PHOENIX_GLB)
 function PhoenixRider() {
   const mats = useMemo(
     () => ({
-      skin: new THREE.MeshStandardMaterial({ color: '#e8b896', flatShading: true }),
-      skinDark: new THREE.MeshStandardMaterial({ color: '#d09474', flatShading: true }),
-      hair: new THREE.MeshStandardMaterial({ color: '#3a281c', flatShading: true, side: THREE.DoubleSide }),
-      hairDark: new THREE.MeshStandardMaterial({ color: '#241610', flatShading: true }),
-      tunic: new THREE.MeshStandardMaterial({ color: '#c44a3a', flatShading: true }),
-      tunicDark: new THREE.MeshStandardMaterial({ color: '#8a3028', flatShading: true }),
-      skirt: new THREE.MeshStandardMaterial({ color: '#5a2a48', flatShading: true, side: THREE.DoubleSide }),
-      pants: new THREE.MeshStandardMaterial({ color: '#3a3048', flatShading: true }),
-      boot: new THREE.MeshStandardMaterial({ color: '#4a2c1e', flatShading: true }),
+      skin: makeToonMaterial({ color: '#e8b896',}),
+      skinDark: makeToonMaterial({ color: '#d09474',}),
+      hair: makeToonMaterial({ color: '#3a281c',side: THREE.DoubleSide }),
+      hairDark: makeToonMaterial({ color: '#241610',}),
+      tunic: makeToonMaterial({ color: '#c44a3a',}),
+      tunicDark: makeToonMaterial({ color: '#8a3028',}),
+      skirt: makeToonMaterial({ color: '#5a2a48',side: THREE.DoubleSide }),
+      pants: makeToonMaterial({ color: '#3a3048',}),
+      boot: makeToonMaterial({ color: '#4a2c1e',}),
     }),
     [],
   )

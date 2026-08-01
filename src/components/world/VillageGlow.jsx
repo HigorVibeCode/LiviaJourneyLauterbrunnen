@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import { HOUSES, resolveOnPath, groundHeightAt, PHASES } from '../../config/world'
@@ -41,12 +42,10 @@ export default function VillageGlow() {
       {windows.map((w) => (
         <mesh key={w.key} position={[w.x, w.y, w.z]} scale={w.s}>
           <boxGeometry args={[1, 1, 0.12]} />
-          <meshStandardMaterial
+          <ToonMat
             color="#ffd898"
             emissive="#ffb040"
-            emissiveIntensity={0.72}
-            flatShading
-          />
+            emissiveIntensity={0.72}/>
         </mesh>
       ))}
     </group>

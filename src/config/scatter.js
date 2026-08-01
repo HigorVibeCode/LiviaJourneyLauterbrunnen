@@ -60,7 +60,7 @@ export const BIOMES = {
     rockColors: ['#7a7e84', '#8a8478', '#6e7276'],
   },
   water: {
-    pines: 70,
+    pines: 48,
     bushes: 36,
     grass: 480,
     flowers: 180,
@@ -213,7 +213,7 @@ export function generateZoneProps(zoneId, density = 1) {
 
   const n = (base) => Math.max(0, Math.round(base * density * zoneMult))
 
-  const place = (count, { keepPath = true, margin = 2, nearTrail = false, skipFar = false } = {}) => {
+  const place = (count, { keepPath = true, margin = 2, nearTrail = false, skipFar = false, pathHalf = PATH_HALF } = {}) => {
     const out = []
     let guard = 0
     let latMax = Math.min(halfX, CORRIDOR_HALF - 3)
@@ -226,7 +226,7 @@ export function generateZoneProps(zoneId, density = 1) {
         : (rng() * 2 - 1) * latMax
       const x = pathXAt(z) + lat
       const latDist = pathLateralDist(x, z)
-      if (keepPath && latDist < PATH_HALF) continue
+      if (keepPath && latDist < pathHalf) continue
       if (skipFar && latDist > TRAIL_FAR && rng() > 0.35) continue
       if (!nearTrail && skipFar && latDist > TRAIL_MID && rng() > 0.55) continue
       if (!isFreeSpot(x, z, blocked, margin)) continue
@@ -236,7 +236,8 @@ export function generateZoneProps(zoneId, density = 1) {
   }
 
   // ── Pinheiros ──
-  const pines = place(n(profile.pines), { margin: 4, skipFar: true }).map((p) => ({
+  const pinePathHalf = zone.biome === 'water' ? 11 : PATH_HALF
+  const pines = place(n(profile.pines), { margin: 4, skipFar: true, pathHalf: pinePathHalf }).map((p) => ({
     ...p,
     s: 0.75 + rng() * 0.75,
     ry: rng() * Math.PI * 2,

@@ -1,5 +1,7 @@
 import * as THREE from 'three'
+import { makeToonMaterial } from '../../materials/toonMaterial'
 import { useMemo } from 'react'
+import ToonMat from '../../materials/ToonMat'
 import { useShallow } from 'zustand/react/shallow'
 import { useProgressStore } from '../../store/progressStore'
 
@@ -61,66 +63,28 @@ export function TorsoOutfit({ outfit }) {
 
   const mats = useMemo(
     () => ({
-      rain: new THREE.MeshStandardMaterial({
-        color: '#e0c83e',
-        flatShading: true,
-        roughness: 0.3,
-        metalness: 0.14,
-      }),
-      rainDark: new THREE.MeshStandardMaterial({
-        color: '#b8a028',
-        flatShading: true,
-        roughness: 0.38,
-        metalness: 0.1,
-      }),
-      rainMid: new THREE.MeshStandardMaterial({
-        color: '#d4bc36',
-        flatShading: true,
-        roughness: 0.32,
-        metalness: 0.12,
-      }),
-      rainShine: new THREE.MeshStandardMaterial({
-        color: '#f0e06a',
-        flatShading: true,
-        roughness: 0.2,
-        metalness: 0.25,
-      }),
-      rainTrim: new THREE.MeshStandardMaterial({
-        color: '#8a7420',
-        flatShading: true,
-        roughness: 0.45,
-      }),
-      furBody: new THREE.MeshStandardMaterial({
-        color: '#8b5530',
-        flatShading: true,
-        roughness: 0.95,
-      }),
-      furDark: new THREE.MeshStandardMaterial({
-        color: '#6a3e22',
-        flatShading: true,
-        roughness: 1,
-      }),
-      furLight: new THREE.MeshStandardMaterial({
-        color: '#c4a882',
-        flatShading: true,
-        roughness: 1,
-      }),
-      furCream: new THREE.MeshStandardMaterial({
-        color: '#efe6d8',
-        flatShading: true,
-        roughness: 1,
-      }),
-      button: new THREE.MeshStandardMaterial({
-        color: '#3a2c1e',
-        flatShading: true,
-        roughness: 0.45,
-        metalness: 0.35,
-      }),
-      belt: new THREE.MeshStandardMaterial({
-        color: '#4a3220',
-        flatShading: true,
-        roughness: 0.7,
-      }),
+      rain: makeToonMaterial({
+        color: '#e0c83e',}),
+      rainDark: makeToonMaterial({
+        color: '#b8a028',}),
+      rainMid: makeToonMaterial({
+        color: '#d4bc36',}),
+      rainShine: makeToonMaterial({
+        color: '#f0e06a',}),
+      rainTrim: makeToonMaterial({
+        color: '#8a7420',}),
+      furBody: makeToonMaterial({
+        color: '#8b5530',}),
+      furDark: makeToonMaterial({
+        color: '#6a3e22',}),
+      furLight: makeToonMaterial({
+        color: '#c4a882',}),
+      furCream: makeToonMaterial({
+        color: '#efe6d8',}),
+      button: makeToonMaterial({
+        color: '#3a2c1e',}),
+      belt: makeToonMaterial({
+        color: '#4a3220',}),
     }),
     [],
   )
@@ -210,12 +174,12 @@ export function TorsoOutfit({ outfit }) {
       <group visible={outfit.binoculars} position={[0, 0.3, binocularZ]}>
         <mesh position={[0, 0.12, -0.02]} rotation={[0.3, 0, 0]}>
           <torusGeometry args={[0.09, 0.008, 4, 10]} />
-          <meshStandardMaterial color="#3a3228" flatShading />
+          <ToonMat color="#3a3228"/>
         </mesh>
         {[-1, 1].map((s) => (
           <mesh key={s} castShadow position={[s * 0.035, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.028, 0.034, 0.09, 8]} />
-            <meshStandardMaterial color="#4a5560" flatShading roughness={0.5} metalness={0.3} />
+            <ToonMat color="#4a5560"/>
           </mesh>
         ))}
       </group>
@@ -224,16 +188,14 @@ export function TorsoOutfit({ outfit }) {
       <group visible={outfit.lantern} position={[-0.14, 0.08, 0.2]} rotation={[0, 0.4, 0]}>
         <mesh castShadow>
           <cylinderGeometry args={[0.025, 0.03, 0.14, 5]} />
-          <meshStandardMaterial color="#5a4030" flatShading />
+          <ToonMat color="#5a4030"/>
         </mesh>
         <mesh position={[0, 0.1, 0]}>
           <boxGeometry args={[0.06, 0.08, 0.06]} />
-          <meshStandardMaterial
+          <ToonMat
             color="#ffd080"
             emissive="#ffb040"
-            emissiveIntensity={0.9}
-            flatShading
-          />
+            emissiveIntensity={1.4}/>
         </mesh>
       </group>
     </group>
@@ -251,48 +213,24 @@ export function HeadOutfit({ outfit }) {
 
   const mats = useMemo(
     () => ({
-      rain: new THREE.MeshStandardMaterial({
-        color: '#e0c83e',
-        flatShading: true,
-        roughness: 0.3,
-        metalness: 0.14,
-        side: THREE.DoubleSide,
+      rain: makeToonMaterial({
+        color: '#e0c83e',side: THREE.DoubleSide,
       }),
-      rainDark: new THREE.MeshStandardMaterial({
-        color: '#b8a028',
-        flatShading: true,
-        roughness: 0.38,
-        metalness: 0.1,
-        side: THREE.DoubleSide,
+      rainDark: makeToonMaterial({
+        color: '#b8a028',side: THREE.DoubleSide,
       }),
-      rainShine: new THREE.MeshStandardMaterial({
-        color: '#f0e06a',
-        flatShading: true,
-        roughness: 0.2,
-        metalness: 0.25,
+      rainShine: makeToonMaterial({
+        color: '#f0e06a',}),
+      fur: makeToonMaterial({
+        color: '#8b5530',side: THREE.DoubleSide,
       }),
-      fur: new THREE.MeshStandardMaterial({
-        color: '#8b5530',
-        flatShading: true,
-        roughness: 0.95,
-        side: THREE.DoubleSide,
+      furDark: makeToonMaterial({
+        color: '#6a3e22',side: THREE.DoubleSide,
       }),
-      furDark: new THREE.MeshStandardMaterial({
-        color: '#6a3e22',
-        flatShading: true,
-        roughness: 1,
-        side: THREE.DoubleSide,
-      }),
-      furCream: new THREE.MeshStandardMaterial({
-        color: '#efe6d8',
-        flatShading: true,
-        roughness: 1,
-      }),
-      furLight: new THREE.MeshStandardMaterial({
-        color: '#c4a882',
-        flatShading: true,
-        roughness: 1,
-      }),
+      furCream: makeToonMaterial({
+        color: '#efe6d8',}),
+      furLight: makeToonMaterial({
+        color: '#c4a882',}),
     }),
     [],
   )
@@ -382,26 +320,26 @@ export function RightHandItem({ outfit }) {
       <group visible={outfit.key} position={[0, -0.28, 0.06]} rotation={[0.9, 0, 0.2]}>
         <mesh castShadow>
           <torusGeometry args={[0.05, 0.018, 5, 8]} />
-          <meshStandardMaterial color="#f0cf4c" flatShading metalness={0.5} roughness={0.3} />
+          <ToonMat color="#f0cf4c"/>
         </mesh>
         <mesh castShadow position={[0.085, 0, 0]}>
           <boxGeometry args={[0.1, 0.024, 0.024]} />
-          <meshStandardMaterial color="#f0cf4c" flatShading metalness={0.5} />
+          <ToonMat color="#f0cf4c"/>
         </mesh>
         <mesh castShadow position={[0.125, -0.028, 0]}>
           <boxGeometry args={[0.026, 0.04, 0.024]} />
-          <meshStandardMaterial color="#f0cf4c" flatShading metalness={0.5} />
+          <ToonMat color="#f0cf4c"/>
         </mesh>
       </group>
 
       <group visible={!outfit.key && outfit.tool} position={[0, -0.28, 0.05]} rotation={[1.15, 0, 0.15]}>
         <mesh castShadow>
           <cylinderGeometry args={[0.016, 0.02, 0.22, 5]} />
-          <meshStandardMaterial color="#5c3a1e" flatShading />
+          <ToonMat color="#5c3a1e"/>
         </mesh>
         <mesh castShadow position={[0, 0.11, 0]}>
           <boxGeometry args={[0.05, 0.055, 0.13]} />
-          <meshStandardMaterial color="#9fb0c2" flatShading metalness={0.6} roughness={0.3} />
+          <ToonMat color="#9fb0c2"/>
         </mesh>
       </group>
     </group>
@@ -414,10 +352,8 @@ export function LeftHandItem({ outfit }) {
     <group visible={outfit.crystal} position={[0, -0.28, 0.06]}>
       <mesh castShadow>
         <octahedronGeometry args={[0.075, 0]} />
-        <meshStandardMaterial
-          color="#6ec8e8"
-          flatShading
-          emissive="#6ec8e8"
+        <ToonMat
+          color="#6ec8e8"emissive="#6ec8e8"
           emissiveIntensity={1.4}
           transparent
           opacity={0.95}

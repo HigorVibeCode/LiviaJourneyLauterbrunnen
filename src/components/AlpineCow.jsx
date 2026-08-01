@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { makeToonMaterial } from '../materials/toonMaterial'
 import { STAIRS, groundHeightAt, stairsPitch } from '../config/world'
 import {
   cowChase,
@@ -286,17 +287,13 @@ export default function AlpineCow() {
   const s = 1.35
   const mats = useMemo(
     () => ({
-      white: new THREE.MeshStandardMaterial({ color: '#f0ebe2', flatShading: true }),
-      black: new THREE.MeshStandardMaterial({ color: '#2c2824', flatShading: true }),
-      muzzle: new THREE.MeshStandardMaterial({ color: '#3a342e', flatShading: true }),
-      eye: new THREE.MeshStandardMaterial({ color: '#1a1410', flatShading: true }),
-      horn: new THREE.MeshStandardMaterial({ color: '#e8dcc4', flatShading: true }),
-      bell: new THREE.MeshStandardMaterial({
-        color: '#d4a020',
-        flatShading: true,
-        metalness: 0.5,
-        roughness: 0.35,
-      }),
+      white: makeToonMaterial({ color: '#f0ebe2',}),
+      black: makeToonMaterial({ color: '#2c2824',}),
+      muzzle: makeToonMaterial({ color: '#3a342e',}),
+      eye: makeToonMaterial({ color: '#1a1410',}),
+      horn: makeToonMaterial({ color: '#e8dcc4',}),
+      bell: makeToonMaterial({
+        color: '#d4a020',}),
     }),
     [],
   )

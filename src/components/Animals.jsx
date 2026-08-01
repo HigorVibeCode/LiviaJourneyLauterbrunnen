@@ -1,4 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
+import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import {
   SCATTER_ZONES,
@@ -203,17 +204,17 @@ function Creature({ def, entries }) {
       {/* corpo */}
       <mesh castShadow={false} position={[0, legY + s * 0.42, 0]}>
         <capsuleGeometry args={[s * 0.4, s * 0.72, 4, 7]} />
-        <meshStandardMaterial color={spec.body} flatShading />
+        <ToonMat color={spec.body}/>
       </mesh>
       {spec.fluffy && (
         <>
           <mesh castShadow={false} position={[0, legY + s * 0.6, s * 0.1]}>
             <sphereGeometry args={[s * 0.55, 6, 5]} />
-            <meshStandardMaterial color={spec.body} flatShading />
+            <ToonMat color={spec.body}/>
           </mesh>
           <mesh castShadow={false} position={[0, legY + s * 0.55, -s * 0.4]}>
             <sphereGeometry args={[s * 0.45, 6, 5]} />
-            <meshStandardMaterial color={spec.body} flatShading />
+            <ToonMat color={spec.body}/>
           </mesh>
         </>
       )}
@@ -221,11 +222,11 @@ function Creature({ def, entries }) {
         <>
           <mesh position={[s * 0.28, legY + s * 0.62, s * 0.15]}>
             <sphereGeometry args={[s * 0.26, 5, 4]} />
-            <meshStandardMaterial color={spec.dark} flatShading />
+            <ToonMat color={spec.dark}/>
           </mesh>
           <mesh position={[-s * 0.3, legY + s * 0.55, -s * 0.3]}>
             <sphereGeometry args={[s * 0.22, 5, 4]} />
-            <meshStandardMaterial color={spec.dark} flatShading />
+            <ToonMat color={spec.dark}/>
           </mesh>
         </>
       )}
@@ -239,37 +240,37 @@ function Creature({ def, entries }) {
       >
         <mesh castShadow={false}>
           <boxGeometry args={[s * 0.44, s * 0.44, s * 0.55]} />
-          <meshStandardMaterial color={spec.body} flatShading />
+          <ToonMat color={spec.body}/>
         </mesh>
         <mesh position={[0, -s * 0.05, s * 0.34]}>
           <boxGeometry args={[s * 0.26, s * 0.2, s * 0.16]} />
-          <meshStandardMaterial color={spec.dark} flatShading />
+          <ToonMat color={spec.dark}/>
         </mesh>
         {[0.14, -0.14].map((o) => (
           <mesh key={o} position={[o * s * 1.2, s * 0.1, s * 0.26]}>
             <sphereGeometry args={[s * 0.055, 5, 4]} />
-            <meshStandardMaterial color="#20180f" flatShading />
+            <ToonMat color="#20180f"/>
           </mesh>
         ))}
         {spec.ears === 'long' &&
           [0.13, -0.13].map((o) => (
             <mesh key={o} castShadow={false} position={[o * s, s * 0.42, -s * 0.05]} rotation={[-0.2, 0, o * 2]}>
               <capsuleGeometry args={[s * 0.07, s * 0.44, 3, 5]} />
-              <meshStandardMaterial color={spec.dark} flatShading />
+              <ToonMat color={spec.dark}/>
             </mesh>
           ))}
         {!spec.ears &&
           [0.2, -0.2].map((o) => (
             <mesh key={o} position={[o * s, s * 0.26, -s * 0.05]}>
               <coneGeometry args={[s * 0.1, s * 0.2, 4]} />
-              <meshStandardMaterial color={spec.dark} flatShading />
+              <ToonMat color={spec.dark}/>
             </mesh>
           ))}
         {spec.horns &&
           [0.18, -0.18].map((o) => (
             <mesh key={o} castShadow={false} position={[o * s, s * 0.3, 0]} rotation={[0, 0, o * 3]}>
               <coneGeometry args={[s * 0.07, s * 0.42, 5]} />
-              <meshStandardMaterial color="#d8cdb4" flatShading />
+              <ToonMat color="#d8cdb4"/>
             </mesh>
           ))}
         {spec.antlers &&
@@ -277,18 +278,18 @@ function Creature({ def, entries }) {
             <group key={o} position={[o * s, s * 0.3, 0]}>
               <mesh castShadow={false} rotation={[0, 0, o * 2.2]}>
                 <cylinderGeometry args={[s * 0.035, s * 0.05, s * 0.6, 4]} />
-                <meshStandardMaterial color="#8a6a44" flatShading />
+                <ToonMat color="#8a6a44"/>
               </mesh>
               <mesh castShadow={false} position={[o * s * 0.25, s * 0.36, 0]} rotation={[0, 0, o * 3.6]}>
                 <cylinderGeometry args={[s * 0.025, s * 0.035, s * 0.34, 4]} />
-                <meshStandardMaterial color="#8a6a44" flatShading />
+                <ToonMat color="#8a6a44"/>
               </mesh>
             </group>
           ))}
         {spec.bell && (
           <mesh position={[0, -s * 0.22, s * 0.1]}>
             <sphereGeometry args={[s * 0.09, 5, 4]} />
-            <meshStandardMaterial color="#c9a227" flatShading metalness={0.6} roughness={0.4} />
+            <ToonMat color="#c9a227"/>
           </mesh>
         )}
       </group>
@@ -309,7 +310,7 @@ function Creature({ def, entries }) {
         >
           <mesh castShadow={false} position={[0, -legLen / 2, 0]}>
             <cylinderGeometry args={[s * 0.075, s * 0.06, legLen, 5]} />
-            <meshStandardMaterial color={spec.dark} flatShading />
+            <ToonMat color={spec.dark}/>
           </mesh>
         </group>
       ))}
@@ -323,7 +324,7 @@ function Creature({ def, entries }) {
       >
         <mesh castShadow={false} rotation={[spec.tail ? -0.4 : 0.6, 0, 0]}>
           <capsuleGeometry args={[s * (spec.tail ? 0.14 : 0.06), s * (spec.tail ? 0.6 : 0.3), 3, 5]} />
-          <meshStandardMaterial color={spec.tail ? spec.dark : spec.body} flatShading />
+          <ToonMat color={spec.tail ? spec.dark : spec.body}/>
         </mesh>
       </group>
     </group>
@@ -356,7 +357,7 @@ function BirdFlock({ def, paused }) {
         <group key={i} position={[(i % 3 - 1) * 2.2, (i % 2) * 1.1, Math.floor(i / 3) * 2]}>
           <mesh>
             <capsuleGeometry args={[0.13, 0.34, 3, 5]} />
-            <meshStandardMaterial color="#3a3a42" flatShading />
+            <ToonMat color="#3a3a42"/>
           </mesh>
           {[0, 1].map((w) => (
             <group
@@ -367,7 +368,7 @@ function BirdFlock({ def, paused }) {
             >
               <mesh position={[(w ? 1 : -1) * 0.42, 0.06, 0]}>
                 <boxGeometry args={[0.8, 0.05, 0.28]} />
-                <meshStandardMaterial color="#4a4a54" flatShading />
+                <ToonMat color="#4a4a54"/>
               </mesh>
             </group>
           ))}
@@ -427,10 +428,8 @@ function Butterflies({ density, paused }) {
               }}
             >
               <boxGeometry args={[0.3, 0.02, 0.18]} />
-              <meshStandardMaterial
-                color={g.colors[i % g.colors.length]}
-                flatShading
-                emissive={g.colors[i % g.colors.length]}
+              <ToonMat
+                color={g.colors[i % g.colors.length]}emissive={g.colors[i % g.colors.length]}
                 emissiveIntensity={0.25}
               />
             </mesh>
@@ -508,10 +507,8 @@ function Bees({ density, paused }) {
               }}
             >
               <capsuleGeometry args={[0.055, 0.09, 2, 5]} />
-              <meshStandardMaterial
-                color="#e8b830"
-                flatShading
-                emissive="#c89020"
+              <ToonMat
+                color="#e8b830"emissive="#c89020"
                 emissiveIntensity={0.4}
               />
             </mesh>
@@ -575,7 +572,7 @@ function Fireflies({ paused }) {
               }}
             >
               <sphereGeometry args={[0.045, 4, 4]} />
-              <meshStandardMaterial color="#c8ff80" emissive="#90ff40" emissiveIntensity={0.8} flatShading />
+              <ToonMat color="#c8ff80" emissive="#90ff40" emissiveIntensity={0.8}/>
             </mesh>
           ))}
         </group>
