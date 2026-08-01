@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { makeRng } from '../config/world'
+import { playerPosition } from '../store/playerStore'
 import Instanced from './world/Instanced'
 
 /**
@@ -49,10 +50,25 @@ export default function AlpsBackdrop() {
     }))
   }, [])
 
+  const layerRefs = useRef([])
+
+  useFrame(() => {
+    const pz = playerPosition.z
+    layerRefs.current.forEach((g, i) => {
+      if (!g || !rows[i]) return
+      g.visible = Math.abs(rows[i].z - pz) <= 350
+    })
+  })
+
   return (
     <group>
-      {rows.map((row) => (
-        <group key={row.key} position={[0, -10, row.z]} scale={row.scale}>
+      {rows.map((row, li) => (
+        <group
+          key={row.key}
+          ref={(el) => { layerRefs.current[li] = el }}
+          position={[0, -10, row.z]}
+          scale={row.scale}
+        >
           {row.peaks.map((p, i) => (
             <group key={i} position={[p.x, 0, p.z]} rotation={[0, p.ry, 0]}>
               <mesh>

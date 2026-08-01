@@ -15,8 +15,9 @@ import {
   makeRng,
   pathXAt,
   pathYawAt,
+  isSummitBuiltArea,
 } from '../../config/world'
-import Instanced from './Instanced'
+import Instanced, { ChunkedInstanced } from './Instanced'
 
 const GROUND_THICKNESS = 2
 const GROUND_SLICE = 24
@@ -56,19 +57,25 @@ export default function Terrain() {
         const cz = (z0 + z1) / 2
         const sliceHalfZ = (z0 - z1) / 2 + 0.1
         const cx = pathXAt(cz) + lat0
-        groundColliders.push({
-          id: `${seg.id}-${cz.toFixed(1)}`,
-          x: cx,
-          y: seg.y,
-          z: cz,
-          halfX: seg.halfX + 2,
-          halfZ: sliceHalfZ + 0.2,
-        })
+        const skipCollider =
+          seg.y === SUMMIT_Y &&
+          isSummitBuiltArea(cx, cz)
+        if (!skipCollider) {
+          groundColliders.push({
+            id: `${seg.id}-${cz.toFixed(1)}`,
+            x: cx,
+            y: seg.y,
+            z: cz,
+            halfX: seg.halfX + 2,
+            halfZ: sliceHalfZ + 0.2,
+          })
+        }
 
         const cols = Math.max(1, Math.round((seg.halfX * 2) / PLATE_W))
         const pw = (seg.halfX * 2) / cols
         for (let c = 0; c < cols; c++) {
           const x = cx - seg.halfX + pw / 2 + c * pw
+          if (seg.y === SUMMIT_Y && isSummitBuiltArea(x, cz)) continue
           let base = seg.color
           if (seg.biome === 'alpine') {
             base = rng() > 0.45 ? '#d8e3dc' : rng() > 0.4 ? '#8fae86' : '#a8c39c'
@@ -125,10 +132,11 @@ export default function Terrain() {
         ))}
       </RigidBody>
 
-      <Instanced geometry={plateGeo} material={plateMat} items={plateItems} castShadow={false} />
+      <ChunkedInstanced geometry={plateGeo} material={plateMat} items={plateItems} castShadow={false} />
 
-      <mesh position={[0, SUMMIT_Y - 8, TREASURE_POS.z]} receiveShadow>
-        <boxGeometry args={[SUMMIT_HALF_X * 2.2, 16, 90]} />
+      {/* volume de apoio abaixo do platô — não pode chegar a SUMMIT_Y (z-fight com props) */}
+      <mesh position={[0, SUMMIT_Y - 14, TREASURE_POS.z]} receiveShadow renderOrder={-2}>
+        <boxGeometry args={[SUMMIT_HALF_X * 2.2, 12, 90]} />
         <ToonMat color="#8a9690"/>
       </mesh>
 

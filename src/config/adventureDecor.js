@@ -152,9 +152,6 @@ export const HERO_PLACEMENTS = [
   { prop: 'Sign', x: 10, z: 38, ry: -0.35, s: 0.95 },
 
   // ── Saída do 1º portão / início do pasto (cavalo ao lado) ──
-  { prop: 'Fence', x: 8.5, z: 12, ry: 0.1, s: 1 },
-  { prop: 'Fence', x: 11.1, z: 12, ry: 0.1, s: 1 },
-  { prop: 'Fence', x: -8.5, z: 12, ry: -0.1, s: 1 },
   { prop: 'Lamp', x: -6.5, z: 11.5, ry: 0, s: 1 },
   { prop: 'Lamp', x: 6.5, z: 11.5, ry: Math.PI, s: 1 },
 

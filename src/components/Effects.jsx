@@ -34,8 +34,8 @@ export default function Effects() {
         key="outline"
         blur={false}
         edgeStrength={2.6}
-        width={1024}
-        height={1024}
+        width={512}
+        height={512}
         visibleEdgeColor={0x141820}
         hiddenEdgeColor={0x141820}
         xRay={false}

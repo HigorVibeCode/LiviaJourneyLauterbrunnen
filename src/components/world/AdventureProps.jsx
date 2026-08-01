@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useRef } from 'react'
+import { forwardRef, useMemo, useRef, useState, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
@@ -9,10 +9,10 @@ import {
   buildAdventurePlacements,
 } from '../../config/adventureDecor'
 import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
-import Instanced from './Instanced'
+import { ChunkedInstanced } from './Instanced'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
 import { playerPosition } from '../../store/playerStore'
-import { bandForDistance, distanceToPlayer, isHeroPlacement } from '../../utils/lodBands'
+import { filterAdventurePlacements } from '../../utils/lodBands'
 import { makeToonMaterial } from '../../materials/toonMaterial'
 
 const MODEL_URL = '/models/adventure_pack.glb'
@@ -132,9 +132,9 @@ function extractNormalized(scene, name, targetHeight) {
 
   pivot.traverse((obj) => {
     if (!obj.isMesh) return
-    // só árvores/heróis grandes projetam sombra — fill props são receive-only
+    // só árvores/heróis grandes projetam sombra — scatter não recebe sombra
     obj.castShadow = false
-    obj.receiveShadow = true
+    obj.receiveShadow = false
     if (obj.geometry) obj.geometry.computeVertexNormals()
     if (obj.material) tintMeshMaterial(obj, name)
   })
@@ -250,30 +250,28 @@ export default function AdventureProps() {
   const library = useMemo(() => buildLibrary(scene), [scene])
   const placements = useMemo(() => buildAdventurePlacements(density), [density])
 
-  const { instanced, clones, colliders, canopyOccluders } = useMemo(
+  const { colliders, canopyOccluders } = useMemo(
     () => buildPropBatch(library, placements),
     [library, placements],
   )
 
-  const cloneRefs = useRef([])
+  const [lodPlacements, setLodPlacements] = useState(placements)
   const lodTick = useRef(0)
 
+  useEffect(() => {
+    setLodPlacements(placements)
+  }, [placements])
+
   useFrame((state) => {
-    if (state.clock.elapsedTime - lodTick.current < 0.22) return
+    if (state.clock.elapsedTime - lodTick.current < 0.35) return
     lodTick.current = state.clock.elapsedTime
-    const px = playerPosition.x
-    const pz = playerPosition.z
-    clones.forEach((it, i) => {
-      const root = cloneRefs.current[i]
-      if (!root) return
-      if (isHeroPlacement(it)) {
-        root.visible = true
-        return
-      }
-      const d = distanceToPlayer(it.x, it.z, px, pz)
-      root.visible = bandForDistance(d) !== 'far'
-    })
+    setLodPlacements(filterAdventurePlacements(placements, playerPosition.x, playerPosition.z))
   })
+
+  const { instanced, clones } = useMemo(
+    () => buildPropBatch(library, lodPlacements),
+    [library, lodPlacements],
+  )
 
   return (
     <group name="adventure-props">
@@ -300,19 +298,19 @@ export default function AdventureProps() {
       </RigidBody>
 
       {instanced.map((group) => (
-        <Instanced
+        <ChunkedInstanced
           key={group.prop}
           geometry={group.geometry}
           material={group.material}
           items={group.items}
           castShadow={false}
+          receiveShadow={false}
         />
       ))}
 
       {clones.map((it, i) => (
         <PackClone
           key={`ap-${it.prop}-${i}`}
-          ref={(el) => { cloneRefs.current[i] = el }}
           template={library[it.prop].pivot}
           placement={it}
         />

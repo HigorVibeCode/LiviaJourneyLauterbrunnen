@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
@@ -6,7 +6,6 @@ import { useProgressStore, QUESTS, ITEMS, missingItems } from '../store/progress
 import { playerPosition } from '../store/playerStore'
 import { guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
-import PackProp from './world/PackProp'
 
 const INTERACT_DIST = 8
 const OPEN_ANGLE = 1.85
@@ -180,17 +179,6 @@ export default function Gate({
 
   return (
     <group position={position}>
-      <Suspense fallback={null}>
-        <PackProp
-          name="Gate"
-          position={[0, 0, -0.12]}
-          rotation={0}
-          scale={Math.min(width / 6.5, 1.25)}
-          collider={false}
-          snapGround={false}
-        />
-      </Suspense>
-
       <Post x={-width / 2 - 0.1} height={height} />
       <Post x={width / 2 + 0.1} height={height} />
 

@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { getToonGradientMap } from '../../materials/toonMaterial'
+import { chunkItemsByZ } from '../../utils/lodBands'
 
 const tmpMatrix = new THREE.Matrix4()
 const tmpQuat = new THREE.Quaternion()
@@ -25,7 +26,10 @@ export default function Instanced({
 
   useLayoutEffect(() => {
     const mesh = ref.current
-    if (!mesh || !items.length) return
+    if (!mesh) return
+
+    mesh.count = items.length
+    if (!items.length) return
 
     // Se qualquer item tem cor, pinta TODOS (evita instanceColor parcial / preto)
     let useColor = false
@@ -116,4 +120,20 @@ export function useWindMaterial({ color, strength = 0.16, speed = 1.4 }) {
   })
 
   return material
+}
+
+/** InstancedMesh partido em chunks Z — bounding spheres menores, culling eficaz. */
+export function ChunkedInstanced({ geometry, material, items, castShadow = true, receiveShadow = true }) {
+  const chunks = useMemo(() => chunkItemsByZ(items), [items])
+  if (!items.length) return null
+  return chunks.map(({ key, items: chunkItems }) => (
+    <Instanced
+      key={key}
+      geometry={geometry}
+      material={material}
+      items={chunkItems}
+      castShadow={castShadow}
+      receiveShadow={receiveShadow}
+    />
+  ))
 }

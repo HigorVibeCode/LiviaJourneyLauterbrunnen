@@ -235,9 +235,11 @@ export const useProgressStore = create((set, get) => ({
     return true
   },
 
-  setNearGate: (gateId) => set({ nearGateId: gateId }),
+  setNearGate: (gateId) =>
+    set((s) => (s.nearGateId === gateId ? s : { nearGateId: gateId })),
 
-  setNearNpc: (npcId) => set({ nearNpcId: npcId }),
+  setNearNpc: (npcId) =>
+    set((s) => (s.nearNpcId === npcId ? s : { nearNpcId: npcId })),
 
   markNpcSpoke: (npcId) =>
     set((s) => ({ npcSpoke: { ...s.npcSpoke, [npcId]: true } })),

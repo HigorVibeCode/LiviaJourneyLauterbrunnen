@@ -103,7 +103,7 @@ export default function WorldMap() {
               z={0}
               y={g.y}
               gateWidth={g.width}
-              halfWidth={g.width / 2 + 14}
+              halfWidth={g.halfWidth}
               height={g.height}
               color={g.color}
             />

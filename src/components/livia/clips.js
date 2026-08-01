@@ -25,16 +25,16 @@ function posTrack(node, times, positions) {
   return new THREE.VectorKeyframeTrack(`${node}.position`, times, values)
 }
 
-/** Respiração, transferência de peso, olhar curioso */
+/** Respiração, transferência de peso, olhar curioso — sem bob vertical (causava “pulinho”) */
 function idleClip() {
   const d = 3.6
   const t = [0, d * 0.25, d * 0.5, d * 0.75, d]
   return new THREE.AnimationClip('idle', d, [
     posTrack('Hips', t, [
       [0, 0.82, 0],
-      [0, 0.835, 0],
       [0, 0.82, 0],
-      [0, 0.83, 0],
+      [0, 0.82, 0],
+      [0, 0.82, 0],
       [0, 0.82, 0],
     ]),
     quatTrack('Spine', t, [
@@ -118,25 +118,25 @@ function idleClip() {
 }
 
 /**
- * Ciclo de caminhada com joelho (flexão no avanço), contato de pé,
- * bob duplo e balanço oposto de braços.
+ * Ciclo de caminhada: joelhos/braços balançam; Hips.Y fixo (sem bob —
+ * o bob vertical parecia a personagem a “saltar” a cada passo).
  */
-function walkClip(name = 'walk', d = 0.92, swing = 0.55, bob = 0.055, lean = 0.08) {
+function walkClip(name = 'walk', d = 0.92, swing = 0.55, _bob = 0, lean = 0.08) {
   const t = [0, d * 0.25, d * 0.5, d * 0.75, d]
   const knee = swing * 1.15
   return new THREE.AnimationClip(name, d, [
     posTrack('Hips', t, [
       [0, 0.82, 0],
-      [0, 0.82 + bob, 0.02],
       [0, 0.82, 0],
-      [0, 0.82 + bob, 0.02],
+      [0, 0.82, 0],
+      [0, 0.82, 0],
       [0, 0.82, 0],
     ]),
     quatTrack('Hips', t, [
       [0, 0, 0],
-      [0, 0.08, 0.04],
+      [0, 0.05, 0.025],
       [0, 0, 0],
-      [0, -0.08, -0.04],
+      [0, -0.05, -0.025],
       [0, 0, 0],
     ]),
     quatTrack('Spine', t, [
@@ -333,8 +333,8 @@ function fallClip() {
 export function createLiviaClips() {
   return [
     idleClip(),
-    walkClip('walk', 0.92, 0.55, 0.055, 0.08),
-    walkClip('run', 0.58, 0.88, 0.1, 0.22),
+    walkClip('walk', 0.92, 0.55, 0, 0.08),
+    walkClip('run', 0.58, 0.88, 0, 0.18),
     jumpClip(),
     fallClip(),
   ]

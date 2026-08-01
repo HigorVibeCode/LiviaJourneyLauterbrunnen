@@ -138,20 +138,26 @@ export default function Hud() {
   return (
     <div className={`hud ${paused ? 'hud--paused' : ''} ${isMobile ? 'hud--touch' : ''}`}>
       <div className="hud-panel hud-objective hud-magic">
-        <span className="hud-ornament hud-ornament--tl" aria-hidden>
-          ◆
-        </span>
-        <span className="hud-ornament hud-ornament--br" aria-hidden>
-          ◆
-        </span>
+        {!isMobile && (
+          <>
+            <span className="hud-ornament hud-ornament--tl" aria-hidden>
+              ◆
+            </span>
+            <span className="hud-ornament hud-ornament--br" aria-hidden>
+              ◆
+            </span>
+          </>
+        )}
         <span className="hud-panel-label">
-          Fase {phaseNumber} de {PHASE_ORDER.length} · {phaseInfo.label}
+          {isMobile
+            ? `Fase ${phaseNumber}/${PHASE_ORDER.length} · ${phaseInfo.label}`
+            : `Fase ${phaseNumber} de ${PHASE_ORDER.length} · ${phaseInfo.label}`}
         </span>
-        <p className="hud-chapter">{phaseInfo.chapter}</p>
-        <p>{hint}</p>
+        {!isMobile && <p className="hud-chapter">{phaseInfo.chapter}</p>}
+        <p className="hud-objective-main">{hint}</p>
 
         {currentQuest && (
-          <ul className="hud-checklist">
+          <ul className={`hud-checklist ${isMobile ? 'hud-checklist--compact' : ''}`}>
             {currentQuest.itemIds.map((id) => (
               <li key={id} className={inventory.includes(id) ? 'is-done' : ''}>
                 <span className="hud-check">{inventory.includes(id) ? '✔' : '○'}</span>
@@ -189,9 +195,8 @@ export default function Hud() {
         <div className="hud-interact hud-magic">
           <kbd>E</kbd>
           <span>
-            {isMobile
-              ? `Falar com ${nearNpc.name}`
-              : npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ?? npcInteractHint(nearNpc)}
+            {npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ??
+              (isMobile ? `Falar com ${nearNpc.name}` : npcInteractHint(nearNpc))}
           </span>
         </div>
       )}
@@ -317,6 +322,7 @@ export default function Hud() {
               <span className="hud-panel-label">Controles (toque)</span>
               <ul className="pause-help-tips">
                 <li>Joystick esquerdo — andar</li>
+                <li>Arraste o dedo no centro/direita — girar a câmera</li>
                 <li>Correr / Pular / E — botões à direita</li>
                 <li>Segure E — guia luminosa</li>
               </ul>

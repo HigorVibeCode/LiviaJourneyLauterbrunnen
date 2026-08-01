@@ -35,11 +35,11 @@ export function BarrierWall({ z, gateWidth, halfWidth, height = 6, y = 0, color 
       <RigidBody type="fixed" colliders={false} friction={1}>
         <CuboidCollider
           position={[-(gapHalf + segLen / 2), y + height / 2, z]}
-          args={[segLen / 2, height / 2, 0.6]}
+          args={[segLen / 2, height / 2, 1.0]}
         />
         <CuboidCollider
           position={[gapHalf + segLen / 2, y + height / 2, z]}
-          args={[segLen / 2, height / 2, 0.6]}
+          args={[segLen / 2, height / 2, 1.0]}
         />
       </RigidBody>
 
@@ -52,11 +52,11 @@ export function BarrierWall({ z, gateWidth, halfWidth, height = 6, y = 0, color 
           return (
             <group key={`${side}-${i}`}>
               <mesh position={[x, y + h / 2, z]} castShadow receiveShadow>
-                <boxGeometry args={[segLen / panels + 0.1, h, 1]} />
+                <boxGeometry args={[segLen / panels + 0.1, h, 0.35]} />
                 <ToonMat color={i % 2 ? shade(color, -16) : color}/>
               </mesh>
               <mesh position={[x, y + h + 0.25, z]} castShadow>
-                <boxGeometry args={[segLen / panels + 0.4, 0.4, 1.5]} />
+                <boxGeometry args={[segLen / panels + 0.4, 0.4, 0.45]} />
                 <ToonMat color={shade(color, -30)}/>
               </mesh>
             </group>
@@ -223,7 +223,6 @@ export function SummitStairs() {
     () => ({
       step: new THREE.BoxGeometry(STAIRS.halfWidth * 2, STAIRS.stepRise * 0.92, STAIRS.stepDepth * 0.92),
       landing: new THREE.BoxGeometry(STAIRS.halfWidth * 2.15, 0.28, STAIRS.stepDepth * 2.4),
-      dirt: new THREE.BoxGeometry(4.2, 0.12, STAIRS.stepDepth * 1.1),
       snow: new THREE.BoxGeometry(1, 0.08, 1),
       pillar: new THREE.CylinderGeometry(0.5, 0.65, 1, 6),
       cap: new THREE.BoxGeometry(1.3, 0.35, 1.3),
@@ -248,8 +247,13 @@ export function SummitStairs() {
     () => ({
       step: makeToonMaterial({ color: '#ffffff',}),
       landing: makeToonMaterial({ color: '#ffffff',}),
-      dirt: makeToonMaterial({ color: '#ffffff',}),
-      snow: makeToonMaterial({ color: '#ffffff',}),
+      snow: (() => {
+        const m = makeToonMaterial({ color: '#ffffff' })
+        m.polygonOffset = true
+        m.polygonOffsetFactor = -1
+        m.polygonOffsetUnits = -1
+        return m
+      })(),
       pillar: makeToonMaterial({ color: '#ffffff',}),
       cap: makeToonMaterial({ color: '#ffffff',}),
       lantern: makeToonMaterial({
@@ -271,7 +275,6 @@ export function SummitStairs() {
     const rng = makeRng(9091)
     const steps = []
     const landings = []
-    const dirt = []
     const snow = []
     const pillars = []
     const caps = []
@@ -335,18 +338,6 @@ export function SummitStairs() {
         const shrineSide = i % 12 === 0 ? -1 : 1
         shrines.push({ x: shrineSide * 5.5, y: top + 1.2, z: z + 0.6, color: '#5c6066' })
         shrineCaps.push({ x: shrineSide * 5.5, y: top + 2.7, z: z + 0.6, color: '#3e4248' })
-        for (const side of [-1, 1]) {
-          snow.push({
-            x: side * (STAIRS.halfWidth - 4 - rng() * 2),
-            y: top + 0.07,
-            z: z + (rng() - 0.2) * STAIRS.stepDepth * 0.6,
-            sx: 1.2 + rng() * 1.4,
-            sz: 0.8 + rng(),
-            sy: 0.65,
-            color: snowC[i % snowC.length],
-            ry: rng() * 0.8,
-          })
-        }
       } else {
         // alguns degraus com tom nevado embutido (sem placa flutuante)
         const snowy = rng() > 0.72
@@ -356,32 +347,6 @@ export function SummitStairs() {
           z,
           color: snowy ? '#aeb8c2' : stoneA[(i + Math.floor(rng() * 3)) % stoneA.length],
           ry: (rng() - 0.5) * 0.02,
-        })
-      }
-
-      // neve só nas beiradas externas
-      if (i % 2 === 0) {
-        const side = i % 4 === 0 ? -1 : 1
-        snow.push({
-          x: side * (STAIRS.halfWidth - 2.5 - rng() * 2),
-          y: top + 0.07,
-          z: z + (rng() - 0.5) * 0.5,
-          sx: 1.0 + rng() * 1.2,
-          sz: 0.6 + rng() * 0.7,
-          sy: 0.6,
-          color: snowC[i % snowC.length],
-          ry: rng() * 0.5,
-        })
-      }
-
-      if (i % 2 === 0) {
-        const side = i % 4 === 0 ? -1 : 1
-        dirt.push({
-          x: side * (STAIRS.halfWidth * 0.62),
-          y: top + 0.04,
-          z: z + 0.2,
-          color: i % 4 === 0 ? '#7a6a48' : '#6e6240',
-          ry: side * 0.08,
         })
       }
 
@@ -513,7 +478,6 @@ export function SummitStairs() {
     return {
       steps,
       landings,
-      dirt,
       snow,
       pillars,
       caps,
@@ -567,7 +531,6 @@ export function SummitStairs() {
         items={batches.landings}
         castShadow={false}
       />
-      <Instanced geometry={geos.dirt} material={mats.dirt} items={batches.dirt} castShadow={false} />
       <Instanced geometry={geos.snow} material={mats.snow} items={batches.snow} castShadow={false} />
       <Instanced
         geometry={geos.pillar}

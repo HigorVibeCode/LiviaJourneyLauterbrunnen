@@ -1,15 +1,15 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
-import Instanced, { useWindMaterial } from './Instanced'
+import { ChunkedInstanced, useWindMaterial } from './Instanced'
 import { generateZoneProps } from '../../config/scatter'
-import { SCATTER_ZONES, pathXAt } from '../../config/world'
+import { SCATTER_ZONES } from '../../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
 import { playerPosition } from '../../store/playerStore'
-import { bandForDistance, distanceToPlayer } from '../../utils/lodBands'
+import { filterVegetationZone } from '../../utils/lodBands'
 import { makeToonMaterial } from '../../materials/toonMaterial'
 
 /** Geometrias compartilhadas por todas as zonas (criadas uma vez) */
@@ -285,27 +285,24 @@ export default function Vegetation() {
     return list
   }, [zones])
 
-  const decorativeRefs = useRef({})
   const lodTick = useRef(0)
+  const [lodZones, setLodZones] = useState(zones)
+
+  useEffect(() => {
+    setLodZones(zones)
+  }, [zones])
 
   useFrame((state) => {
-    if (state.clock.elapsedTime - lodTick.current < 0.22) return
+    if (state.clock.elapsedTime - lodTick.current < 0.35) return
     lodTick.current = state.clock.elapsedTime
     const px = playerPosition.x
     const pz = playerPosition.z
-    zones.forEach((z) => {
-      const midZ = (z.zFrom + z.zTo) / 2
-      const midX = pathXAt(midZ)
-      const d = distanceToPlayer(midX, midZ, px, pz)
-      const band = bandForDistance(d)
-      const deco = decorativeRefs.current[z.zoneId]
-      if (deco) deco.visible = band !== 'far'
-    })
+    setLodZones(zones.map((z) => filterVegetationZone(z, px, pz)))
   })
 
   const snowmen = useMemo(
-    () => zones.flatMap((z) => z.snowmen.map((s) => ({ ...s, zone: z.zoneId }))),
-    [zones],
+    () => lodZones.flatMap((z) => z.snowmen.map((s) => ({ ...s, zone: z.zoneId }))),
+    [lodZones],
   )
 
   return (
@@ -343,36 +340,35 @@ export default function Vegetation() {
         ))}
       </RigidBody>
 
-      {zones.map((z) => (
+      {lodZones.map((z) => (
         <group key={z.zoneId}>
-          <Instanced geometry={geo.trunk} material={mat.bark} items={z.pineBases} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.canopyA} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.canopyB} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.canopyC} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.trunk} material={mat.bark} items={z.pineBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.canopyA} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.canopyB} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.canopyC} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
 
-          <Instanced geometry={geo.snowA} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.snowB} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.snowC} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.snowA} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.snowB} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.snowC} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
 
-          <group ref={(el) => { decorativeRefs.current[z.zoneId] = el }}>
-          <Instanced geometry={geo.bush} material={bushMaterial} items={z.bushes} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.bushCap} material={mat.snow} items={z.bushSnow} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.fruit} material={mat.fruit} items={z.fruits} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.bush} material={bushMaterial} items={z.bushes} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.bushCap} material={mat.snow} items={z.bushSnow} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.fruit} material={mat.fruit} items={z.fruits} castShadow={false} receiveShadow={false} />
 
-          <Instanced
+          <ChunkedInstanced
             geometry={geo.blade}
             material={grassMaterial}
             items={z.grass}
             castShadow={false}
             receiveShadow={false}
           />
-          <Instanced geometry={geo.stem} material={mat.stem} items={z.flowerBases} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.leaves} material={mat.leaf} items={z.flowerBases} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.petals} material={mat.bloom} items={z.flowers} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.bloom} material={mat.bloomCenter} items={z.flowerBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.stem} material={mat.stem} items={z.flowerBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.leaves} material={mat.leaf} items={z.flowerBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.petals} material={mat.bloom} items={z.flowers} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.bloom} material={mat.bloomCenter} items={z.flowerBases} castShadow={false} receiveShadow={false} />
 
-          <Instanced geometry={geo.fern} material={bushMaterial} items={z.ferns} castShadow={false} receiveShadow={false} />
-          <Instanced
+          <ChunkedInstanced geometry={geo.fern} material={bushMaterial} items={z.ferns} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced
             geometry={geo.reed}
             material={reedMaterial}
             items={z.reeds}
@@ -380,23 +376,23 @@ export default function Vegetation() {
             receiveShadow={false}
           />
 
-          <Instanced geometry={geo.rock} material={mat.rock} items={z.rocks} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.rock} material={mat.rock} items={z.pebbles} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.rock} material={mat.rock} items={z.rocks} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.rock} material={mat.rock} items={z.pebbles} castShadow={false} receiveShadow={false} />
 
-          <Instanced geometry={geo.stemMush} material={mat.mushStem} items={z.mushroomBases} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.capMush} material={mat.mushCap} items={z.mushrooms} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.stemMush} material={mat.mushStem} items={z.mushroomBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.capMush} material={mat.mushCap} items={z.mushrooms} castShadow={false} receiveShadow={false} />
 
-          <Instanced geometry={geo.log} material={mat.wood} items={z.logs} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.hay} material={mat.hay} items={z.hay} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.crate} material={mat.wood} items={z.crateBoxes} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.barrel} material={mat.woodDark} items={z.barrels} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.log} material={mat.wood} items={z.logs} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.hay} material={mat.hay} items={z.hay} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.crate} material={mat.wood} items={z.crateBoxes} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.barrel} material={mat.woodDark} items={z.barrels} castShadow={false} receiveShadow={false} />
 
-          <Instanced geometry={geo.post} material={mat.woodDark} items={z.fences} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.rail} material={mat.wood} items={z.railsHigh} castShadow={false} receiveShadow={false} />
-          <Instanced geometry={geo.rail} material={mat.wood} items={z.railsLow} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.post} material={mat.woodDark} items={z.fences} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.rail} material={mat.wood} items={z.railsHigh} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.rail} material={mat.wood} items={z.railsLow} castShadow={false} receiveShadow={false} />
 
-          <Instanced geometry={geo.lampPost} material={mat.metal} items={z.lanterns} castShadow={false} receiveShadow={false} />
-          <Instanced
+          <ChunkedInstanced geometry={geo.lampPost} material={mat.metal} items={z.lanterns} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced
             geometry={geo.lampGlass}
             material={mat.lamp}
             items={z.lanterns}
@@ -404,14 +400,13 @@ export default function Vegetation() {
             receiveShadow={false}
           />
 
-          <Instanced
+          <ChunkedInstanced
             geometry={geo.snowPatch}
             material={mat.snow}
             items={z.snowPatches}
             castShadow={false}
           />
-          <Instanced geometry={geo.icicle} material={mat.ice} items={z.icicles} castShadow={false} receiveShadow={false} />
-          </group>
+          <ChunkedInstanced geometry={geo.icicle} material={mat.ice} items={z.icicles} castShadow={false} receiveShadow={false} />
         </group>
       ))}
 

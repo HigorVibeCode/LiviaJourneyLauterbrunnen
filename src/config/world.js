@@ -344,7 +344,16 @@ export const HORSE_WAIT = {
   y: 0,
 }
 
-const STAIRS_Z_TOP = STAIRS.zStart - (STAIRS.steps - 1) * STAIRS.stepDepth
+export const STAIRS_Z_TOP = STAIRS.zStart - (STAIRS.steps - 1) * STAIRS.stepDepth
+
+/** Zona já construída (escada + platô do mirante) — sem placas de terreno por cima */
+export function isSummitBuiltArea(x, z) {
+  const px = pathXAt(z)
+  const lat = Math.abs(x - px)
+  if (z <= STAIRS.zStart + 4 && z >= STAIRS_Z_TOP - 10 && lat < STAIRS.halfWidth + 4) return true
+  if (z <= STAIRS_Z_TOP + 4 && z >= TREASURE_POS.z - 24 && lat < 34) return true
+  return false
+}
 
 /** Segmentos de chão. followPath: xCenter = pathXAt(mid) + latCenter */
 export const GROUND_SEGMENTS = [

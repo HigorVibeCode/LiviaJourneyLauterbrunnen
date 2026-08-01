@@ -1,10 +1,29 @@
 import { pathLateralDist } from '../config/world.js'
 
-/** Anéis LOD em metros (distância ao jogador). */
-export const LOD_NEAR = 35
-export const LOD_MID = 70
+/** Limiares LOD (metros). Hysteresis evita flicker no limiar. */
+export const LOD_NEAR = 40
+export const LOD_MID = 77
+export const LOD_NEAR_HIDE = 42
+export const LOD_MID_SHOW = 72
+export const LOD_MID_HIDE = 82
 
-export function bandForDistance(d) {
+/**
+ * Banda LOD com hysteresis opcional (prevBand = banda anterior do prop).
+ */
+export function bandForDistance(d, prevBand = null) {
+  if (prevBand === 'near') {
+    if (d > LOD_NEAR_HIDE) return d <= LOD_MID_HIDE ? 'mid' : 'far'
+    return 'near'
+  }
+  if (prevBand === 'mid') {
+    if (d > LOD_MID_HIDE) return 'far'
+    if (d < LOD_NEAR - 2) return 'near'
+    return 'mid'
+  }
+  if (prevBand === 'far') {
+    if (d < LOD_MID_SHOW) return d < LOD_NEAR - 2 ? 'near' : 'mid'
+    return 'far'
+  }
   if (d <= LOD_NEAR) return 'near'
   if (d <= LOD_MID) return 'mid'
   return 'far'
@@ -12,6 +31,20 @@ export function bandForDistance(d) {
 
 export function distanceToPlayer(x, z, px, pz) {
   return Math.hypot(x - px, z - pz)
+}
+
+/** Parte items em fatias de ~40 m ao longo de Z para frustum culling eficaz. */
+export const CHUNK_SIZE = 40
+
+export function chunkItemsByZ(items, chunkSize = CHUNK_SIZE) {
+  if (!items?.length) return []
+  const map = new Map()
+  for (const it of items) {
+    const key = Math.floor(it.z / chunkSize)
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(it)
+  }
+  return [...map.entries()].map(([key, chunkItems]) => ({ key, items: chunkItems }))
 }
 
 /**
@@ -39,12 +72,13 @@ const FAR_KEEP = new Set(['pines', 'pineSnow', 'pineBases'])
 /**
  * Filtra props de vegetação por banda LOD relativa ao jogador.
  */
-export function filterVegetationZone(zone, px, pz) {
+export function filterVegetationZone(zone, px, pz, prevBands = null) {
   const keep = (items, category) => {
     if (!items?.length) return items
     return items.filter((it) => {
       const d = distanceToPlayer(it.x, it.z, px, pz)
-      const band = bandForDistance(d)
+      const prev = prevBands?.get(it) ?? null
+      const band = bandForDistance(d, prev)
       if (band === 'near') return true
       if (band === 'mid') return MID_KEEP.has(category)
       if (band === 'far') return FAR_KEEP.has(category)

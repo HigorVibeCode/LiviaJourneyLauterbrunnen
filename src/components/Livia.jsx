@@ -1,13 +1,13 @@
 import { useEffect, useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useKeyboardControls } from '@react-three/drei'
-import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier'
+import { RigidBody, CapsuleCollider, useRapier, useAfterPhysicsStep } from '@react-three/rapier'
 import * as THREE from 'three'
 import { usePlayerStore, INITIAL_SPAWN, updatePlayerPosition } from '../store/playerStore'
 import { useWaterfallStore } from '../store/waterfallStore'
 import { useGameStore } from '../store/gameStore'
 import { useProgressStore } from '../store/progressStore'
-import { CAM_RAY_GROUPS, PLAYER_GROUPS } from '../physics/groups'
+import { CAM_RAY_WORLD, PLAYER_GROUPS } from '../physics/groups'
 import { GUIDE_HOLD_SEC, GUIDE_MAX_CHARGE, GUIDE_RECHARGE_RATE, guideHand, guideInput } from '../lib/guideInput'
 import { getObjectiveTarget } from '../lib/objectiveTarget'
 import { phoenixRide } from '../lib/phoenixRide'
@@ -24,7 +24,7 @@ import {
 import { resolveWaterPush, WATER_COMPLAINTS } from '../lib/waterPush'
 import LiviaModel from './livia/LiviaModel'
 import { sfxFootstep, sfxJump, sfxLand, sfxComplaintSplash, surfaceAt } from '../audio/sfx'
-import { touchInput } from '../lib/touchInput'
+import { touchInput, detectMobile } from '../lib/touchInput'
 import { groundHeightAt, pathXAt } from '../config/world'
 import { LiviaLanternLight } from './LanternPickup'
 
@@ -40,24 +40,100 @@ const STUCK_SPEED = 0.55
 const STUCK_TIME = 0.38
 const UNSTUCK_NUDGE = 3.2
 const CAM_DIST = 8.6
-const CAM_MIN_DIST = 2.4
+const CAM_MIN_DIST = 2.6
 const LOOK_HEIGHT = 1.45
-const CAM_SKIN = 0.55
+/** Altura fixa do pivô acima do chão analítico — nunca segue bounce do capsule */
+const CAM_STAND_CLEAR = 0.92
+const CAM_SKIN = 0.65
 const CAM_PITCH_MIN = 0.12
 const CAM_PITCH_MAX = 1.15
 const CAM_MOUSE_SENS = 0.0022
+const CAM_TOUCH_SENS = 0.0028
+/** Correção lenta ao corpo — filtra jitter; a velocidade carrega o follow (sem lag ao strafear) */
+const CAM_FOLLOW_CORRECT = 5.5
+const CAM_FOLLOW_CORRECT_AIR = 14
+const CAM_DIST_PULL = 11
+const CAM_DIST_RELEASE = 2.2
+const CAM_ORBIT_SMOOTH = 22
+const CAM_OCCLUDE_HOLD = 5
+const CAM_OCCLUDE_CLEAR = 12
+const CAM_GROUND_NORMAL_Y = 0.62
+const HORSE_CAM_STAND_CLEAR = 1.35
+const HORSE_CAM_ORBIT_SMOOTH = 16
 const TURN_SPEED = 14
 const GUIDE_TURN_SPEED = 7
+/** No jogo o body.y assenta ≈ no chão analítico (não subtrair o fundo da capsule). */
+const standBodyY = (groundY) => groundY
 const complaintIdx = { i: 0 }
+
+function expSmooth(current, target, speed, dt) {
+  return lerp(current, target, 1 - Math.exp(-speed * dt))
+}
+
 /**
- * Suavização da câmera por segundo (fração restante após 1s).
- * Valores altos = câmera "arrastada": era 0.0015, o que só percorria ~10% da
- * distância por frame e fazia o andar parecer travado. 1e-9 dá ~28%/frame.
+ * Distância do spring-arm com histerese.
+ * Só entra em oclusão após N frames; só solta após M frames livres.
+ * Hits de chão (normal.y alta) são ignorados — eram a principal fonte de flicker.
  */
-const CAM_SMOOTH = 1e-9
-/** Com obstáculo no LOS: quase snap — evita ficar “presa” atrás da árvore no lerp */
-const CAM_OCCLUDE_SMOOTH = 1e-20
-const CAM_ZOOM_OUT_SMOOTH = 0.05
+function springArmWanted(world, rapier, body, camRay, idealDist, occlude) {
+  let rawHit = idealDist
+
+  if (typeof world.castRayAndGetNormal === 'function') {
+    const hit = world.castRayAndGetNormal(
+      camRay,
+      idealDist,
+      true,
+      rapier.QueryFilterFlags.EXCLUDE_SENSORS,
+      CAM_RAY_WORLD,
+      undefined,
+      body,
+    )
+    if (hit) {
+      const ny = typeof hit.normal?.y === 'number' ? hit.normal.y : 0
+      if (ny < CAM_GROUND_NORMAL_Y) {
+        const toi = hit.timeOfImpact ?? idealDist
+        rawHit = Math.max(CAM_MIN_DIST, toi - CAM_SKIN)
+      }
+    }
+  } else {
+    const toiHit = world.castRay(
+      camRay,
+      idealDist,
+      true,
+      rapier.QueryFilterFlags.EXCLUDE_SENSORS,
+      CAM_RAY_WORLD,
+      undefined,
+      body,
+    )
+    if (toiHit) {
+      rawHit = Math.max(CAM_MIN_DIST, toiHit.timeOfImpact - CAM_SKIN)
+    }
+  }
+
+  const occluded = rawHit < idealDist - 0.25
+  if (occluded) {
+    occlude.hitFrames += 1
+    occlude.clearFrames = 0
+    if (occlude.hitFrames >= CAM_OCCLUDE_HOLD) occlude.active = true
+    if (occlude.active) occlude.locked = rawHit
+  } else {
+    occlude.clearFrames += 1
+    occlude.hitFrames = 0
+    if (occlude.clearFrames >= CAM_OCCLUDE_CLEAR) {
+      occlude.active = false
+      occlude.locked = idealDist
+    }
+  }
+
+  return occlude.active ? occlude.locked : idealDist
+}
+
+function lerpAngle(a, b, t) {
+  let d = b - a
+  while (d > Math.PI) d -= Math.PI * 2
+  while (d < -Math.PI) d += Math.PI * 2
+  return a + d * t
+}
 
 function lerp(a, b, t) {
   return a + (b - a) * Math.min(1, Math.max(0, t))
@@ -82,8 +158,21 @@ export default function Livia() {
   const respawningRef = useRef(false)
   const camDistRef = useRef(CAM_DIST)
   const camDebugRef = useRef({ ideal: CAM_DIST, wanted: CAM_DIST, occluded: false })
+  const camPivot = useRef({
+    x: INITIAL_SPAWN.x,
+    y: groundHeightAt(INITIAL_SPAWN.x, INITIAL_SPAWN.z) + CAM_STAND_CLEAR + LOOK_HEIGHT,
+    z: INITIAL_SPAWN.z,
+  })
+  /** Histerese do spring arm — evita flicker quando o ray oscila em emendas */
+  const camOcclude = useRef({ hitFrames: 0, clearFrames: 0, locked: CAM_DIST, active: false })
+  /** Frames seguidos sem chão — só então a câmera passa a seguir o corpo no ar */
+  const camAirFrames = useRef(0)
+  const camQuat = useRef(new THREE.Quaternion())
+  const camQuatReady = useRef(false)
   /** Órbita da câmera: yaw 0 = atrás no +Z (visão inicial do mapa) */
   const camOrbit = useRef({ yaw: 0, pitch: 0.42 })
+  const camOrbitTarget = useRef({ yaw: 0, pitch: 0.42 })
+  const camMobileRef = useRef(typeof window !== 'undefined' ? detectMobile() : false)
   const prevPosRef = useRef({ x: INITIAL_SPAWN.x, z: INITIAL_SPAWN.z })
   const stuckTimerRef = useRef(0)
 
@@ -104,6 +193,9 @@ export default function Livia() {
   const camDesired = useMemo(() => new THREE.Vector3(), [])
   const camDir = useMemo(() => new THREE.Vector3(), [])
   const camTarget = useMemo(() => new THREE.Vector3(), [])
+  const camUp = useMemo(() => new THREE.Vector3(0, 1, 0), [])
+  const camRotMat = useMemo(() => new THREE.Matrix4(), [])
+  const camQuatTarget = useMemo(() => new THREE.Quaternion(), [])
   // raios reutilizados: criar 2 objetos novos por frame alimentava o GC
   const groundRay = useMemo(() => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 }), [rapier])
   const camRay = useMemo(() => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 }), [rapier])
@@ -181,13 +273,15 @@ export default function Livia() {
     const onMove = (e) => {
       if (document.pointerLockElement == null) return
       if (useGameStore.getState().paused) return
-      const o = camOrbit.current
+      const o = camOrbitTarget.current
       o.yaw -= e.movementX * CAM_MOUSE_SENS
       o.pitch = THREE.MathUtils.clamp(
         o.pitch + e.movementY * CAM_MOUSE_SENS,
         CAM_PITCH_MIN,
         CAM_PITCH_MAX,
       )
+      camOrbit.current.yaw = o.yaw
+      camOrbit.current.pitch = o.pitch
     }
     const onPause = () => {
       if (useGameStore.getState().paused && document.pointerLockElement) {
@@ -201,6 +295,70 @@ export default function Livia() {
       window.removeEventListener('click', onClick)
       window.removeEventListener('mousemove', onMove)
       unsub()
+    }
+  }, [])
+
+  // Mobile: arrastar o dedo no canvas gira a câmera (sem pointer lock)
+  useEffect(() => {
+    if (!detectMobile()) return undefined
+
+    let lookId = null
+    let lastX = 0
+    let lastY = 0
+
+    const isCanvas = (el) => el?.tagName === 'CANVAS'
+
+    const applyLook = (dx, dy) => {
+      const o = camOrbitTarget.current
+      o.yaw -= dx * CAM_TOUCH_SENS
+      o.pitch = THREE.MathUtils.clamp(
+        o.pitch + dy * CAM_TOUCH_SENS,
+        CAM_PITCH_MIN,
+        CAM_PITCH_MAX,
+      )
+    }
+
+    const onTouchStart = (e) => {
+      if (useGameStore.getState().paused) return
+      if (lookId != null) return
+      for (const t of e.changedTouches) {
+        const el = document.elementFromPoint(t.clientX, t.clientY)
+        if (!isCanvas(el)) continue
+        lookId = t.identifier
+        lastX = t.clientX
+        lastY = t.clientY
+        break
+      }
+    }
+
+    const onTouchMove = (e) => {
+      if (lookId == null) return
+      const t = [...e.touches].find((x) => x.identifier === lookId)
+      if (!t) return
+      e.preventDefault()
+      const dx = t.clientX - lastX
+      const dy = t.clientY - lastY
+      lastX = t.clientX
+      lastY = t.clientY
+      if (Math.abs(dx) + Math.abs(dy) < 2) return
+      applyLook(dx, dy)
+    }
+
+    const clearLook = (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === lookId) lookId = null
+      }
+    }
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
+    window.addEventListener('touchend', clearLook)
+    window.addEventListener('touchcancel', clearLook)
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', clearLook)
+      window.removeEventListener('touchcancel', clearLook)
     }
   }, [])
 
@@ -410,25 +568,47 @@ export default function Livia() {
       animState.current.grounded = true
       animState.current.jumping = false
 
-      const { yaw: camYaw, pitch } = camOrbit.current
+      const orbitTarget = camOrbitTarget.current
+      const orbit = camOrbit.current
+      if (camMobileRef.current) {
+        const orbitT = 1 - Math.exp(-HORSE_CAM_ORBIT_SMOOTH * dt)
+        orbit.yaw = lerpAngle(orbit.yaw, orbitTarget.yaw, orbitT)
+        orbit.pitch = expSmooth(orbit.pitch, orbitTarget.pitch, HORSE_CAM_ORBIT_SMOOTH, dt)
+      } else {
+        orbit.yaw = orbitTarget.yaw
+        orbit.pitch = orbitTarget.pitch
+      }
+
+      const { yaw: camYaw, pitch } = orbit
       const cosP = Math.cos(pitch)
-      camLook.set(seatX, hy + LOOK_HEIGHT + 0.35 + horseRide.bobY, seatZ)
-      camDesired.set(
-        seatX + Math.sin(camYaw) * cosP * HORSE_CAM_DIST,
-        hy + LOOK_HEIGHT + 0.35 + Math.sin(pitch) * HORSE_CAM_DIST,
-        seatZ + Math.cos(camYaw) * cosP * HORSE_CAM_DIST,
+      // Cavalo já é cinemático — follow suave no assento, Y no chão (sem bob)
+      camPivot.current.x = expSmooth(camPivot.current.x, seatX, 14, dt)
+      camPivot.current.z = expSmooth(camPivot.current.z, seatZ, 14, dt)
+      camPivot.current.y =
+        groundHeightAt(camPivot.current.x, camPivot.current.z) + HORSE_CAM_STAND_CLEAR + LOOK_HEIGHT
+
+      camLook.set(camPivot.current.x, camPivot.current.y, camPivot.current.z)
+      camDistRef.current = expSmooth(camDistRef.current, HORSE_CAM_DIST, 4, dt)
+      const dist = camDistRef.current
+
+      state.camera.position.set(
+        camLook.x + Math.sin(camYaw) * cosP * dist,
+        camLook.y + Math.sin(pitch) * dist,
+        camLook.z + Math.cos(camYaw) * cosP * dist,
       )
-      state.camera.position.lerp(camDesired, 1 - Math.pow(CAM_SMOOTH, dt))
       state.camera.lookAt(camLook)
+      camQuat.current.copy(state.camera.quaternion)
+      camQuatReady.current = true
       void jump
       return
     }
 
     if (animState.current.riding) {
       body.setGravityScale(1)
+      // só limpa o sink da sela ao desmontar (não zerar offset anti-bounce do chão)
+      if (modelRef.current) modelRef.current.position.y = 0
     }
     animState.current.riding = false
-    if (modelRef.current) modelRef.current.position.y = 0
 
     // vaca alpina: arrasta a Livia no chão, aos trancos (cômico)
     if (cowChase.dragging && !inFinale) {
@@ -502,89 +682,6 @@ export default function Livia() {
       return
     }
 
-    // ── Câmera orbital (mouse) + occlusion ──
-    const { yaw, pitch } = camOrbit.current
-    const cosP = Math.cos(pitch)
-    camLook.set(pos.x, pos.y + LOOK_HEIGHT, pos.z)
-    camDesired.set(
-      pos.x + Math.sin(yaw) * cosP * CAM_DIST,
-      pos.y + LOOK_HEIGHT + Math.sin(pitch) * CAM_DIST,
-      pos.z + Math.cos(yaw) * cosP * CAM_DIST,
-    )
-    camDir.copy(camDesired).sub(camLook)
-    const idealDist = camDir.length()
-    camDir.normalize()
-
-    camRay.origin.x = camLook.x
-    camRay.origin.y = camLook.y
-    camRay.origin.z = camLook.z
-    camRay.dir.x = camDir.x
-    camRay.dir.y = camDir.y
-    camRay.dir.z = camDir.z
-    const camHit = world.castRay(
-      camRay,
-      idealDist,
-      true,
-      rapier.QueryFilterFlags.EXCLUDE_SENSORS,
-      CAM_RAY_GROUPS,
-      undefined,
-      body,
-    )
-    let wanted = camHit
-      ? Math.max(CAM_MIN_DIST, camHit.timeOfImpact - CAM_SKIN)
-      : idealDist
-
-    // LOS atual: se o lerp deixou a câmera atrás de um obstáculo, puxa na hora
-    let stranded = false
-    const curDist = state.camera.position.distanceTo(camLook)
-    if (curDist > CAM_MIN_DIST + 0.05) {
-      const dx = (state.camera.position.x - camLook.x) / curDist
-      const dy = (state.camera.position.y - camLook.y) / curDist
-      const dz = (state.camera.position.z - camLook.z) / curDist
-      camRay.dir.x = dx
-      camRay.dir.y = dy
-      camRay.dir.z = dz
-      const losHit = world.castRay(
-        camRay,
-        curDist,
-        true,
-        rapier.QueryFilterFlags.EXCLUDE_SENSORS,
-        CAM_RAY_GROUPS,
-        undefined,
-        body,
-      )
-      if (losHit && losHit.timeOfImpact < curDist - 0.2) {
-        const pull = Math.max(CAM_MIN_DIST, losHit.timeOfImpact - CAM_SKIN)
-        state.camera.position.set(
-          camLook.x + dx * pull,
-          camLook.y + dy * pull,
-          camLook.z + dz * pull,
-        )
-        wanted = Math.min(wanted, pull)
-        stranded = true
-      }
-      // restaura direção do braço ideal da câmera
-      camRay.dir.x = camDir.x
-      camRay.dir.y = camDir.y
-      camRay.dir.z = camDir.z
-    }
-
-    const occluded = stranded || wanted < idealDist - 0.12
-    // aproxima rápido (evita clipping), afasta devagar (evita "pulo" de câmera)
-    camDistRef.current =
-      wanted < camDistRef.current
-        ? wanted
-        : lerp(camDistRef.current, wanted, 1 - Math.pow(CAM_ZOOM_OUT_SMOOTH, dt))
-
-    camDebugRef.current.ideal = idealDist
-    camDebugRef.current.wanted = camDistRef.current
-    camDebugRef.current.occluded = occluded
-
-    camTarget.copy(camLook).addScaledVector(camDir, camDistRef.current)
-    const camFollow = occluded ? CAM_OCCLUDE_SMOOTH : CAM_SMOOTH
-    state.camera.position.lerp(camTarget, 1 - Math.pow(camFollow, dt))
-    state.camera.lookAt(camLook)
-
     if (paused) {
       body.setLinvel({ x: 0, y: 0, z: 0 }, true)
       animState.current.paused = true
@@ -594,6 +691,27 @@ export default function Livia() {
       guideInput.holdTime = 0
       guideHand.active = false
       eWasDown.current = false
+      // câmera congelada no follow atual (ainda responde ao mouse)
+      {
+        const o = camOrbitTarget.current
+        const orbit = camOrbit.current
+        if (camMobileRef.current) {
+          orbit.yaw = lerpAngle(orbit.yaw, o.yaw, 1 - Math.exp(-CAM_ORBIT_SMOOTH * dt))
+          orbit.pitch = expSmooth(orbit.pitch, o.pitch, CAM_ORBIT_SMOOTH, dt)
+        } else {
+          orbit.yaw = o.yaw
+          orbit.pitch = o.pitch
+        }
+        const cosP = Math.cos(orbit.pitch)
+        const dist = camDistRef.current
+        camLook.set(camPivot.current.x, camPivot.current.y, camPivot.current.z)
+        state.camera.position.set(
+          camLook.x + Math.sin(orbit.yaw) * cosP * dist,
+          camLook.y + Math.sin(orbit.pitch) * dist,
+          camLook.z + Math.cos(orbit.yaw) * cosP * dist,
+        )
+        state.camera.lookAt(camLook)
+      }
       return
     }
     animState.current.paused = false
@@ -738,6 +856,17 @@ export default function Livia() {
       sfxJump()
     }
 
+    // No chão: sem gravidade + vy=0. NÃO setTranslation aqui —
+    // a física do Rapier corre DEPOIS deste useFrame(-1) e desfazia o snap (bounce).
+    const sticking =
+      groundedRef.current && jumpTimerRef.current === 0 && !field && nextY <= JUMP_FORCE * 0.5
+    if (sticking) {
+      nextY = 0
+      body.setGravityScale(0)
+    } else if (!horseRide.mounted) {
+      body.setGravityScale(1)
+    }
+
     body.setLinvel({ x: nextX, y: nextY, z: nextZ }, true)
 
     // ── Anti-stuck: input forte + quase parado no chão → empurra pra trilha ──
@@ -864,11 +993,125 @@ export default function Livia() {
       }
     }
 
+    // ── Câmera: follow por velocidade (fluido ao strafear) + lookAt direto ──
+    // Mouse já é fluido; o problema era pivô+pos+slerp a lutar com o jitter do capsule.
+    {
+      const orbitTarget = camOrbitTarget.current
+      const orbit = camOrbit.current
+      if (camMobileRef.current) {
+        const orbitT = 1 - Math.exp(-CAM_ORBIT_SMOOTH * dt)
+        orbit.yaw = lerpAngle(orbit.yaw, orbitTarget.yaw, orbitT)
+        orbit.pitch = expSmooth(orbit.pitch, orbitTarget.pitch, CAM_ORBIT_SMOOTH, dt)
+      } else {
+        orbit.yaw = orbitTarget.yaw
+        orbit.pitch = orbitTarget.pitch
+      }
+
+      const { yaw, pitch } = orbit
+      const cosP = Math.cos(pitch)
+      const walkSpeed = Math.hypot(nextX, nextZ)
+
+      const jumping = jumpTimerRef.current > 0
+      if (jumping || (!groundedRef.current && nextY < -1.2)) {
+        camAirFrames.current += 1
+      } else if (groundedRef.current || walkSpeed > 0.15) {
+        camAirFrames.current = 0
+      }
+      const airborne = jumping || camAirFrames.current > 10
+
+      if (!airborne) {
+        // Integra a velocidade desejada (suave) e corrige devagar ao corpo (rejeita bounce)
+        camPivot.current.x += nextX * dt
+        camPivot.current.z += nextZ * dt
+        const corr = 1 - Math.exp(-CAM_FOLLOW_CORRECT * dt)
+        camPivot.current.x += (pos.x - camPivot.current.x) * corr
+        camPivot.current.z += (pos.z - camPivot.current.z) * corr
+        camPivot.current.y =
+          groundHeightAt(camPivot.current.x, camPivot.current.z) + CAM_STAND_CLEAR + LOOK_HEIGHT
+      } else {
+        const corr = 1 - Math.exp(-CAM_FOLLOW_CORRECT_AIR * dt)
+        camPivot.current.x += (pos.x - camPivot.current.x) * corr
+        camPivot.current.z += (pos.z - camPivot.current.z) * corr
+        camPivot.current.y = expSmooth(camPivot.current.y, pos.y + LOOK_HEIGHT, 8, dt)
+      }
+
+      camLook.set(camPivot.current.x, camPivot.current.y, camPivot.current.z)
+
+      // Distância: ao mover no chão fica em CAM_DIST; parado pode aproximar de paredes
+      let dist = camDistRef.current
+      if (!airborne && walkSpeed > 0.2) {
+        dist = expSmooth(dist, CAM_DIST, 3.5, dt)
+        camDistRef.current = dist
+        camOcclude.current.active = false
+        camOcclude.current.locked = CAM_DIST
+      } else {
+        camDesired.set(
+          camLook.x + Math.sin(yaw) * cosP * CAM_DIST,
+          camLook.y + Math.sin(pitch) * CAM_DIST,
+          camLook.z + Math.cos(yaw) * cosP * CAM_DIST,
+        )
+        camDir.copy(camDesired).sub(camLook)
+        const idealDist = camDir.length()
+        camDir.normalize()
+        camRay.origin.x = camLook.x
+        camRay.origin.y = camLook.y + 0.35
+        camRay.origin.z = camLook.z
+        camRay.dir.x = camDir.x
+        camRay.dir.y = camDir.y
+        camRay.dir.z = camDir.z
+        const wanted = springArmWanted(world, rapier, body, camRay, idealDist, camOcclude.current)
+        dist = expSmooth(camDistRef.current, wanted, wanted < dist ? CAM_DIST_PULL : CAM_DIST_RELEASE, dt)
+        camDistRef.current = dist
+      }
+
+      camDebugRef.current.ideal = CAM_DIST
+      camDebugRef.current.wanted = dist
+      camDebugRef.current.occluded = camOcclude.current.active
+
+      // Igual ao mouse: posição ideal exata + lookAt direto (sem slerp)
+      state.camera.position.set(
+        camLook.x + Math.sin(yaw) * cosP * dist,
+        camLook.y + Math.sin(pitch) * dist,
+        camLook.z + Math.cos(yaw) * cosP * dist,
+      )
+      state.camera.lookAt(camLook)
+      camQuat.current.copy(state.camera.quaternion)
+      camQuatReady.current = true
+    }
+
     // ── Estado para o mixer de animação ──
     animState.current.speed = Math.hypot(nextX, nextZ)
     animState.current.grounded = groundedRef.current
     animState.current.jumping = jumpTimerRef.current > 0
   }, -1)
+
+  /**
+   * Depois do step do Rapier (NÃO useFrame priority>0 — isso desliga o auto-render do R3F
+   * e deixa a tela azul/#87a8c0). Trava Y no chão antes do sync do mesh.
+   */
+  useAfterPhysicsStep(() => {
+    const body = bodyRef.current
+    if (!body) return
+    if (horseRide.mounted || cowChase.dragging) return
+    if (jumpTimerRef.current > 0) {
+      if (modelRef.current) modelRef.current.position.y = 0
+      return
+    }
+    if (!groundedRef.current) {
+      if (modelRef.current) modelRef.current.position.y = 0
+      return
+    }
+
+    const p = body.translation()
+    const gY = standBodyY(groundHeightAt(p.x, p.z))
+    if (p.y > gY + 0.85 || p.y < gY - 0.35) return
+    if (useWaterfallStore.getState().getActiveFieldAt(p)) return
+
+    const v = body.linvel()
+    body.setLinvel({ x: v.x, y: 0, z: v.z }, true)
+    body.setTranslation({ x: p.x, y: gY, z: p.z }, true)
+    if (modelRef.current) modelRef.current.position.y = 0
+  })
 
   return (
     <RigidBody

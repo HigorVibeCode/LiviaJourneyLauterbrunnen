@@ -131,7 +131,7 @@ export default function LiviaRig({ stateRef }) {
 
     if (currentRef.current === 'sit') {
       // volta do assento: restaura quadril antes do idle/walk
-      if (hips) hips.position.set(0, 0.84, 0)
+      if (hips) hips.position.set(0, 0.82, 0)
       currentRef.current = 'idle'
       if (actions.idle) {
         actions.idle.reset().fadeIn(0.12).play()
@@ -156,6 +156,9 @@ export default function LiviaRig({ stateRef }) {
 
     mixer.update(Math.min(delta, 0.05))
 
+    // Trava altura do quadril — clips/blend não podem mexer em Y (parecia “pulo”)
+    if (hips) hips.position.y = 0.82
+
     if (s.guiding) {
       if (armR) armR.rotation.set(-2.15, 0.12, 0.42)
       if (foreR) foreR.rotation.set(-0.35, 0.1, 0)
@@ -164,7 +167,7 @@ export default function LiviaRig({ stateRef }) {
 
   return (
     <group ref={root}>
-      <group name="Hips" position={[0, 0.84, 0]}>
+      <group name="Hips" position={[0, 0.82, 0]}>
         {[1, -1].map((side) => (
           <group key={side} name={side > 0 ? 'LegR' : 'LegL'} position={[side * 0.11, 0, 0]}>
             <mesh castShadow position={[0, -0.16, 0]}>

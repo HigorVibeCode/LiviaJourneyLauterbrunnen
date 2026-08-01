@@ -11,5 +11,7 @@ export const GROUP_CAMERA_OCCLUDER = 1
 export const PLAYER_GROUPS = interactionGroups(GROUP_WORLD, [GROUP_WORLD])
 export const CAMERA_OCCLUDER_COLLISION = interactionGroups(GROUP_CAMERA_OCCLUDER, [GROUP_WORLD])
 export const CAMERA_OCCLUDER_SOLVER = interactionGroups(GROUP_CAMERA_OCCLUDER, [])
-/** Ray da câmera: sólidos do mundo + volumes de oclusão */
+/** Ray da câmera: só sólidos do mundo (sem volumes de oclusão de copas — evitam flicker) */
+export const CAM_RAY_WORLD = interactionGroups(GROUP_WORLD, [GROUP_WORLD])
+/** @deprecated prefer CAM_RAY_WORLD — inclui occluders grandes que oscilam nas bordas */
 export const CAM_RAY_GROUPS = interactionGroups(GROUP_WORLD, [GROUP_WORLD, GROUP_CAMERA_OCCLUDER])
