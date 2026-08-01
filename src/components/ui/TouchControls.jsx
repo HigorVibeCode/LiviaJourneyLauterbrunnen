@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { touchInput, detectMobile } from '../../lib/touchInput'
 import { useGameStore } from '../../store/gameStore'
+import { resumeAudio } from '../../audio/engine'
 
 const JOY_RADIUS = 52
 
@@ -67,6 +68,7 @@ export default function TouchControls() {
   const onJoyStart = (e) => {
     e.preventDefault()
     e.stopPropagation()
+    void resumeAudio()
     const t = e.changedTouches?.[0]
     if (!t || !baseRef.current) return
     const rect = baseRef.current.getBoundingClientRect()
@@ -100,6 +102,7 @@ export default function TouchControls() {
     onTouchStart: (e) => {
       e.preventDefault()
       e.stopPropagation()
+      void resumeAudio()
       touchInput[key] = true
     },
     onTouchEnd: (e) => {

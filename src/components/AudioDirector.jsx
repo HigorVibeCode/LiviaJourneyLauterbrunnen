@@ -29,14 +29,34 @@ const TICK_MS = 500
 export default function AudioDirector() {
   const audio = useGameStore((s) => s.audio)
 
-  // primeiro clique/tecla libera o áudio
+  // Mobile/iOS: só destrava com gesto; mantém listeners até running
   useEffect(() => {
-    const unlock = () => resumeAudio()
-    window.addEventListener('pointerdown', unlock)
-    window.addEventListener('keydown', unlock)
+    let done = false
+    const unlock = () => {
+      if (done) return
+      void resumeAudio().then((ok) => {
+        if (!ok) return
+        done = true
+        window.removeEventListener('pointerdown', unlock, true)
+        window.removeEventListener('touchstart', unlock, true)
+        window.removeEventListener('keydown', unlock, true)
+      })
+    }
+    window.addEventListener('pointerdown', unlock, true)
+    window.addEventListener('touchstart', unlock, true)
+    window.addEventListener('keydown', unlock, true)
+
+    // iOS suspende o contexto ao mandar o separador para segundo plano
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void resumeAudio()
+    }
+    document.addEventListener('visibilitychange', onVis)
+
     return () => {
-      window.removeEventListener('pointerdown', unlock)
-      window.removeEventListener('keydown', unlock)
+      window.removeEventListener('pointerdown', unlock, true)
+      window.removeEventListener('touchstart', unlock, true)
+      window.removeEventListener('keydown', unlock, true)
+      document.removeEventListener('visibilitychange', onVis)
     }
   }, [])
 

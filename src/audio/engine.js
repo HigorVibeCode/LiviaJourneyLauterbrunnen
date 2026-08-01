@@ -3,8 +3,8 @@
  * Tudo é gerado na hora (osciladores + ruído filtrado), o que mantém o
  * bundle leve e o estilo "console antigo" discreto que combina com o jogo.
  *
- * O AudioContext só nasce (e só toca) depois do primeiro gesto do usuário,
- * como os navegadores exigem.
+ * O AudioContext só deve ser criado/resumido dentro de um gesto do usuário
+ * (iOS/Android bloqueiam autoplay).
  */
 let ctx = null
 let master = null
@@ -29,10 +29,35 @@ export function getMaster() {
   return master
 }
 
-/** chamada no primeiro clique/tecla para destravar o áudio */
-export function resumeAudio() {
+/**
+ * Destrava o áudio. Tem de correr no stack de um toque/clique/tecla.
+ * No iOS, além do resume(), um buffer silencioso ajuda a “armar” o contexto.
+ */
+export async function resumeAudio() {
   const c = getCtx()
-  if (c.state === 'suspended') c.resume()
+  if (c.state === 'suspended' || c.state === 'interrupted') {
+    try {
+      await c.resume()
+    } catch {
+      /* gesto inválido / política do browser */
+    }
+  }
+  // Kick silencioso — Safari iOS às vezes fica "running" sem emitir som
+  if (c.state === 'running') {
+    try {
+      const buf = c.createBuffer(1, 1, c.sampleRate)
+      const src = c.createBufferSource()
+      src.buffer = buf
+      src.connect(c.destination)
+      src.start(0)
+    } catch {
+      /* ignore */
+    }
+  }
+  if (master) {
+    master.gain.setTargetAtTime(muted ? 0 : MASTER_VOLUME, c.currentTime, 0.04)
+  }
+  return c.state === 'running'
 }
 
 export function audioRunning() {

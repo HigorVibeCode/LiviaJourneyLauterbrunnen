@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { INTRO_LINES, STORY_TITLE } from '../../config/story'
+import { resumeAudio } from '../../audio/engine'
 
 /**
  * Três painéis narrativos após o loading — antes do controle da Livia.
@@ -10,6 +11,8 @@ export default function IntroOverlay({ onDone }) {
   const last = step >= INTRO_LINES.length - 1
 
   const advance = useCallback(() => {
+    // Toque em "Continuar" / "Começar" = gesto válido para o AudioContext (iOS)
+    void resumeAudio()
     if (last) onDone()
     else setStep((s) => s + 1)
   }, [last, onDone])

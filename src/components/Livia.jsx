@@ -503,7 +503,11 @@ export default function Livia() {
         horseGuideWarnRef.current = false
       }
 
-      const { forward, back, left, right, run, jump } = keys
+      const forward = keys.forward || touchInput.forward
+      const back = keys.back || touchInput.back
+      const left = keys.left || touchInput.left
+      const right = keys.right || touchInput.right
+      const run = keys.run || touchInput.run
       let inputX = 0
       let inputZ = 0
       if (forward) inputZ -= 1
@@ -592,7 +596,6 @@ export default function Livia() {
       state.camera.lookAt(camLook)
       camQuat.current.copy(state.camera.quaternion)
       camQuatReady.current = true
-      void jump
       return
     }
 
