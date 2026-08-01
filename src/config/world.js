@@ -23,7 +23,7 @@ export const CLIFF_OFFSET = 48
 export const CLIFF_X = CLIFF_OFFSET
 export const CLIFF_HEIGHT = 88
 /** Passo dos segmentos de penhasco (maior = mais barato; ainda segue a S) */
-export const CLIFF_STEP = 100
+export const CLIFF_STEP = 56
 
 /** Extensão Z do pasto (pradaria ≈ 100 → pasto ≥ 3×) */
 export const PASTURE_LEN = 300
@@ -200,6 +200,9 @@ export const PHASES = {
 }
 
 export const PHASE_ORDER = ['meadow', 'pasture', 'night', 'water', 'snow', 'flower', 'summit']
+
+/** Frases curtas de capítulo (HUD) — uma por bioma */
+export { CHAPTER_STORY as CHAPTER_LINES } from './story.js'
 
 /**
  * Zonas de scatter. `mult` afina densidade (mirante ralo = vista livre).
@@ -410,12 +413,12 @@ export const HOUSES = [
   { lat: 28, z: -490, rot: -0.25, scale: 0.85, kind: 'cabin', body: '#2a2430', roof: '#121018' },
 
   // ── Vale das águas (igreja um pouco à esquerda da trilha) ──
-  { lat: -20, z: -550, rot: 0.05, scale: 1.1, kind: 'church', body: '#e8e2d4', roof: '#4a5560' },
-  { lat: 28, z: -540, rot: -0.25, scale: 1, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
-  { lat: -32, z: -538, rot: 0.3, scale: 1.05, kind: 'chalet', body: '#4a3220', roof: '#7a3820' },
-  { lat: 30, z: -580, rot: -0.4, scale: 0.95, kind: 'barn', body: '#4a3220', roof: '#7a3820' },
-  { lat: -30, z: -610, rot: 0.35, scale: 0.9, kind: 'chalet', body: '#5c3a24', roof: '#8a4028' },
-  { lat: 26, z: -630, rot: -0.2, scale: 1, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
+  { lat: -14, z: -550, rot: 0.05, scale: 1.1, kind: 'church', body: '#e8e2d4', roof: '#4a5560' },
+  { lat: 18, z: -540, rot: -0.25, scale: 1, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
+  { lat: -18, z: -538, rot: 0.3, scale: 1.05, kind: 'chalet', body: '#4a3220', roof: '#7a3820' },
+  { lat: 20, z: -580, rot: -0.4, scale: 0.95, kind: 'barn', body: '#4a3220', roof: '#7a3820' },
+  { lat: -16, z: -610, rot: 0.35, scale: 0.9, kind: 'chalet', body: '#5c3a24', roof: '#8a4028' },
+  { lat: 16, z: -630, rot: -0.2, scale: 1, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
 
   // ── Passo nevado ──
   { lat: -30, z: -676, rot: 0.25, scale: 0.95, kind: 'cabin', body: '#6b4a32', roof: '#e8eef4' },

@@ -1,4 +1,12 @@
 import { create } from 'zustand'
+import {
+  EGG_LORE,
+  FINALE_TOAST,
+  FINISH_TOAST,
+  ITEM_LORE,
+  LANTERN_TOAST,
+  UNLOCK_TOASTS,
+} from '../config/story.js'
 
 /**
  * `consumable: true` = o item é gasto ao abrir o portão (chave, ferramenta,
@@ -67,40 +75,40 @@ export const QUESTS = [
     phase: 'meadow',
     gateId: 'gate_pasture',
     itemIds: ['chave_portao', 'capa_chuva'],
-    hint: 'Explore a pradaria: encontre a Chave do Portão e a Capa de Chuva',
+    hint: 'Primeiro rito: encontre a Chave do Portão e a Capa de Chuva na pradaria.',
     nearGateHint: 'Portão trancado. Faltam a Chave do Portão e a Capa de Chuva',
-    interactHint: 'Pressione E para abrir o portão do pasto',
-    unlockedHint: 'Portão aberto! Monte o cavalo e atravesse o pasto',
+    interactHint: 'Pressione E para cumprir o primeiro rito — abrir o pasto',
+    unlockedHint: UNLOCK_TOASTS.gate_pasture,
   },
   {
     id: 'q_night',
     phase: 'night',
     gateId: 'gate_water',
     itemIds: ['fungo_brilho', 'pena_coruja'],
-    hint: 'No Vale Noturno: encontre o Fungo Brilhante e a Pena de Coruja',
+    hint: 'Vale Noturno: lampião, fale com o Guarda (fungo) e ache a Pena de Coruja.',
     nearGateHint: 'Portão trancado. Faltam o Fungo Brilhante e a Pena de Coruja',
     interactHint: 'Pressione E para abrir o caminho ao Vale das Águas',
-    unlockedHint: 'A noite cede! O Vale das Águas te espera',
+    unlockedHint: UNLOCK_TOASTS.gate_water,
   },
   {
     id: 'q2',
     phase: 'water',
     gateId: 'gate_snow',
     itemIds: ['ferramenta', 'casaco'],
-    hint: 'No Vale das Águas: encontre a Ferramenta do Carpinteiro e o Casaco de Pele',
+    hint: 'Vale das Águas: fale com o Guardião da Ponte e ache o Casaco de Pele.',
     nearGateHint: 'Passagem fechada. Faltam a Ferramenta do Carpinteiro e o Casaco de Pele',
     interactHint: 'Pressione E para abrir a passagem para a neve',
-    unlockedHint: 'Passagem aberta! Cuidado com o Passo Nevado',
+    unlockedHint: UNLOCK_TOASTS.gate_snow,
   },
   {
     id: 'q3',
     phase: 'snow',
     gateId: 'gate_summit',
     itemIds: ['cristal', 'binoculo'],
-    hint: 'No Passo Nevado: encontre o Cristal da Cachoeira e o Binóculo',
+    hint: 'Passo Nevado: fale com o Guia da Neve e ache o Binóculo.',
     nearGateHint: 'Portão de gelo trancado. Faltam o Cristal da Cachoeira e o Binóculo',
     interactHint: 'Pressione E para abrir o Prado Florido',
-    unlockedHint: 'Prado Florido aberto! Respira fundo — a escadaria vem depois',
+    unlockedHint: UNLOCK_TOASTS.gate_summit,
   },
 ]
 
@@ -119,9 +127,14 @@ export const useProgressStore = create((set, get) => ({
   unlockedGates: [],
   toast: null,
   nearGateId: null,
+  nearNpcId: null,
+  /** NPC já falou (primeiro E = diálogo, segundo = item) */
+  npcSpoke: {},
   /** Onde cada item nasceu nesta sessão — usado pela guia (segurar E) */
   itemPositions: {},
   finished: false,
+  hasLantern: false,
+  foundEggs: [],
   /**
    * Sequência final: pickup (pegar tesouro) → mount (fênix chega) →
    * fly (voo ao céu) → done (tela de vitória).
@@ -141,6 +154,30 @@ export const useProgressStore = create((set, get) => ({
     return QUESTS.find((q) => !unlockedGates.includes(q.gateId)) ?? null
   },
 
+  collectLantern: () => {
+    if (get().hasLantern) return
+    set({
+      hasLantern: true,
+      toast: LANTERN_TOAST,
+    })
+    setTimeout(() => {
+      if (get().toast === LANTERN_TOAST) set({ toast: null })
+    }, 3500)
+  },
+
+  findEgg: (eggId) => {
+    const { foundEggs } = get()
+    if (foundEggs.includes(eggId)) return
+    const lore = EGG_LORE[eggId] ?? '✨ Segredo encontrado!'
+    set({
+      foundEggs: [...foundEggs, eggId],
+      toast: lore,
+    })
+    setTimeout(() => {
+      if (get().toast === lore) set({ toast: null })
+    }, 3200)
+  },
+
   collectItem: (itemId) => {
     const { inventory } = get()
     if (inventory.includes(itemId)) return
@@ -151,6 +188,9 @@ export const useProgressStore = create((set, get) => ({
     const missing = missingItems(quest, next)
 
     let toast = item?.pickupHint ?? 'Item coletado!'
+    const lore = ITEM_LORE[itemId]
+    if (lore) toast = `${toast} ${lore}`
+
     if (quest) {
       toast = missing.length
         ? `${toast} Falta ainda: ${missing.map((id) => ITEMS[id].name).join(' e ')}.`
@@ -161,7 +201,6 @@ export const useProgressStore = create((set, get) => ({
       inventory: next,
       collectedEver: [...get().collectedEver, itemId],
       toast,
-      // dispara a comemoração (pulinho da Livia + explosão de brilho)
       lastPickupAt: Date.now(),
     })
     setTimeout(() => {
@@ -169,11 +208,6 @@ export const useProgressStore = create((set, get) => ({
     }, 4500)
   },
 
-  /**
-   * Abre o portão só quando os DOIS itens estão no inventário.
-   * Itens consumíveis (chave, ferramenta, cristal) são gastos na hora;
-   * roupas e binóculo continuam com a Livia.
-   */
   tryUnlockGate: (gateId) => {
     const { inventory, unlockedGates } = get()
     if (unlockedGates.includes(gateId)) return false
@@ -185,15 +219,17 @@ export const useProgressStore = create((set, get) => ({
       (id) => !(quest.itemIds.includes(id) && ITEMS[id]?.consumable),
     )
 
+    const toast = quest.unlockedHint
+
     set({
       inventory: remaining,
       unlockedGates: [...unlockedGates, gateId],
-      toast: quest.unlockedHint,
+      toast,
       nearGateId: null,
     })
 
     setTimeout(() => {
-      if (get().toast === quest.unlockedHint) set({ toast: null })
+      if (get().toast === toast) set({ toast: null })
     }, 4000)
 
     return true
@@ -201,16 +237,20 @@ export const useProgressStore = create((set, get) => ({
 
   setNearGate: (gateId) => set({ nearGateId: gateId }),
 
-  /** Dispara a cutscene do mirante (baú → fênix → céu) */
+  setNearNpc: (npcId) => set({ nearNpcId: npcId }),
+
+  markNpcSpoke: (npcId) =>
+    set((s) => ({ npcSpoke: { ...s.npcSpoke, [npcId]: true } })),
+
   startFinale: () => {
     if (get().finalePhase || get().finished) return
     set({
       finalePhase: 'pickup',
       finaleStartedAt: performance.now(),
-      toast: 'Livia encontrou o tesouro alpino!',
+      toast: FINALE_TOAST,
     })
     setTimeout(() => {
-      if (get().toast === 'Livia encontrou o tesouro alpino!') set({ toast: null })
+      if (get().toast === FINALE_TOAST) set({ toast: null })
     }, 3500)
   },
 
@@ -218,10 +258,9 @@ export const useProgressStore = create((set, get) => ({
 
   finish: () => {
     if (get().finished) return
-    const message = 'Fim da jornada de Livia.'
-    set({ finished: true, finalePhase: 'done', toast: message })
+    set({ finished: true, finalePhase: 'done', toast: FINISH_TOAST })
     setTimeout(() => {
-      if (get().toast === message) set({ toast: null })
+      if (get().toast === FINISH_TOAST) set({ toast: null })
     }, 8000)
   },
 }))

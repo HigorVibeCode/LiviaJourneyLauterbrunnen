@@ -5,8 +5,8 @@ import { getObjectiveTarget } from '../lib/objectiveTarget'
 import { guideHand } from '../lib/guideInput'
 
 const Y_UP = new THREE.Vector3(0, 1, 0)
-const MAX_BEAM_LEN = 3.8
-/** Perto (<20 m): fraco; longe: brilho cheio */
+const MAX_BEAM_LEN = 12
+/** Perto (<20 m): mais fraco, mas nunca abaixo de 0.45 */
 const FAINT_BELOW = 20
 const tmpStart = new THREE.Vector3()
 const tmpEnd = new THREE.Vector3()
@@ -22,7 +22,7 @@ function approach(current, target, step) {
 function strengthForDistance(dist) {
   if (dist >= FAINT_BELOW) return 1
   const t = dist / FAINT_BELOW
-  return 0.16 + t * 0.14
+  return 0.45 + t * 0.55
 }
 
 /**
@@ -30,6 +30,9 @@ function strengthForDistance(dist) {
  */
 export default function GuideBeacon() {
   const rootRef = useRef(null)
+  const targetRef = useRef(null)
+  const targetRingRef = useRef(null)
+  const targetConeRef = useRef(null)
   const coreRef = useRef(null)
   const softRef = useRef(null)
   const auraRef = useRef(null)
@@ -53,6 +56,7 @@ export default function GuideBeacon() {
 
   useFrame((state, delta) => {
     const root = rootRef.current
+    const targetRoot = targetRef.current
     if (!root) return
 
     const handBone = guideHand.bone
@@ -63,6 +67,7 @@ export default function GuideBeacon() {
     const fade = fadeRef.current
     if (fade < 0.01) {
       root.visible = false
+      if (targetRoot) targetRoot.visible = false
       if (lightRef.current) lightRef.current.intensity = 0
       if (tipLightRef.current) tipLightRef.current.intensity = 0
       return
@@ -71,6 +76,7 @@ export default function GuideBeacon() {
     const objective = getObjectiveTarget()
     if (!objective) {
       root.visible = false
+      if (targetRoot) targetRoot.visible = false
       if (lightRef.current) lightRef.current.intensity = 0
       if (tipLightRef.current) tipLightRef.current.intensity = 0
       return
@@ -83,15 +89,9 @@ export default function GuideBeacon() {
     tmpEnd.set(objective.position[0], objective.position[1], objective.position[2])
     tmpDir.subVectors(tmpEnd, tmpStart)
     const dist = tmpDir.length()
-    if (dist < 0.2) {
-      root.visible = false
-      if (lightRef.current) lightRef.current.intensity = 0
-      if (tipLightRef.current) tipLightRef.current.intensity = 0
-      return
-    }
-    tmpDir.multiplyScalar(1 / dist)
+    if (dist > 0.05) tmpDir.multiplyScalar(1 / dist)
 
-    const beamLen = MAX_BEAM_LEN
+    const beamLen = Math.min(MAX_BEAM_LEN, Math.max(2.5, dist * 0.85))
     const strength = strengthForDistance(dist)
     tmpMid.copy(tmpStart).addScaledVector(tmpDir, beamLen * 0.5)
     tmpQuat.setFromUnitVectors(Y_UP, tmpDir)
@@ -117,7 +117,6 @@ export default function GuideBeacon() {
       auraRef.current.material.opacity = 0.1 * opacity
     }
     if (glowRef.current) {
-      // brilho na mão (base do feixe)
       glowRef.current.position.set(0, -beamLen * 0.5 + 0.08, 0)
       glowRef.current.material.opacity = 0.85 * opacity
       const s = 0.42 + Math.sin(state.clock.elapsedTime * 3.6) * 0.08
@@ -154,90 +153,126 @@ export default function GuideBeacon() {
         children[i].scale.setScalar(0.045 + (i % 4) * 0.018)
       }
     }
+
+    if (targetRoot) {
+      targetRoot.visible = true
+      targetRoot.position.set(objective.position[0], objective.position[1], objective.position[2])
+      const targetPulse = 0.85 + Math.sin(state.clock.elapsedTime * 3.8) * 0.15
+      const targetOpacity = fade * strength * targetPulse
+      if (targetRingRef.current) {
+        targetRingRef.current.material.opacity = 0.55 * targetOpacity
+        targetRingRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 4) * 0.08)
+      }
+      if (targetConeRef.current) {
+        targetConeRef.current.material.opacity = 0.65 * targetOpacity
+        targetConeRef.current.rotation.y = state.clock.elapsedTime * 1.2
+      }
+    }
   })
 
   return (
-    <group ref={rootRef} visible={false}>
-      <pointLight ref={lightRef} color="#ffe8a0" intensity={0} distance={7} decay={2} />
-      <pointLight ref={tipLightRef} color="#fff6d0" intensity={0} distance={4} decay={2} />
+    <>
+      <group ref={rootRef} visible={false}>
+        <pointLight ref={lightRef} color="#ffe8a0" intensity={0} distance={7} decay={2} />
+        <pointLight ref={tipLightRef} color="#fff6d0" intensity={0} distance={4} decay={2} />
 
-      {/* aura larga */}
-      <mesh ref={auraRef} renderOrder={0}>
-        <cylinderGeometry args={[0.32, 0.7, 1, 12, 1, true]} />
-        <meshBasicMaterial
-          color="#ffcc66"
-          transparent
-          opacity={0}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+        <mesh ref={auraRef} renderOrder={0}>
+          <cylinderGeometry args={[0.32, 0.7, 1, 12, 1, true]} />
+          <meshBasicMaterial
+            color="#ffcc66"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
 
-      {/* halo médio */}
-      <mesh ref={softRef} renderOrder={1}>
-        <cylinderGeometry args={[0.1, 0.28, 1, 12, 1, true]} />
-        <meshBasicMaterial
-          color="#ffd98a"
-          transparent
-          opacity={0}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+        <mesh ref={softRef} renderOrder={1}>
+          <cylinderGeometry args={[0.1, 0.28, 1, 12, 1, true]} />
+          <meshBasicMaterial
+            color="#ffd98a"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
 
-      {/* núcleo brilhante */}
-      <mesh ref={coreRef} renderOrder={2}>
-        <cylinderGeometry args={[0.03, 0.07, 1, 10, 1, true]} />
-        <meshBasicMaterial
-          color="#fff8e8"
-          transparent
-          opacity={0}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+        <mesh ref={coreRef} renderOrder={2}>
+          <cylinderGeometry args={[0.03, 0.07, 1, 10, 1, true]} />
+          <meshBasicMaterial
+            color="#fff8e8"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
 
-      {/* orbe na mão */}
-      <mesh ref={glowRef} renderOrder={3}>
-        <sphereGeometry args={[1, 12, 10]} />
-        <meshBasicMaterial
-          color="#fff6d0"
-          transparent
-          opacity={0}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+        <mesh ref={glowRef} renderOrder={3}>
+          <sphereGeometry args={[1, 12, 10]} />
+          <meshBasicMaterial
+            color="#fff6d0"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
 
-      {/* ponta do feixe */}
-      <mesh ref={tipRef} renderOrder={3}>
-        <octahedronGeometry args={[1, 0]} />
-        <meshBasicMaterial
-          color="#ffe08a"
-          transparent
-          opacity={0}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+        <mesh ref={tipRef} renderOrder={3}>
+          <octahedronGeometry args={[1, 0]} />
+          <meshBasicMaterial
+            color="#ffe08a"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
 
-      <group ref={motesRef}>
-        {moteOffsets.map((_, i) => (
-          <mesh key={i} renderOrder={2}>
-            <sphereGeometry args={[1, 6, 5]} />
-            <meshBasicMaterial
-              color={i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fff6d8' : '#ffd080'}
-              transparent
-              opacity={0}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
-        ))}
+        <group ref={motesRef}>
+          {moteOffsets.map((_, i) => (
+            <mesh key={i} renderOrder={2}>
+              <sphereGeometry args={[1, 6, 5]} />
+              <meshBasicMaterial
+                color={i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fff6d8' : '#ffd080'}
+                transparent
+                opacity={0}
+                depthWrite={false}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+          ))}
+        </group>
       </group>
-    </group>
+
+      <group ref={targetRef} visible={false}>
+        <mesh ref={targetRingRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} renderOrder={4}>
+          <ringGeometry args={[0.55, 0.85, 24]} />
+          <meshBasicMaterial
+            color="#ffd060"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        <mesh ref={targetConeRef} position={[0, 0.5, 0]} renderOrder={4}>
+          <coneGeometry args={[0.22, 0.55, 6]} />
+          <meshBasicMaterial
+            color="#ffe890"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      </group>
+    </>
   )
 }

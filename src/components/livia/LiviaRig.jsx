@@ -14,8 +14,8 @@ const LIP = '#c45a68'
 const HAIR = '#3a281c'
 const HAIR_DARK = '#241610'
 const HAIR_LIGHT = '#4a3428'
-const TUNIC = '#c45a48'
-const TUNIC_DARK = '#a44838'
+const TUNIC = '#4a8ec8'
+const TUNIC_DARK = '#2868a8'
 const SHIRT = '#f2ebe0'
 const SKIRT = '#5a2a48'
 const PANTS = '#6a5a48'
@@ -209,8 +209,8 @@ export default function LiviaRig({ stateRef }) {
           <cylinderGeometry args={[0.175, 0.205, 0.18, 10]} />
           <meshStandardMaterial color={TUNIC_DARK} flatShading />
         </mesh>
-        {/* saia só sem capa/casaco — tubo que desce (não disco flat na cintura) */}
-        {!hoodOn && (
+        {/* saia oculta — visual da referência usa casaco + calças */}
+        {false && !hoodOn && (
           <group position={[0, -0.02, 0]}>
             <mesh castShadow position={[0, -0.14, 0]}>
               <cylinderGeometry args={[0.2, 0.3, 0.36, 12, 1, true]} />
@@ -459,6 +459,19 @@ export default function LiviaRig({ stateRef }) {
                   <sphereGeometry args={[0.11, 5, 4]} />
                   <meshStandardMaterial color={HAIR} flatShading />
                 </mesh>
+              ))}
+              {/* tranças laterais */}
+              {[1, -1].map((side) => (
+                <group key={`braid${side}`} position={[side * 0.15, 0.05, -0.04]}>
+                  <mesh position={[0, -0.12, -0.02]} rotation={[0.15, 0, side * 0.08]}>
+                    <capsuleGeometry args={[0.042, 0.38, 3, 5]} />
+                    <meshStandardMaterial color={HAIR_DARK} flatShading />
+                  </mesh>
+                  <mesh position={[0, -0.38, -0.03]} rotation={[0.2, 0, side * 0.1]}>
+                    <capsuleGeometry args={[0.038, 0.32, 3, 5]} />
+                    <meshStandardMaterial color={HAIR} flatShading />
+                  </mesh>
+                </group>
               ))}
               {[0.13, -0.13].map((x) => (
                 <mesh

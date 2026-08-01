@@ -2,12 +2,37 @@ import { GATES, TREASURE_POS, HORSE_WAIT, pathXAt } from '../config/world'
 import { ITEMS, QUESTS, missingItems, useProgressStore } from '../store/progressStore'
 import { playerPosition } from '../store/playerStore'
 import { horseRide } from './horseRide'
+import { NPCS, resolveNpcPosition } from '../config/npcs'
+import { pickSpawnForItem } from '../data/itemSpawns'
 
 const TREASURE = [TREASURE_POS.x, TREASURE_POS.y, TREASURE_POS.z]
 
 function gatePos(gateId, label) {
   const g = GATES[gateId]
   return { position: [pathXAt(g.z), g.y + 2, g.z], label }
+}
+
+function hashItemId(id) {
+  let h = 2166136261
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+/** Posição conhecida ou fallback (NPC / spawn determinístico) */
+function resolveItemPosition(id, itemPositions) {
+  const p = itemPositions[id]
+  if (p) return p
+
+  const npc = NPCS.find((n) => n.itemId === id)
+  if (npc) {
+    const pos = resolveNpcPosition(npc)
+    return [pos.x, pos.y, pos.z]
+  }
+
+  return pickSpawnForItem(id, hashItemId(id))
 }
 
 /**
@@ -43,8 +68,7 @@ export function getObjectiveTarget() {
   let best = null
   let bestDist = Infinity
   for (const id of missing) {
-    const p = itemPositions[id]
-    if (!p) continue
+    const p = resolveItemPosition(id, itemPositions)
     const d = Math.hypot(p[0] - playerPosition.x, p[2] - playerPosition.z)
     if (d < bestDist) {
       bestDist = d

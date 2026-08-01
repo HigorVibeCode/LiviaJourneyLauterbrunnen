@@ -125,18 +125,18 @@ export default function Collectible({ itemId }) {
   // nunca mudar — desmontar aqui recompilava shaders e travava o frame.
   const dead = gone || (collected && !bursting)
   const color = COLORS[itemId] ?? '#ffffff'
-  /** Halo do objetivo — tom âmbar suave (não neon) */
-  const beacon = isCurrent ? '#d4b060' : color
+  /** Halo do objetivo — tom âmbar/dourado estilo thumb */
+  const beacon = isCurrent ? '#f0c848' : color
 
   return (
     <group position={position}>
       {/* Feixe visível a distância */}
-      <mesh ref={beamRef} position={[0, 11, 0]} visible={isCurrent && !bursting && !dead}>
-        <cylinderGeometry args={[0.5, 1.4, 24, 6, 1, true]} />
+      <mesh ref={beamRef} position={[0, 13, 0]} visible={isCurrent && !bursting && !dead}>
+        <cylinderGeometry args={[0.55, 1.6, 28, 6, 1, true]} />
         <meshBasicMaterial
           color={beacon}
           transparent
-          opacity={0.2}
+          opacity={0.28}
           side={THREE.DoubleSide}
           depthWrite={false}
         />
@@ -147,8 +147,8 @@ export default function Collectible({ itemId }) {
         ref={lightRef}
         position={[0, 1.2, 0]}
         color={beacon}
-        intensity={dead ? 0 : isCurrent ? 4.5 : 2.2}
-        distance={bursting ? 12 : 7}
+        intensity={dead ? 0 : isCurrent ? 7.5 : 2.8}
+        distance={bursting ? 14 : 9}
         decay={2}
       />
 
@@ -178,7 +178,7 @@ export default function Collectible({ itemId }) {
         <meshBasicMaterial
           color={beacon}
           transparent
-          opacity={isCurrent ? 0.48 : 0.32}
+          opacity={isCurrent ? 0.58 : 0.36}
           side={THREE.DoubleSide}
           depthWrite={false}
         />
@@ -190,7 +190,7 @@ export default function Collectible({ itemId }) {
           <meshStandardMaterial
             color="#d4b060"
             emissive="#b89440"
-            emissiveIntensity={0.45}
+            emissiveIntensity={0.65}
             flatShading
             metalness={0.35}
             roughness={0.5}

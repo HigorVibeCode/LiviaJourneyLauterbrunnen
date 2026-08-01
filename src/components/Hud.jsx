@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { useProgressStore, ITEMS, QUESTS, missingItems } from '../store/progressStore'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 import { playerPosition, usePlayerStore } from '../store/playerStore'
-import { PHASES, PHASE_ORDER } from '../config/world'
+import { PHASES, PHASE_ORDER, CHAPTER_LINES } from '../config/world'
+import { EASTER_EGGS, EGG_ICONS } from '../config/easterEggs'
+import { NPCS } from '../config/npcs'
+import { npcInteractHint, npcDialogueLine } from './NPC'
 import { GUIDE_MAX_CHARGE, guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
 
@@ -18,7 +21,7 @@ function useObjectiveHint() {
     return () => clearInterval(id)
   }, [])
 
-  if (finished) return 'Você encontrou o tesouro alpino. Aproveite a vista!'
+  if (finished) return 'O Coração do Vale pulsa no mirante. A promessa foi cumprida.'
 
   if (unlockedGates.includes('gate_pasture') && !unlockedGates.includes('gate_night')) {
     void horseTick
@@ -48,9 +51,9 @@ function useObjectiveHint() {
   return quest.hint
 }
 
-/** Nome do bioma em que a Livia está agora */
-function usePhaseLabel() {
-  const [label, setLabel] = useState(PHASES.meadow.label)
+/** Nome do bioma + linha de capítulo */
+function usePhaseInfo() {
+  const [info, setInfo] = useState({ label: PHASES.meadow.label, chapter: CHAPTER_LINES.meadow })
 
   useEffect(() => {
     const tick = () => {
@@ -64,14 +67,14 @@ function usePhaseLabel() {
         }
         if (z < p.zFrom) found = p
       }
-      setLabel(found.label)
+      setInfo({ label: found.label, chapter: CHAPTER_LINES[found.id] ?? '' })
     }
     tick()
     const id = setInterval(tick, 500)
     return () => clearInterval(id)
   }, [])
 
-  return label
+  return info
 }
 
 /** Tela de vitória: aparece após o voo da fênix */
@@ -91,12 +94,14 @@ function useVictory() {
 
 export default function Hud() {
   const hint = useObjectiveHint()
-  const phaseLabel = usePhaseLabel()
+  const phaseInfo = usePhaseInfo()
   const victory = useVictory()
   const toast = useProgressStore((s) => s.toast)
   const inventory = useProgressStore((s) => s.inventory)
   const collectedEver = useProgressStore((s) => s.collectedEver)
+  const foundEggs = useProgressStore((s) => s.foundEggs)
   const nearGateId = useProgressStore((s) => s.nearGateId)
+  const nearNpcId = useProgressStore((s) => s.nearNpcId)
   const unlockedGates = useProgressStore((s) => s.unlockedGates)
   const respawns = usePlayerStore((s) => s.respawns)
   const paused = useGameStore((s) => s.paused)
@@ -105,9 +110,12 @@ export default function Hud() {
   const setQuality = useGameStore((s) => s.setQuality)
   const audio = useGameStore((s) => s.audio)
   const toggleAudio = useGameStore((s) => s.toggleAudio)
+  const isMobile = useGameStore((s) => s.isMobile)
 
   const currentQuest = QUESTS.find((q) => !unlockedGates.includes(q.gateId))
   const nearQuest = QUESTS.find((q) => q.gateId === nearGateId)
+  const nearNpc = NPCS.find((n) => n.id === nearNpcId)
+  const npcSpoke = useProgressStore((s) => s.npcSpoke)
   const canInteract =
     nearQuest &&
     !unlockedGates.includes(nearQuest.gateId) &&
@@ -137,8 +145,9 @@ export default function Hud() {
           ◆
         </span>
         <span className="hud-panel-label">
-          Fase {phaseNumber} de {PHASE_ORDER.length} · {phaseLabel}
+          Fase {phaseNumber} de {PHASE_ORDER.length} · {phaseInfo.label}
         </span>
+        <p className="hud-chapter">{phaseInfo.chapter}</p>
         <p>{hint}</p>
 
         {currentQuest && (
@@ -162,8 +171,10 @@ export default function Hud() {
         </div>
         <p className="hud-charge-hint">
           {guideDepleted
-            ? 'A magia se esgotou…'
-            : `${guideCharge.toFixed(1)}s restantes · segure E`}
+            ? 'Recarregando… aguarde um momento'
+            : isMobile
+              ? `${guideCharge.toFixed(1)}s · segure o botão E`
+              : `${guideCharge.toFixed(1)}s restantes · segure E`}
         </p>
       </div>
 
@@ -173,6 +184,28 @@ export default function Hud() {
           <span>Abrir portão</span>
         </div>
       )}
+
+      {nearNpc && (
+        <div className="hud-interact hud-magic">
+          <kbd>E</kbd>
+          <span>{npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ?? npcInteractHint(nearNpc)}</span>
+        </div>
+      )}
+
+      <div className="hud-panel hud-eggs hud-magic">
+        <span className="hud-panel-label">Segredos {foundEggs.length}/{EASTER_EGGS.length}</span>
+        <div className="hud-egg-row">
+          {EASTER_EGGS.map((egg) => (
+            <span
+              key={egg.id}
+              className={`hud-egg-icon ${foundEggs.includes(egg.id) ? 'is-found' : ''}`}
+              title={egg.id}
+            >
+              {foundEggs.includes(egg.id) ? EGG_ICONS[egg.icon] : '○'}
+            </span>
+          ))}
+        </div>
+      </div>
 
       {inventory.length > 0 && (
         <div className="hud-panel hud-inventory hud-magic">
@@ -194,12 +227,8 @@ export default function Hud() {
         <div className="pause-overlay">
           <div className="pause-card victory-card hud-magic">
             <p className="pause-kicker">Fim da jornada</p>
-            <h2>Tesouro alpino encontrado!</h2>
-            <p className="pause-copy">
-              Livia atravessou a pradaria, o vale das águas e o passo nevado, encontrou o
-              tesouro no mirante e partiu nos céus com a fênix. Lauterbrunnen ficou para trás
-              — a jornada terminou.
-            </p>
+            <h2>Coração do Vale</h2>
+            <p className="pause-copy">{ENDING_TEXT}</p>
 
             <div className="victory-stats">
               <div className="victory-stat">
@@ -242,6 +271,7 @@ export default function Hud() {
               O objetivo atual fica no canto da tela enquanto você joga.
             </p>
 
+            {!isMobile ? (
             <div className="pause-help">
               <span className="hud-panel-label">Controles</span>
               <ul className="pause-help-list">
@@ -278,6 +308,16 @@ export default function Hud() {
                 </li>
               </ul>
             </div>
+            ) : (
+            <div className="pause-help">
+              <span className="hud-panel-label">Controles (toque)</span>
+              <ul className="pause-help-tips">
+                <li>Joystick esquerdo — andar</li>
+                <li>Correr / Pular / E — botões à direita</li>
+                <li>Segure E — guia luminosa</li>
+              </ul>
+            </div>
+            )}
 
             <div className="pause-help">
               <span className="hud-panel-label">Como jogar</span>
@@ -285,7 +325,7 @@ export default function Hud() {
                 <li>Cada fase tem dois itens escondidos — encontre-os antes de abrir o portão.</li>
                 <li>Chegue perto do portão e pressione E quando a mochila estiver completa.</li>
                 <li>No pasto, monte o cavalo com E e cavalque até o Vale Noturno.</li>
-                <li>A guia luminosa gasta carga: use com parcimônia para não se perder.</li>
+                <li>A guia luminosa gasta carga, mas recarrega lentamente quando não está em uso.</li>
                 <li>Evite cair na água gelada e na cachoeira — a Livia volta ao último lugar seguro.</li>
               </ul>
             </div>

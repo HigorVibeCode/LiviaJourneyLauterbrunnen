@@ -41,7 +41,13 @@ import {
   resolveOnPath,
   worldFromPath,
 } from '../config/world'
+import EasterEgg from './EasterEgg'
+import NPC from './NPC'
+import LanternPickup from './LanternPickup'
+import { EASTER_EGGS } from '../config/easterEggs'
+import { NPCS } from '../config/npcs'
 import AtmosphereZones from './AtmosphereZones'
+import VillageGlow from './world/VillageGlow'
 import ErrorBoundary from './ErrorBoundary'
 
 export default function WorldMap() {
@@ -105,16 +111,24 @@ export default function WorldMap() {
       })}
 
       <AtmosphereZones />
+      <VillageGlow />
 
       {/* ── Itens: 2 por fase, sorteados dentro da própria fase ── */}
       <Collectible itemId="chave_portao" />
       <Collectible itemId="capa_chuva" />
-      <Collectible itemId="fungo_brilho" />
       <Collectible itemId="pena_coruja" />
-      <Collectible itemId="ferramenta" />
       <Collectible itemId="casaco" />
-      <Collectible itemId="cristal" />
       <Collectible itemId="binoculo" />
+
+      {NPCS.map((npc) => (
+        <NPC key={npc.id} def={npc} />
+      ))}
+
+      <LanternPickup />
+
+      {EASTER_EGGS.map((egg) => (
+        <EasterEgg key={egg.id} egg={egg} />
+      ))}
 
       {/* ── Vilarejo / placas (ancorados perto da trilha) ── */}
       <VillageWell position={[worldFromPath(-400, 14).x, 0, -400]} />
@@ -203,33 +217,37 @@ function PathStones() {
     const rng = makeRng(31337)
     const out = []
     const palettes = {
-      meadow: ['#9a8a68', '#8a7a5c', '#a09070', '#7a6a50'],
-      pasture: ['#968668', '#86785a', '#9e8e70', '#7a6a52'],
+      meadow: ['#8a7050', '#7a6048', '#9a8060', '#6a5840', '#a08868'],
+      pasture: ['#847058', '#746048', '#948060', '#685038', '#988868'],
       night: ['#3a3a48', '#2e2e3a', '#4a4a58', '#353544'],
-      water: ['#8a7a5c', '#7a6a50', '#948468', '#6e5e48'],
+      water: ['#7a6848', '#6a5838', '#8a7858', '#5a4830'],
       snow: ['#d0dae4', '#c0ccd6', '#dae2ea', '#b4c0ca'],
-      flower: ['#9a8a68', '#8a7a5c', '#a09070', '#7e6e54'],
+      flower: ['#8a7050', '#9a8060', '#7a6048', '#a08868'],
       alpine: ['#b4c0b8', '#a8b4ac', '#c0cac2', '#9aa69e'],
     }
 
-    for (let z = 112; z > PHASES.summit.zFrom + 20; z -= 7.5) {
+    for (let z = 112; z > PHASES.summit.zFrom + 20; z -= 2.4) {
       if (z < RIVER.zTo + 6 && z > RIVER.zFrom - 6) continue
       if (z < STAIRS.zStart + 4) continue
 
       const biome = phaseAt(z).biome
       const palette = palettes[biome] ?? palettes.alpine
       const cx = pathXAt(z)
-      if (rng() < 0.4) continue
-      const lx = rng() > 0.5 ? -1.8 : 1.8
-      const x = cx + lx + (rng() - 0.5) * 0.7
-      out.push({
-        x,
-        y: groundHeightAt(x, z) + 0.05,
-        z: z + (rng() - 0.5) * 0.8,
-        s: 0.75 + rng() * 0.45,
-        sy: 0.65 + rng() * 0.55,
-        ry: rng() * Math.PI,
-        color: palette[Math.floor(rng() * palette.length)],
+      const lanes = [-2.1, 0, 2.1]
+
+      lanes.forEach((lx, i) => {
+        const edge = Math.abs(lx) > 1.5
+        if (rng() < (edge ? 0.35 : 0.55)) return
+        const x = cx + lx + (rng() - 0.5) * 0.7
+        out.push({
+          x,
+          y: groundHeightAt(x, z) + 0.05,
+          z: z + (rng() - 0.5) * 0.8 + i * 0.15,
+          s: (edge ? 0.65 : 0.95) + rng() * 0.45,
+          sy: 0.55 + rng() * 0.45,
+          ry: rng() * Math.PI,
+          color: palette[Math.floor(rng() * palette.length)],
+        })
       })
     }
     return out

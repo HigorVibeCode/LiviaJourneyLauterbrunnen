@@ -6,8 +6,11 @@
 /** Segurar E por este tempo acende a guia (e cancela o tap de interação) */
 export const GUIDE_HOLD_SEC = 0.28
 
-/** Tempo total de uso do feixe na partida (não recarrega) */
-export const GUIDE_MAX_CHARGE = 5
+/** Tempo total de uso do feixe por ativação (recarrega lentamente) */
+export const GUIDE_MAX_CHARGE = 12
+
+/** Velocidade de recarga quando o feixe não está em uso */
+export const GUIDE_RECHARGE_RATE = 0.35
 
 export const guideInput = {
   /** E está pressionado */

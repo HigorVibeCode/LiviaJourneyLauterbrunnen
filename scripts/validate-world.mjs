@@ -21,6 +21,7 @@ import {
 } from '../src/config/world.js'
 import { generateZoneProps } from '../src/config/scatter.js'
 import { pickSpawnForItem, isSpawnInsideItemZone, ITEM_ZONES } from '../src/data/itemSpawns.js'
+import { isClearOfSolids, SPAWN_SOLIDS, SPAWN_MARGIN } from '../src/data/worldSolids.js'
 import { QUESTS, ITEMS } from '../src/store/progressStore.js'
 
 let failures = 0
@@ -129,14 +130,17 @@ check(meadow.snowPatches.length === 0, 'não há neve na pradaria')
 Object.keys(ITEM_ZONES).forEach((itemId) => {
   let wrong = 0
   let tooClose = 0
+  let inSolid = 0
   for (let i = 0; i < 500; i++) {
     const p = pickSpawnForItem(itemId, i * 7919)
     if (!isSpawnInsideItemZone(itemId, p)) wrong++
     if (!isFreeSpot(p[0], p[2], blocked, 0)) tooClose++
+    if (!isClearOfSolids(p[0], p[2], SPAWN_MARGIN, SPAWN_SOLIDS)) inSolid++
     if (pathLateralDist(p[0], p[2]) > CORRIDOR_HALF + 2) wrong++
   }
   check(wrong === 0, `${itemId} sempre na sua fase (${wrong} falhas)`)
   check(tooClose === 0, `${itemId} nunca dentro de casa/portão/água (${tooClose} falhas)`)
+  check(inSolid === 0, `${itemId} nunca dentro de props sólidos (${inSolid} falhas)`)
 })
 
 // 8. Nenhum item nasce na fase de outro item

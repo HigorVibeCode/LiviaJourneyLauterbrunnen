@@ -6,6 +6,7 @@ import {
   isFreeSpot,
   groundHeightAt,
   makeRng,
+  pathXAt,
 } from '../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 
@@ -34,6 +35,13 @@ const ZONE_FAUNA = {
     'cow', 'cow', 'cow', 'sheep', 'sheep', 'sheep', 'sheep',
     'rabbit', 'rabbit', 'rabbit', 'goat', 'goat', 'fox', 'marmot', 'deer',
   ],
+  pasture: [
+    'sheep', 'sheep', 'sheep', 'sheep', 'cow', 'cow',
+    'goat', 'goat', 'rabbit', 'rabbit', 'marmot', 'deer',
+  ],
+  night: [
+    'fox', 'fox', 'rabbit', 'rabbit', 'deer', 'marmot', 'bear',
+  ],
   water: [
     'deer', 'deer', 'deer', 'fox', 'fox', 'rabbit', 'rabbit', 'rabbit',
     'goat', 'goat', 'marmot', 'marmot', 'sheep', 'sheep', 'bear', 'cow',
@@ -42,13 +50,17 @@ const ZONE_FAUNA = {
     'hare', 'hare', 'hare', 'ibex', 'ibex', 'reindeer', 'reindeer',
     'fox', 'marmot', 'deer', 'bear',
   ],
+  flower: [
+    'rabbit', 'rabbit', 'goat', 'goat', 'sheep', 'sheep', 'deer', 'fox',
+  ],
   climb: ['ibex', 'ibex', 'goat', 'marmot', 'hare', 'reindeer'],
-  summitTop: ['ibex', 'marmot', 'hare'],
+  summitTop: ['ibex', 'marmot', 'hare', 'cow'],
 }
 
 export default function Animals() {
   const quality = useGameStore((s) => s.quality)
   const density = (QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium).density
+  const insectDensity = quality === 'high' ? density : density * 0.85
   const paused = useGameStore((s) => s.paused)
 
   const herds = useMemo(() => {
@@ -69,9 +81,10 @@ export default function Animals() {
         let z = 0
         let ok = false
         for (let a = 0; a < 60 && !ok; a++) {
-          x = (rng() * 2 - 1) * maxX
+          const lat = (rng() * 2 - 1) * maxX
           z = zone.zFrom + 8 + rng() * Math.max(4, zone.zTo - zone.zFrom - 16)
-          ok = isFreeSpot(x, z, blocked, 5) && Math.abs(x) > 8
+          x = pathXAt(z) + lat
+          ok = isFreeSpot(x, z, blocked, 5) && Math.abs(lat) > 8
         }
         if (!ok) continue
 
@@ -154,13 +167,9 @@ export default function Animals() {
       {flocks.map((f) => (
         <BirdFlock key={f.key} def={f} paused={paused} />
       ))}
-      {/* insetos só em Alta — no medium eram partículas extras sem valor de gameplay */}
-      {density >= 0.7 && (
-        <>
-          <Butterflies density={density} paused={paused} />
-          <Bees density={density} paused={paused} />
-        </>
-      )}
+      <Butterflies density={insectDensity} paused={paused} />
+      <Bees density={insectDensity} paused={paused} />
+      <Fireflies paused={paused} />
     </group>
   )
 }
@@ -192,17 +201,17 @@ function Creature({ def, entries }) {
       scale={def.scale}
     >
       {/* corpo */}
-      <mesh castShadow position={[0, legY + s * 0.42, 0]}>
+      <mesh castShadow={false} position={[0, legY + s * 0.42, 0]}>
         <capsuleGeometry args={[s * 0.4, s * 0.72, 4, 7]} />
         <meshStandardMaterial color={spec.body} flatShading />
       </mesh>
       {spec.fluffy && (
         <>
-          <mesh castShadow position={[0, legY + s * 0.6, s * 0.1]}>
+          <mesh castShadow={false} position={[0, legY + s * 0.6, s * 0.1]}>
             <sphereGeometry args={[s * 0.55, 6, 5]} />
             <meshStandardMaterial color={spec.body} flatShading />
           </mesh>
-          <mesh castShadow position={[0, legY + s * 0.55, -s * 0.4]}>
+          <mesh castShadow={false} position={[0, legY + s * 0.55, -s * 0.4]}>
             <sphereGeometry args={[s * 0.45, 6, 5]} />
             <meshStandardMaterial color={spec.body} flatShading />
           </mesh>
@@ -228,7 +237,7 @@ function Creature({ def, entries }) {
         }}
         position={[0, legY + s * 0.78, s * 0.62]}
       >
-        <mesh castShadow>
+        <mesh castShadow={false}>
           <boxGeometry args={[s * 0.44, s * 0.44, s * 0.55]} />
           <meshStandardMaterial color={spec.body} flatShading />
         </mesh>
@@ -244,7 +253,7 @@ function Creature({ def, entries }) {
         ))}
         {spec.ears === 'long' &&
           [0.13, -0.13].map((o) => (
-            <mesh key={o} castShadow position={[o * s, s * 0.42, -s * 0.05]} rotation={[-0.2, 0, o * 2]}>
+            <mesh key={o} castShadow={false} position={[o * s, s * 0.42, -s * 0.05]} rotation={[-0.2, 0, o * 2]}>
               <capsuleGeometry args={[s * 0.07, s * 0.44, 3, 5]} />
               <meshStandardMaterial color={spec.dark} flatShading />
             </mesh>
@@ -258,7 +267,7 @@ function Creature({ def, entries }) {
           ))}
         {spec.horns &&
           [0.18, -0.18].map((o) => (
-            <mesh key={o} castShadow position={[o * s, s * 0.3, 0]} rotation={[0, 0, o * 3]}>
+            <mesh key={o} castShadow={false} position={[o * s, s * 0.3, 0]} rotation={[0, 0, o * 3]}>
               <coneGeometry args={[s * 0.07, s * 0.42, 5]} />
               <meshStandardMaterial color="#d8cdb4" flatShading />
             </mesh>
@@ -266,11 +275,11 @@ function Creature({ def, entries }) {
         {spec.antlers &&
           [0.16, -0.16].map((o) => (
             <group key={o} position={[o * s, s * 0.3, 0]}>
-              <mesh castShadow rotation={[0, 0, o * 2.2]}>
+              <mesh castShadow={false} rotation={[0, 0, o * 2.2]}>
                 <cylinderGeometry args={[s * 0.035, s * 0.05, s * 0.6, 4]} />
                 <meshStandardMaterial color="#8a6a44" flatShading />
               </mesh>
-              <mesh castShadow position={[o * s * 0.25, s * 0.36, 0]} rotation={[0, 0, o * 3.6]}>
+              <mesh castShadow={false} position={[o * s * 0.25, s * 0.36, 0]} rotation={[0, 0, o * 3.6]}>
                 <cylinderGeometry args={[s * 0.025, s * 0.035, s * 0.34, 4]} />
                 <meshStandardMaterial color="#8a6a44" flatShading />
               </mesh>
@@ -298,7 +307,7 @@ function Creature({ def, entries }) {
           }}
           position={[lx, legY, lz]}
         >
-          <mesh castShadow position={[0, -legLen / 2, 0]}>
+          <mesh castShadow={false} position={[0, -legLen / 2, 0]}>
             <cylinderGeometry args={[s * 0.075, s * 0.06, legLen, 5]} />
             <meshStandardMaterial color={spec.dark} flatShading />
           </mesh>
@@ -312,7 +321,7 @@ function Creature({ def, entries }) {
         }}
         position={[0, legY + s * 0.5, -s * 0.7]}
       >
-        <mesh castShadow rotation={[spec.tail ? -0.4 : 0.6, 0, 0]}>
+        <mesh castShadow={false} rotation={[spec.tail ? -0.4 : 0.6, 0, 0]}>
           <capsuleGeometry args={[s * (spec.tail ? 0.14 : 0.06), s * (spec.tail ? 0.6 : 0.3), 3, 5]} />
           <meshStandardMaterial color={spec.tail ? spec.dark : spec.body} flatShading />
         </mesh>
@@ -374,11 +383,8 @@ function Butterflies({ density, paused }) {
     // só nos biomas com flores: pradaria, vale das águas e mirante
     const bands = [
       [26, 110],
-      [26, 110],
-      [26, 110],
-      [-116, 6],
-      [-116, 6],
-      [-116, 6],
+      [-280, 12],
+      [-908, -784],
       [-116, 6],
       [-340, -302],
     ]
@@ -446,11 +452,8 @@ function Bees({ density, paused }) {
     const blocked = buildBlockedRects()
     const bands = [
       [30, 108],
-      [30, 108],
-      [30, 108],
-      [30, 108],
-      [-112, 4],
-      [-112, 4],
+      [-280, 12],
+      [-908, -784],
       [-112, 4],
       [-336, -304],
     ]
@@ -461,9 +464,10 @@ function Bees({ density, paused }) {
       let z = 0
       let ok = false
       for (let a = 0; a < 40 && !ok; a++) {
-        x = (rng() * 2 - 1) * 44
+        const lat = (rng() * 2 - 1) * 44
         z = band[0] + rng() * (band[1] - band[0])
-        ok = isFreeSpot(x, z, blocked, 2) && Math.abs(x) > 9
+        x = pathXAt(z) + lat
+        ok = isFreeSpot(x, z, blocked, 2) && Math.abs(lat) > 9
       }
       if (!ok) return
       list.push({
@@ -510,6 +514,68 @@ function Bees({ density, paused }) {
                 emissive="#c89020"
                 emissiveIntensity={0.4}
               />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  )
+}
+
+/** Vaga-lumes no vale noturno — enxame pequeno, custo mínimo. */
+function Fireflies({ paused }) {
+  const swarms = useMemo(() => {
+    const rng = makeRng(1313)
+    const zA = -520
+    const zB = -292
+    return Array.from({ length: 2 }, (_, i) => {
+      let x = 0
+      let z = 0
+      let ok = false
+      for (let a = 0; a < 30 && !ok; a++) {
+        const lat = (rng() * 2 - 1) * 36
+        z = zA + rng() * (zB - zA)
+        x = pathXAt(z) + lat
+        ok = Math.abs(lat) > 6
+      }
+      return {
+        key: `ff-${i}`,
+        center: [x, groundHeightAt(x, z) + 1.4, z],
+        count: 12,
+      }
+    })
+  }, [])
+
+  const refs = useRef([])
+
+  useFrame((state) => {
+    if (paused) return
+    const t = state.clock.elapsedTime
+    for (let i = 0; i < refs.current.length; i++) {
+      const m = refs.current[i]
+      if (!m) continue
+      const p = i * 1.9
+      m.position.x = Math.sin(t * 1.8 + p) * 1.8 + Math.sin(t * 0.5 + p) * 0.6
+      m.position.z = Math.cos(t * 1.5 + p * 1.2) * 1.6
+      m.position.y = Math.sin(t * 2.8 + p) * 0.9 + 0.2
+      const pulse = 0.55 + Math.sin(t * 4 + p) * 0.45
+      if (m.material) m.material.emissiveIntensity = pulse
+    }
+  })
+
+  return (
+    <group>
+      {swarms.map((s, si) => (
+        <group key={s.key} position={s.center}>
+          {Array.from({ length: s.count }, (_, i) => (
+            <mesh
+              key={i}
+              ref={(el) => {
+                refs.current[si * s.count + i] = el
+              }}
+            >
+              <sphereGeometry args={[0.045, 4, 4]} />
+              <meshStandardMaterial color="#c8ff80" emissive="#90ff40" emissiveIntensity={0.8} flatShading />
             </mesh>
           ))}
         </group>

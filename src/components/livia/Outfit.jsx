@@ -31,6 +31,7 @@ export function useOutfit() {
         key: has('chave_portao'),
         tool: has('ferramenta'),
         crystal: has('cristal'),
+        lantern: s.hasLantern,
       }
     }),
   )
@@ -217,6 +218,23 @@ export function TorsoOutfit({ outfit }) {
             <meshStandardMaterial color="#4a5560" flatShading roughness={0.5} metalness={0.3} />
           </mesh>
         ))}
+      </group>
+
+      {/* lampião na cintura */}
+      <group visible={outfit.lantern} position={[-0.14, 0.08, 0.2]} rotation={[0, 0.4, 0]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.025, 0.03, 0.14, 5]} />
+          <meshStandardMaterial color="#5a4030" flatShading />
+        </mesh>
+        <mesh position={[0, 0.1, 0]}>
+          <boxGeometry args={[0.06, 0.08, 0.06]} />
+          <meshStandardMaterial
+            color="#ffd080"
+            emissive="#ffb040"
+            emissiveIntensity={0.9}
+            flatShading
+          />
+        </mesh>
       </group>
     </group>
   )

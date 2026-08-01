@@ -23,9 +23,9 @@ const PLATE_W = 20
 /** Cada trecho do penhasco tem a cor do bioma que ele margeia */
 const CLIFF_BANDS = [
   { zFrom: 16, zTo: 120, color: '#767a80', top: '#7f8f78' },
-  { zFrom: -288, zTo: 16, color: '#6a7a58', top: '#5a8a4a' },
+  { zFrom: -288, zTo: 16, color: '#6a7a58', top: '#4a9a42' },
   { zFrom: -520, zTo: -288, color: '#2a3040', top: '#1a2030' },
-  { zFrom: -656, zTo: -520, color: '#6a7870', top: '#5a7a58' },
+  { zFrom: -656, zTo: -520, color: '#5a7868', top: '#4a8a48' },
   { zFrom: -780, zTo: -656, color: '#96a3ac', top: '#e0e8ee' },
   { zFrom: -916, zTo: -780, color: '#6a7a62', top: '#6a8a5e' },
   { zFrom: -1110, zTo: -916, color: '#8d9aa3', top: '#e8eef2' },
@@ -46,22 +46,23 @@ export default function Terrain() {
 
     GROUND_SEGMENTS.forEach((seg) => {
       const lat0 = seg.latCenter ?? 0
-      const midZ = (seg.zFrom + seg.zTo) / 2
-      const halfZ = (seg.zTo - seg.zFrom) / 2
-      groundColliders.push({
-        id: seg.id,
-        x: pathXAt(midZ) + lat0,
-        y: seg.y,
-        z: midZ,
-        halfX: seg.halfX + 8,
-        halfZ: halfZ + 0.25,
-      })
 
+      // colliders por fatia — seguem a S como as placas visuais (1 AABB longo
+      // desalinhava física vs chão nas curvas)
       for (let z0 = seg.zTo; z0 > seg.zFrom; z0 -= GROUND_SLICE) {
         const z1 = Math.max(seg.zFrom, z0 - GROUND_SLICE)
         const cz = (z0 + z1) / 2
         const sliceHalfZ = (z0 - z1) / 2 + 0.1
         const cx = pathXAt(cz) + lat0
+        groundColliders.push({
+          id: `${seg.id}-${cz.toFixed(1)}`,
+          x: cx,
+          y: seg.y,
+          z: cz,
+          halfX: seg.halfX + 2,
+          halfZ: sliceHalfZ + 0.2,
+        })
+
         const cols = Math.max(1, Math.round((seg.halfX * 2) / PLATE_W))
         const pw = (seg.halfX * 2) / cols
         for (let c = 0; c < cols; c++) {
@@ -71,16 +72,16 @@ export default function Terrain() {
             base = rng() > 0.45 ? '#d8e3dc' : rng() > 0.4 ? '#8fae86' : '#a8c39c'
           } else if (seg.biome === 'meadow') {
             const r = rng()
-            base = r > 0.66 ? '#6a8a62' : r > 0.33 ? '#5e7e58' : '#748e6a'
+            base = r > 0.66 ? '#5a9a52' : r > 0.33 ? '#4e8e48' : '#68a060'
           } else if (seg.biome === 'water') {
-            base = rng() > 0.5 ? '#5a7a58' : '#4e6e50'
+            base = rng() > 0.5 ? '#4a8a48' : '#428040'
           } else if (seg.biome === 'night') {
             base = rng() > 0.5 ? '#243028' : '#1e2a24'
           } else if (seg.biome === 'flower') {
             const r = rng()
-            base = r > 0.6 ? '#6a8a5e' : r > 0.3 ? '#748e66' : '#5e7e56'
+            base = r > 0.6 ? '#5a9a52' : r > 0.3 ? '#68a858' : '#4e8e48'
           } else if (seg.biome === 'pasture') {
-            base = rng() > 0.5 ? '#6e8e66' : '#64865c'
+            base = rng() > 0.5 ? '#5ea050' : '#549848'
           } else if (seg.biome === 'snow') {
             base = rng() > 0.5 ? '#e2ebf2' : '#d8e4ec'
           }
@@ -154,7 +155,7 @@ function Cliffs() {
           y: CLIFF_HEIGHT / 2,
           z: cz,
           ry: yaw,
-          sx: 8,
+          sx: 8 + (rng() - 0.5) * 1.8,
           sy: CLIFF_HEIGHT,
           sz: len,
           color: side < 0 ? band.color : shade(band.color, 8),
@@ -185,6 +186,7 @@ function Cliffs() {
           x: px + side * CLIFF_OFFSET,
           y: CLIFF_HEIGHT / 2,
           z: cz,
+          ry: yaw,
           halfX: 4.5,
           halfY: CLIFF_HEIGHT / 2,
           halfZ: len / 2,
@@ -240,6 +242,7 @@ function Cliffs() {
           <CuboidCollider
             key={i}
             position={[c.x, c.y, c.z]}
+            rotation={[0, c.ry ?? 0, 0]}
             args={[c.halfX, c.halfY, c.halfZ]}
           />
         ))}

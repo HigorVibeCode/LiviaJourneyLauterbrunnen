@@ -10,6 +10,7 @@ import {
   sfxRespawn,
   sfxOwl,
   sfxWolfHowl,
+  sfxDistantBell,
 } from '../audio/sfx'
 import { useProgressStore } from '../store/progressStore'
 import { usePlayerStore, playerPosition } from '../store/playerStore'
@@ -78,20 +79,22 @@ export default function AudioDirector() {
       const inWater = z <= PHASES.water.zTo + 6 && z >= PHASES.water.zFrom - 6
       const inSnow = z <= PHASES.snow.zTo + 6 && z >= PHASES.snow.zFrom - 8
       const inFlower = z <= PHASES.flower.zTo + 6 && z >= PHASES.flower.zFrom - 6
+      const inPasture = z <= PHASES.pasture.zTo + 6 && z >= PHASES.pasture.zFrom - 6
+      const inMeadow = z <= PHASES.meadow.zTo + 6 && z >= PHASES.meadow.zFrom - 6
       const inSummit = z <= PHASES.summit.zTo && z >= PHASES.summit.zFrom
       const gateOpen = useProgressStore.getState().unlockedGates.includes('gate_summit')
       const tensionOn =
         (inSummit && gateOpen && !useProgressStore.getState().finished) || inNight
 
       setAmbientTargets({
-        wind: inSummit ? 0.12 : inSnow ? 0.075 : inNight ? 0.055 : 0.032,
+        wind: inSummit ? 0.12 : inSnow ? 0.075 : inNight ? 0.055 : inPasture ? 0.04 : 0.032,
         rain: inWater ? 0.085 : 0,
-        water: inWater ? 0.05 : 0,
+        water: inWater ? 0.08 : inNight ? 0.012 : 0,
         tension: tensionOn ? (inNight ? 0.06 : 0.085) : 0,
       })
 
-      // pássaros: vivos no prado florido; silenciosos na noite/neve
-      if (!inSnow && !inSummit && !inNight && Math.random() < (inFlower ? 0.18 : inWater ? 0.045 : 0.13)) {
+      if (inMeadow && Math.random() < 0.025) sfxDistantBell()
+      if (!inSnow && !inSummit && !inNight && Math.random() < (inFlower ? 0.2 : inPasture ? 0.12 : inMeadow ? 0.15 : inWater ? 0.045 : 0.13)) {
         sfxChirp()
       }
       if (inWater && Math.random() < 0.013) sfxThunder()

@@ -292,3 +292,47 @@ export function sfxMooChase() {
 export function sfxMooCatch() {
   sfxMoo('catch')
 }
+
+/** Easter eggs — sons curtos e claros para crianças */
+export function sfxEggBell() {
+  tone({ freq: 880, dur: 0.12, type: 'sine', gain: 0.06 })
+  tone({ freq: 1175, time: 0.08, dur: 0.18, type: 'triangle', gain: 0.05 })
+}
+
+export function sfxEggHay() {
+  noiseBurst({ dur: 0.08, freq: 320, q: 0.6, gain: 0.05 })
+  noiseBurst({ time: 0.05, dur: 0.1, type: 'bandpass', freq: 680, q: 1.2, gain: 0.04 })
+}
+
+export function sfxEggFirefly() {
+  tone({ freq: 620, dur: 0.15, type: 'sine', gain: 0.045, glide: 120 })
+  tone({ freq: 740, time: 0.12, dur: 0.2, type: 'triangle', gain: 0.04, glide: 80 })
+  tone({ freq: 880, time: 0.28, dur: 0.25, type: 'sine', gain: 0.035, glide: -60 })
+}
+
+export function sfxEggSplash() {
+  noiseBurst({ dur: 0.14, freq: 700, q: 0.9, gain: 0.06 })
+  tone({ freq: 280, time: 0.06, dur: 0.12, type: 'sine', gain: 0.04, glide: -40 })
+}
+
+export function sfxEggPop() {
+  tone({ freq: 420, dur: 0.08, type: 'triangle', gain: 0.05, glide: 180 })
+  noiseBurst({ time: 0.04, dur: 0.06, type: 'highpass', freq: 1200, gain: 0.035 })
+}
+
+export function sfxEggChime() {
+  tone({ freq: 988, dur: 0.2, type: 'sine', gain: 0.045 })
+  tone({ freq: 1319, time: 0.1, dur: 0.22, type: 'triangle', gain: 0.038 })
+}
+
+export function sfxEggFanfare() {
+  ;[523, 659, 784, 988].forEach((f, i) => {
+    tone({ freq: f, time: i * 0.12, dur: 0.22, type: 'triangle', gain: 0.045 })
+  })
+}
+
+/** Sino distante na pradaria (camada ambiental leve) */
+export function sfxDistantBell() {
+  tone({ freq: 660, dur: 0.35, type: 'sine', gain: 0.028 })
+  tone({ freq: 990, time: 0.08, dur: 0.28, type: 'triangle', gain: 0.018 })
+}

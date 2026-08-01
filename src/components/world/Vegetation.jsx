@@ -1,16 +1,14 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import Instanced, { useWindMaterial } from './Instanced'
 import { generateZoneProps } from '../../config/scatter'
-import { SCATTER_ZONES } from '../../config/world'
-import { playerPosition } from '../../store/playerStore'
+import { SCATTER_ZONES, pathXAt } from '../../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
-
-/** Só monta zonas perto da Livia — o mapa inteiro de uma vez matava o FPS */
-const ZONE_PAD = 180
+import { playerPosition } from '../../store/playerStore'
+import { bandForDistance, distanceToPlayer } from '../../utils/lodBands'
 
 /** Geometrias compartilhadas por todas as zonas (criadas uma vez) */
 function useSharedGeometries() {
@@ -70,7 +68,7 @@ function useSharedGeometries() {
     stemMush.translate(0, 0.15, 0)
 
     const log = new THREE.CylinderGeometry(0.5, 0.5, 3.2, 6)
-    const hay = new THREE.CylinderGeometry(1.2, 1.2, 2.2, 9)
+    const hay = new THREE.CylinderGeometry(0.95, 0.95, 2.6, 8)
     const crate = new THREE.BoxGeometry(1.3, 1.3, 1.3)
     const barrel = new THREE.CylinderGeometry(0.6, 0.7, 1.3, 8)
 
@@ -159,7 +157,7 @@ function useSharedMaterials() {
       lamp: mk({
         color: '#ffd79a',
         emissive: new THREE.Color('#ffb24a'),
-        emissiveIntensity: 0.8,
+        emissiveIntensity: 1.35,
         roughness: 0.3,
       }),
     }
@@ -171,25 +169,15 @@ export default function Vegetation() {
   const density = (QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium).density
   const geo = useSharedGeometries()
   const mat = useSharedMaterials()
-  // vento só em Alta — no Médio o shader de wind em milhares de blades mata o FPS
-  const windOn = quality === 'high'
+  // vento: Alta = tudo; Médio = só arbustos/juncos/samambaias (grama estática)
+  const windFull = quality === 'high'
+  const windSelective = quality === 'medium' || quality === 'high'
   const grassWind = useWindMaterial({ color: '#ffffff', strength: 0.2, speed: 1.3 })
   const bushWind = useWindMaterial({ color: '#ffffff', strength: 0.045, speed: 0.9 })
   const reedWind = useWindMaterial({ color: '#ffffff', strength: 0.13, speed: 1 })
-  const grassMaterial = windOn ? grassWind : mat.grass
-  const bushMaterial = windOn ? bushWind : mat.bush
-  const reedMaterial = windOn ? reedWind : mat.reed
-
-  // banda Z arredondada — evita re-render a cada frame
-  const bandRef = useRef(Math.round(playerPosition.z / 48) * 48)
-  const [bandZ, setBandZ] = useState(bandRef.current)
-  useFrame(() => {
-    const next = Math.round(playerPosition.z / 48) * 48
-    if (next !== bandRef.current) {
-      bandRef.current = next
-      setBandZ(next)
-    }
-  })
+  const grassMaterial = windFull ? grassWind : mat.grass
+  const bushMaterial = windSelective ? bushWind : mat.bush
+  const reedMaterial = windSelective ? reedWind : mat.reed
 
   const zones = useMemo(() => {
     const rails = (fences, height) =>
@@ -207,9 +195,8 @@ export default function Vegetation() {
       .filter(Boolean)
       .map((z) => ({
         ...z,
-        // Instâncias com `color` tingem o material inteiro, então tronco,
-        // neve, haste e miolo precisam de listas sem cor — senão o tronco
-        // do pinheiro fica verde e a haste da flor fica rosa.
+        zFrom: SCATTER_ZONES[z.zoneId]?.zFrom ?? 0,
+        zTo: SCATTER_ZONES[z.zoneId]?.zTo ?? 0,
         flowerBases: strip(z.flowers),
         pineBases: strip(z.pines),
         pineSnowBases: strip(z.pineSnow),
@@ -221,33 +208,64 @@ export default function Vegetation() {
       }))
   }, [density])
 
-  const activeZones = useMemo(() => {
-    return zones.filter((z) => {
-      const def = SCATTER_ZONES[z.zoneId]
-      if (!def) return false
-      return bandZ <= def.zTo + ZONE_PAD && bandZ >= def.zFrom - ZONE_PAD
-    })
-  }, [zones, bandZ])
-
   const solids = useMemo(() => {
     const list = []
-    activeZones.forEach((z) => {
-      // só o tronco — a Livia passa por baixo da copa
+    zones.forEach((z) => {
       z.pines.forEach((p) => list.push({ x: p.x, y: p.y, z: p.z, r: 0.32 * p.s, h: 2.4 * p.s }))
       z.rocks.forEach((r) => {
         if (r.solid) list.push({ x: r.x, y: r.y, z: r.z, r: r.s * 0.45, h: r.s * 0.48 })
       })
+      z.bushes.forEach((b) =>
+        list.push({ x: b.x, y: b.y, z: b.z, r: 0.42 * (b.s ?? 1), h: 0.35 * (b.s ?? 1) }),
+      )
+      z.logs.forEach((l) =>
+        list.push({ x: l.x, y: l.y + 0.2 * (l.s ?? 1), z: l.z, r: 0.48 * (l.s ?? 1), h: 0.32 * (l.s ?? 1) }),
+      )
+      z.hay.forEach((h) =>
+        list.push({ x: h.x, y: h.y, z: h.z, r: 0.55 * (h.s ?? 1), h: 0.38 * (h.s ?? 1) }),
+      )
+      z.crateBoxes.forEach((c) =>
+        list.push({ x: c.x, y: c.y, z: c.z, r: 0.42 * (c.s ?? 1), h: 0.45 * (c.s ?? 1) }),
+      )
+      z.barrels.forEach((c) =>
+        list.push({ x: c.x, y: c.y, z: c.z, r: 0.38 * (c.s ?? 1), h: 0.45 * (c.s ?? 1) }),
+      )
     })
     return list
-  }, [activeZones])
+  }, [zones])
 
-  /**
-   * Copas: volume alinhado aos cones visuais.
-   * Grupo CAMERA_OCCLUDER — o raycast da câmera enxerga; a Livia não esbarra.
-   */
+  const bushColliders = useMemo(() => {
+    const list = []
+    zones.forEach((z) =>
+      z.bushes.forEach((b) =>
+        list.push({ x: b.x, y: b.y + 0.35 * (b.s ?? 1), z: b.z, r: 0.42 * (b.s ?? 1), h: 0.35 * (b.s ?? 1) }),
+      ),
+    )
+    return list
+  }, [zones])
+
+  const propColliders = useMemo(() => {
+    const list = []
+    zones.forEach((z) => {
+      z.logs.forEach((l) =>
+        list.push({ x: l.x, y: l.y + 0.25 * (l.s ?? 1), z: l.z, r: 0.48 * (l.s ?? 1), h: 0.28 * (l.s ?? 1) }),
+      )
+      z.hay.forEach((h) =>
+        list.push({ x: h.x, y: h.y, z: h.z, r: 0.52 * (h.s ?? 1), h: 0.32 * (h.s ?? 1) }),
+      )
+      z.crateBoxes.forEach((c) =>
+        list.push({ x: c.x, y: c.y, z: c.z, r: 0.4 * (c.s ?? 1), h: 0.42 * (c.s ?? 1) }),
+      )
+      z.barrels.forEach((c) =>
+        list.push({ x: c.x, y: c.y, z: c.z, r: 0.36 * (c.s ?? 1), h: 0.42 * (c.s ?? 1) }),
+      )
+    })
+    return list
+  }, [zones])
+
   const canopyOccluders = useMemo(() => {
     const list = []
-    activeZones.forEach((z) => {
+    zones.forEach((z) => {
       z.pines.forEach((p) => {
         const s = p.s
         list.push({
@@ -260,21 +278,41 @@ export default function Vegetation() {
       })
     })
     return list
-  }, [activeZones])
+  }, [zones])
 
   const fenceColliders = useMemo(() => {
     const list = []
-    // cercas só na zona ativa — menos colliders no Rapier
-    activeZones.forEach((z) =>
-      z.railsHigh.forEach((f) => list.push({ x: f.x, y: f.y - 0.35, z: f.z, ry: f.ry })),
+    zones.forEach((z) =>
+      z.fences.forEach((f) => {
+        const rx = f.ry === 0 ? f.x + 1.35 : f.x
+        const rz = f.ry === 0 ? f.z : f.z + 1.35
+        list.push({ x: rx, y: f.y + 0.85, z: rz, ry: f.ry })
+      }),
     )
     return list
-  }, [activeZones])
+  }, [zones])
 
-  /** Bonecos de neve e árvores nevadas viram props do WorldMap */
+  const decorativeRefs = useRef({})
+  const lodTick = useRef(0)
+
+  useFrame((state) => {
+    if (state.clock.elapsedTime - lodTick.current < 0.22) return
+    lodTick.current = state.clock.elapsedTime
+    const px = playerPosition.x
+    const pz = playerPosition.z
+    zones.forEach((z) => {
+      const midZ = (z.zFrom + z.zTo) / 2
+      const midX = pathXAt(midZ)
+      const d = distanceToPlayer(midX, midZ, px, pz)
+      const band = bandForDistance(d)
+      const deco = decorativeRefs.current[z.zoneId]
+      if (deco) deco.visible = band !== 'far'
+    })
+  })
+
   const snowmen = useMemo(
-    () => activeZones.flatMap((z) => z.snowmen.map((s) => ({ ...s, zone: z.zoneId }))),
-    [activeZones],
+    () => zones.flatMap((z) => z.snowmen.map((s) => ({ ...s, zone: z.zoneId }))),
+    [zones],
   )
 
   return (
@@ -283,6 +321,12 @@ export default function Vegetation() {
       <RigidBody type="fixed" colliders={false} friction={0.35}>
         {solids.map((s, i) => (
           <CuboidCollider key={`s${i}`} position={[s.x, s.y + s.h, s.z]} args={[s.r, s.h, s.r]} />
+        ))}
+        {bushColliders.map((b, i) => (
+          <CuboidCollider key={`b${i}`} position={[b.x, b.y, b.z]} args={[b.r, b.h, b.r]} />
+        ))}
+        {propColliders.map((p, i) => (
+          <CuboidCollider key={`p${i}`} position={[p.x, p.y, p.z]} args={[p.r, p.h, p.r]} />
         ))}
         {fenceColliders.map((f, i) => (
           <CuboidCollider
@@ -306,7 +350,7 @@ export default function Vegetation() {
         ))}
       </RigidBody>
 
-      {activeZones.map((z) => (
+      {zones.map((z) => (
         <group key={z.zoneId}>
           <Instanced geometry={geo.trunk} material={mat.bark} items={z.pineBases} castShadow={false} receiveShadow={false} />
           <Instanced geometry={geo.canopyA} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
@@ -317,6 +361,7 @@ export default function Vegetation() {
           <Instanced geometry={geo.snowB} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
           <Instanced geometry={geo.snowC} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
 
+          <group ref={(el) => { decorativeRefs.current[z.zoneId] = el }}>
           <Instanced geometry={geo.bush} material={bushMaterial} items={z.bushes} castShadow={false} receiveShadow={false} />
           <Instanced geometry={geo.bushCap} material={mat.snow} items={z.bushSnow} castShadow={false} receiveShadow={false} />
           <Instanced geometry={geo.fruit} material={mat.fruit} items={z.fruits} castShadow={false} receiveShadow={false} />
@@ -328,8 +373,10 @@ export default function Vegetation() {
             castShadow={false}
             receiveShadow={false}
           />
-          {/* flor = 1 mesh (pétalas) — stem/leaves/miolo eram 4× draw cost */}
+          <Instanced geometry={geo.stem} material={mat.stem} items={z.flowerBases} castShadow={false} receiveShadow={false} />
+          <Instanced geometry={geo.leaves} material={mat.leaf} items={z.flowerBases} castShadow={false} receiveShadow={false} />
           <Instanced geometry={geo.petals} material={mat.bloom} items={z.flowers} castShadow={false} receiveShadow={false} />
+          <Instanced geometry={geo.bloom} material={mat.bloomCenter} items={z.flowerBases} castShadow={false} receiveShadow={false} />
 
           <Instanced geometry={geo.fern} material={bushMaterial} items={z.ferns} castShadow={false} receiveShadow={false} />
           <Instanced
@@ -364,14 +411,14 @@ export default function Vegetation() {
             receiveShadow={false}
           />
 
-          {/* ── Elementos de inverno ── */}
           <Instanced
             geometry={geo.snowPatch}
             material={mat.snow}
             items={z.snowPatches}
             castShadow={false}
           />
-          <Instanced geometry={geo.icicle} material={mat.ice} items={z.icicles} receiveShadow={false} />
+          <Instanced geometry={geo.icicle} material={mat.ice} items={z.icicles} castShadow={false} receiveShadow={false} />
+          </group>
         </group>
       ))}
 

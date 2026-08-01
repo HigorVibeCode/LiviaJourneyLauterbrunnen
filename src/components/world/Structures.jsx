@@ -1269,8 +1269,11 @@ export function Ponds() {
   )
 }
 
+import { SIGN_TEXTS } from '../../config/story'
+
 /** Placa de madeira indicando a direção */
 export function Signpost({ position = [0, 0, 0], rotation = 0, label = 0 }) {
+  const text = SIGN_TEXTS[label] ?? ''
   return (
     <group position={position} rotation={[0, rotation, 0]}>
       <mesh position={[0, 1.4, 0]} castShadow>
@@ -1292,6 +1295,12 @@ export function Signpost({ position = [0, 0, 0], rotation = 0, label = 0 }) {
         <coneGeometry args={[0.26, 0.4, 5]} />
         <meshStandardMaterial color={label % 2 ? '#4a2814' : '#3d2914'} flatShading />
       </mesh>
+      {text && (
+        <mesh position={[0, 2.05, 0.08]}>
+          <planeGeometry args={[1.6, 0.28]} />
+          <meshBasicMaterial color="#f4efe4" transparent opacity={0.92} />
+        </mesh>
+      )}
     </group>
   )
 }

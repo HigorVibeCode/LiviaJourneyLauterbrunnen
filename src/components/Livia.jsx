@@ -8,7 +8,7 @@ import { useWaterfallStore } from '../store/waterfallStore'
 import { useGameStore } from '../store/gameStore'
 import { useProgressStore } from '../store/progressStore'
 import { CAM_RAY_GROUPS, PLAYER_GROUPS } from '../physics/groups'
-import { GUIDE_HOLD_SEC, guideHand, guideInput } from '../lib/guideInput'
+import { GUIDE_HOLD_SEC, GUIDE_MAX_CHARGE, GUIDE_RECHARGE_RATE, guideHand, guideInput } from '../lib/guideInput'
 import { getObjectiveTarget } from '../lib/objectiveTarget'
 import { phoenixRide } from '../lib/phoenixRide'
 import { cowChase } from '../lib/cowChase'
@@ -24,7 +24,9 @@ import {
 import { resolveWaterPush, WATER_COMPLAINTS } from '../lib/waterPush'
 import LiviaModel from './livia/LiviaModel'
 import { sfxFootstep, sfxJump, sfxLand, sfxComplaintSplash, surfaceAt } from '../audio/sfx'
+import { touchInput } from '../lib/touchInput'
 import { groundHeightAt, pathXAt } from '../config/world'
+import { LiviaLanternLight } from './LanternPickup'
 
 const WALK_SPEED = 7.4
 const RUN_SPEED = 12.4
@@ -94,6 +96,7 @@ export default function Livia() {
     riding: false,
   })
   const eWasDown = useRef(false)
+  const horseGuideWarnRef = useRef(false)
   const finaleHopStarted = useRef(false)
 
   const { world, rapier } = useRapier()
@@ -332,7 +335,24 @@ export default function Livia() {
       animState.current.guiding = false
       animState.current.riding = true
 
-      const { forward, back, left, right, run, jump } = getKeys()
+      const keys = getKeys()
+      const interact = keys.interact || touchInput.interact
+      if (interact) {
+        if (!horseGuideWarnRef.current) {
+          horseGuideWarnRef.current = true
+          const toast = 'Desça do cavalo para usar a guia luminosa.'
+          useProgressStore.setState({ toast })
+          setTimeout(() => {
+            if (useProgressStore.getState().toast === toast) {
+              useProgressStore.setState({ toast: null })
+            }
+          }, 2800)
+        }
+      } else {
+        horseGuideWarnRef.current = false
+      }
+
+      const { forward, back, left, right, run, jump } = keys
       let inputX = 0
       let inputZ = 0
       if (forward) inputZ -= 1
@@ -589,9 +609,16 @@ export default function Livia() {
     }
 
     // ── Input ──
-    const { forward, back, left, right, jump, run, interact } = getKeys()
+    const keys = getKeys()
+    const forward = keys.forward || touchInput.forward
+    const back = keys.back || touchInput.back
+    const left = keys.left || touchInput.left
+    const right = keys.right || touchInput.right
+    const jump = keys.jump || touchInput.jump
+    const run = keys.run || touchInput.run
+    const interact = keys.interact || touchInput.interact
 
-    // E: tap curto → portão / montar; segurar → guia (consome carga, máx 5s)
+    // E: tap curto → portão / montar; segurar → guia (consome carga, recarrega fora de uso)
     if (guideInput.tapStale) {
       guideInput.tapPending = false
       guideInput.tapStale = false
@@ -653,6 +680,9 @@ export default function Livia() {
         guideInput.guiding = false
         guideInput.depleted = true
       }
+    } else if (!guideInput.holding && guideInput.charge < GUIDE_MAX_CHARGE) {
+      guideInput.charge = Math.min(GUIDE_MAX_CHARGE, guideInput.charge + dt * GUIDE_RECHARGE_RATE)
+      if (guideInput.charge > 0.05) guideInput.depleted = false
     }
     if (guideInput.tapPending) guideInput.tapStale = true
     guideHand.active = guideInput.guiding
@@ -684,6 +714,8 @@ export default function Livia() {
     const maxSpeed = run ? RUN_SPEED : WALK_SPEED
     const control = groundedRef.current ? 1 : AIR_CONTROL
     const blend = 1 - Math.exp(-ACCEL * control * dt)
+    const touchMove = touchInput.forward || touchInput.back || touchInput.left || touchInput.right
+    const turnBoost = touchMove ? 1.18 : 1
     let nextX = lerp(vel.x, worldX * maxSpeed, blend)
     let nextZ = lerp(vel.z, worldZ * maxSpeed, blend)
     let nextY = vel.y
@@ -827,7 +859,7 @@ export default function Livia() {
         while (diff > Math.PI) diff -= Math.PI * 2
         while (diff < -Math.PI) diff += Math.PI * 2
         const turn =
-          length > 0.05 ? TURN_SPEED : guideInput.guiding ? GUIDE_TURN_SPEED : TURN_SPEED
+          length > 0.05 ? TURN_SPEED * turnBoost : guideInput.guiding ? GUIDE_TURN_SPEED : TURN_SPEED * turnBoost
         modelRef.current.rotation.y = current + diff * Math.min(1, dt * turn)
       }
     }
@@ -862,6 +894,7 @@ export default function Livia() {
       <group ref={modelRef} rotation={[0, Math.PI, 0]}>
         <group ref={hopRef}>
           <LiviaModel stateRef={animState} />
+          <LiviaLanternLight />
         </group>
       </group>
     </RigidBody>

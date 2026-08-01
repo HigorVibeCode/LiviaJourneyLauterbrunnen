@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { KeyboardControls } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
@@ -11,8 +11,15 @@ import Weather from './components/Weather'
 import Hud from './components/Hud'
 import GuideBeacon from './components/GuideBeacon'
 import FinaleDirector from './components/FinaleDirector'
+import TouchControls from './components/ui/TouchControls'
+import LoadingScreen from './components/ui/LoadingScreen'
+import IntroOverlay from './components/ui/IntroOverlay'
+import BootWarmup from './components/ui/BootWarmup'
+import { LoaderReporter } from './components/ui/LoaderReporter'
 import ErrorBoundary from './components/ErrorBoundary'
 import { QUALITY_PRESETS, useGameStore } from './store/gameStore'
+import { useLoadingStore, markIntroDone } from './store/loadingStore'
+import { preloadGameAssets } from './lib/preloadAssets'
 import './App.css'
 
 const keyboardMap = [
@@ -50,22 +57,25 @@ function GameCanvas() {
   return (
     <Canvas
       shadows={preset.shadows}
-      dpr={1}
-      camera={{ position: [0, 6, 108], fov: 52, near: 0.5, far: 900 }}
+      dpr={preset.dpr}
+      camera={{ position: [0, 6, 108], fov: 52, near: 0.4, far: 1600 }}
       gl={{
         alpha: false,
-        antialias: false,
+        antialias: !preset.postFx,
         powerPreference: 'high-performance',
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.0,
         stencil: false,
       }}
+      performance={{ min: 0.6 }}
       onCreated={({ gl }) => {
         gl.setClearColor('#87a8c0', 1)
         gl.outputColorSpace = THREE.SRGBColorSpace
       }}
     >
       <Lighting />
+      <LoaderReporter />
+      <BootWarmup />
 
       <ErrorBoundary name="GameScene">
         <Suspense fallback={null}>
@@ -83,13 +93,37 @@ function GameCanvas() {
 }
 
 export default function App() {
+  const bootReady = useLoadingStore((s) => s.bootReady)
+  const introDone = useLoadingStore((s) => s.introDone)
+  const [showIntro, setShowIntro] = useState(false)
+
+  useEffect(() => {
+    preloadGameAssets()
+  }, [])
+
+  useEffect(() => {
+    if (bootReady && !introDone) setShowIntro(true)
+  }, [bootReady, introDone])
+
+  const gameUnlocked = bootReady && introDone
+
   return (
     <KeyboardControls map={keyboardMap}>
       <div className="game-root">
         <PauseListener />
         <AudioDirector />
         <GameCanvas />
-        <Hud />
+        {gameUnlocked && <Hud />}
+        {gameUnlocked && <TouchControls />}
+        {!gameUnlocked && <LoadingScreen hidden={false} />}
+        {showIntro && !introDone && (
+          <IntroOverlay
+            onDone={() => {
+              markIntroDone()
+              setShowIntro(false)
+            }}
+          />
+        )}
       </div>
     </KeyboardControls>
   )

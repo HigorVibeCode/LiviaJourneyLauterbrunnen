@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { detectMobile } from '../lib/touchInput'
 
 /** Presets de qualidade — controlam sombras, pós-processamento e densidade */
 export const QUALITY_PRESETS = {
@@ -10,18 +11,17 @@ export const QUALITY_PRESETS = {
     postFx: false,
     shadowMapSize: 512,
     dpr: [1, 1],
-    density: 0.35,
+    density: 0.55,
   },
   medium: {
     id: 'medium',
     label: 'Média',
-    // sombra desligada no medium: é o maior custo num mapa aberto
     shadows: false,
     softShadows: false,
     postFx: false,
     shadowMapSize: 1024,
     dpr: [1, 1],
-    density: 0.42,
+    density: 0.75,
   },
   high: {
     id: 'high',
@@ -29,9 +29,9 @@ export const QUALITY_PRESETS = {
     shadows: true,
     softShadows: false,
     postFx: true,
-    shadowMapSize: 1024,
-    dpr: [1, 1.25],
-    density: 0.75,
+    shadowMapSize: 1536,
+    dpr: [1, 1.5],
+    density: 1.2,
   },
 }
 
@@ -46,6 +46,7 @@ export const useGameStore = create((set, get) => ({
   paused: false,
   quality: initialQuality(),
   audio: true,
+  isMobile: typeof window !== 'undefined' ? detectMobile() : false,
 
   togglePause: () => set((s) => ({ paused: !s.paused })),
   setPaused: (paused) => set({ paused }),

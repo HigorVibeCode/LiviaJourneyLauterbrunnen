@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { playerPosition } from '../store/playerStore'
 import { PHASES } from '../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
+import { useProgressStore } from '../store/progressStore'
 
 const SUN_DIR = { x: 42, y: 58, z: 26 }
 
@@ -13,44 +14,52 @@ const SUN_DIR = { x: 42, y: 58, z: 26 }
  */
 const MOODS = {
   default: {
-    fog: 0.00135,
-    fogColor: new THREE.Color('#a8c0d4'),
-    sun: 1.55,
-    sunColor: new THREE.Color('#f0ebe0'),
-    ambient: 0.28,
-    hemi: 0.48,
-  },
-  night: {
-    fog: 0.0085,
-    fogColor: new THREE.Color('#0e1422'),
-    sun: 0.28,
-    sunColor: new THREE.Color('#6a7a9a'),
-    ambient: 0.08,
-    hemi: 0.14,
-  },
-  water: {
-    fog: 0.0042,
-    fogColor: new THREE.Color('#7a92a0'),
-    sun: 1.15,
-    sunColor: new THREE.Color('#d8e0e6'),
+    fog: 0.00095,
+    fogColor: new THREE.Color('#7eb0d8'),
+    sun: 1.85,
+    sunColor: new THREE.Color('#ffe8c8'),
     ambient: 0.22,
     hemi: 0.38,
   },
+  night: {
+    fog: 0.0032,
+    fogColor: new THREE.Color('#243048'),
+    sun: 0.72,
+    sunColor: new THREE.Color('#8a9ab8'),
+    ambient: 0.20,
+    hemi: 0.32,
+  },
+  water: {
+    fog: 0.0032,
+    fogColor: new THREE.Color('#6a98b0'),
+    sun: 1.35,
+    sunColor: new THREE.Color('#ffe0b8'),
+    ambient: 0.18,
+    hemi: 0.32,
+  },
   snow: {
-    fog: 0.003,
-    fogColor: new THREE.Color('#c0d0e0'),
-    sun: 1.45,
-    sunColor: new THREE.Color('#eef2f6'),
-    ambient: 0.32,
-    hemi: 0.52,
+    fog: 0.0024,
+    fogColor: new THREE.Color('#b0c8e0'),
+    sun: 1.65,
+    sunColor: new THREE.Color('#f8f4ec'),
+    ambient: 0.26,
+    hemi: 0.42,
   },
   flower: {
-    fog: 0.00125,
-    fogColor: new THREE.Color('#b8c8b0'),
-    sun: 1.65,
-    sunColor: new THREE.Color('#f2e8d0'),
-    ambient: 0.32,
-    hemi: 0.55,
+    fog: 0.00088,
+    fogColor: new THREE.Color('#98c898'),
+    sun: 1.9,
+    sunColor: new THREE.Color('#ffe8b0'),
+    ambient: 0.24,
+    hemi: 0.42,
+  },
+  pasture: {
+    fog: 0.00092,
+    fogColor: new THREE.Color('#88b898'),
+    sun: 1.82,
+    sunColor: new THREE.Color('#ffe8c0'),
+    ambient: 0.24,
+    hemi: 0.42,
   },
 }
 
@@ -59,6 +68,7 @@ function moodAt(z) {
   if (z <= PHASES.water.zTo + 6 && z >= PHASES.water.zFrom - 6) return MOODS.water
   if (z <= PHASES.snow.zTo + 6 && z >= PHASES.snow.zFrom - 8) return MOODS.snow
   if (z <= PHASES.flower.zTo + 6 && z >= PHASES.flower.zFrom - 6) return MOODS.flower
+  if (z <= PHASES.pasture.zTo + 6 && z >= PHASES.pasture.zFrom - 6) return MOODS.pasture
   return MOODS.default
 }
 
@@ -98,14 +108,20 @@ export default function Lighting() {
     }
 
     const mood = moodAt(p.z)
+    const inNight =
+      p.z <= PHASES.night.zTo + 4 && p.z >= PHASES.night.zFrom - 4
+    const lanternBoost =
+      inNight && useProgressStore.getState().hasLantern ? 0.10 : 0
+    const targetAmbient = mood.ambient + lanternBoost
+    const targetHemi = mood.hemi + lanternBoost * 0.5
     const k = Math.min(1, delta * 1.6)
     light.intensity += (mood.sun - light.intensity) * k
     light.color.lerp(mood.sunColor, k)
     if (ambientRef.current) {
-      ambientRef.current.intensity += (mood.ambient - ambientRef.current.intensity) * k
+      ambientRef.current.intensity += (targetAmbient - ambientRef.current.intensity) * k
     }
     if (hemiRef.current) {
-      hemiRef.current.intensity += (mood.hemi - hemiRef.current.intensity) * k
+      hemiRef.current.intensity += (targetHemi - hemiRef.current.intensity) * k
     }
     if (state.scene.fog) {
       const nextDensity = mood.fog
@@ -122,15 +138,15 @@ export default function Lighting() {
     <>
       {preset.softShadows && <SoftShadows size={22} samples={8} focus={0.6} />}
 
-      <hemisphereLight ref={hemiRef} args={['#b8cce0', '#5a6e52', 0.48]} />
-      <ambientLight ref={ambientRef} intensity={0.28} color="#c8d8e4" />
+      <hemisphereLight ref={hemiRef} args={['#88b8e8', '#4a7a42', 0.38]} />
+      <ambientLight ref={ambientRef} intensity={0.22} color="#b8d0e8" />
 
       <object3D ref={targetRef} />
       <directionalLight
         ref={lightRef}
         castShadow={preset.shadows}
-        intensity={1.55}
-        color="#f0ebe0"
+        intensity={1.85}
+        color="#ffe8c8"
         shadow-mapSize-width={preset.shadowMapSize}
         shadow-mapSize-height={preset.shadowMapSize}
         shadow-camera-near={1}
@@ -145,8 +161,8 @@ export default function Lighting() {
 
       <directionalLight position={[-30, 26, -18]} intensity={0.32} color="#9ab0c4" />
 
-      <fogExp2 attach="fog" args={['#a8c0d4', 0.00135]} />
-      <color attach="background" args={['#87a8c0']} />
+      <fogExp2 attach="fog" args={['#7eb0d8', 0.00095]} />
+      <color attach="background" args={['#5a9ec8']} />
     </>
   )
 }

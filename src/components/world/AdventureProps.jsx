@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { forwardRef, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
@@ -8,12 +8,11 @@ import {
   PROP_COLLIDERS,
   buildAdventurePlacements,
 } from '../../config/adventureDecor'
-import { playerPosition } from '../../store/playerStore'
 import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import Instanced from './Instanced'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
-
-const NEAR_PAD = 200
+import { playerPosition } from '../../store/playerStore'
+import { bandForDistance, distanceToPlayer, isHeroPlacement } from '../../utils/lodBands'
 
 const MODEL_URL = '/models/adventure_pack.glb'
 
@@ -137,7 +136,7 @@ function extractNormalized(scene, name, targetHeight) {
     if (!obj.isMesh) return
     // só árvores/heróis grandes projetam sombra — fill props são receive-only
     obj.castShadow = false
-    obj.receiveShadow = false
+    obj.receiveShadow = true
     if (obj.material) tintMeshMaterial(obj, name)
   })
 
@@ -164,6 +163,71 @@ function bakeForInstancing(pivot) {
   }
 }
 
+function buildPropBatch(library, placements) {
+  const byProp = new Map()
+  for (const p of placements) {
+    if (!library[p.prop]) continue
+    if (!byProp.has(p.prop)) byProp.set(p.prop, [])
+    byProp.get(p.prop).push(p)
+  }
+
+  const instanced = []
+  const clones = []
+  const colliders = []
+  const canopyOccluders = []
+
+  for (const [prop, items] of byProp) {
+    const entry = library[prop]
+    const collider = PROP_COLLIDERS[prop]
+
+    if (entry.baked) {
+      instanced.push({
+        prop,
+        geometry: entry.baked.geometry,
+        material: entry.baked.material,
+        items: items.map((it) => ({
+          x: it.x,
+          y: it.y,
+          z: it.z,
+          ry: it.ry,
+          s: it.s,
+        })),
+      })
+    } else {
+      for (const it of items) {
+        clones.push({ prop, ...it })
+      }
+    }
+
+    if (collider) {
+      for (const it of items) {
+        const s = it.s ?? 1
+        colliders.push({
+          x: it.x,
+          y: it.y,
+          z: it.z,
+          ry: it.ry ?? 0,
+          r: (collider.r ?? 0.5) * s,
+          h: (collider.h ?? 0.5) * s,
+          depth: (collider.depth ?? collider.r ?? 0.5) * s,
+        })
+        if (/Tree|Maple|Willow|Pine/i.test(prop) && !/Dead|Trunk/.test(prop)) {
+          const th = (PROP_HEIGHTS[prop] ?? 10) * s
+          canopyOccluders.push({
+            x: it.x,
+            y: it.y + th * 0.55,
+            z: it.z,
+            r: th * 0.28,
+            h: th * 0.4,
+          })
+        }
+      }
+    }
+  }
+
+  return { instanced, clones, colliders, canopyOccluders }
+}
+
 function buildLibrary(scene) {
   const library = {}
   for (const [name, height] of Object.entries(PROP_HEIGHTS)) {
@@ -185,89 +249,32 @@ export default function AdventureProps() {
   const density = (QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium).density
 
   const library = useMemo(() => buildLibrary(scene), [scene])
-  const allPlacements = useMemo(() => buildAdventurePlacements(density), [density])
+  const placements = useMemo(() => buildAdventurePlacements(density), [density])
 
-  const bandRef = useRef(Math.round(playerPosition.z / 48) * 48)
-  const [bandZ, setBandZ] = useState(bandRef.current)
-  useFrame(() => {
-    const next = Math.round(playerPosition.z / 48) * 48
-    if (next !== bandRef.current) {
-      bandRef.current = next
-      setBandZ(next)
-    }
-  })
-
-  const placements = useMemo(
-    () => allPlacements.filter((p) => Math.abs(p.z - bandZ) < NEAR_PAD),
-    [allPlacements, bandZ],
+  const { instanced, clones, colliders, canopyOccluders } = useMemo(
+    () => buildPropBatch(library, placements),
+    [library, placements],
   )
 
-  const { instanced, clones, colliders, canopyOccluders } = useMemo(() => {
-    const byProp = new Map()
-    for (const p of placements) {
-      if (!library[p.prop]) continue
-      if (!byProp.has(p.prop)) byProp.set(p.prop, [])
-      byProp.get(p.prop).push(p)
-    }
+  const cloneRefs = useRef([])
+  const lodTick = useRef(0)
 
-    const instanced = []
-    const clones = []
-    const colliders = []
-    const canopyOccluders = []
-
-    for (const [prop, items] of byProp) {
-      const entry = library[prop]
-      const collider = PROP_COLLIDERS[prop]
-
-      if (entry.baked) {
-        instanced.push({
-          prop,
-          geometry: entry.baked.geometry,
-          material: entry.baked.material,
-          items: items.map((it) => ({
-            x: it.x,
-            y: it.y,
-            z: it.z,
-            ry: it.ry,
-            s: it.s,
-          })),
-        })
-      } else {
-        for (const it of items) {
-          clones.push({ prop, ...it })
-        }
+  useFrame((state) => {
+    if (state.clock.elapsedTime - lodTick.current < 0.22) return
+    lodTick.current = state.clock.elapsedTime
+    const px = playerPosition.x
+    const pz = playerPosition.z
+    clones.forEach((it, i) => {
+      const root = cloneRefs.current[i]
+      if (!root) return
+      if (isHeroPlacement(it)) {
+        root.visible = true
+        return
       }
-
-      // só sólidos grandes — Barrel/Crate/Lamp etc. são decoração sem física
-      const solidProp = /Tree|Maple|Willow|Pine|Rock|Trunk|Log|Fence|Well|Tent|Table/i.test(prop)
-      if (collider && solidProp) {
-        for (const it of items) {
-          const s = it.s ?? 1
-          colliders.push({
-            x: it.x,
-            y: it.y,
-            z: it.z,
-            ry: it.ry ?? 0,
-            r: (collider.r ?? 0.5) * s,
-            h: (collider.h ?? 0.5) * s,
-            depth: (collider.depth ?? collider.r ?? 0.5) * s,
-          })
-          if (/Tree|Maple|Willow|Pine/i.test(prop) && !/Dead|Trunk/.test(prop)) {
-            const th = (PROP_HEIGHTS[prop] ?? 10) * s
-            canopyOccluders.push({
-              x: it.x,
-              y: it.y + th * 0.55,
-              z: it.z,
-              r: th * 0.28,
-              h: th * 0.4,
-            })
-          }
-        }
-      }
-    }
-
-    return { instanced, clones, colliders, canopyOccluders }
-  }, [library, placements])
+      const d = distanceToPlayer(it.x, it.z, px, pz)
+      root.visible = bandForDistance(d) !== 'far'
+    })
+  })
 
   return (
     <group name="adventure-props">
@@ -304,27 +311,29 @@ export default function AdventureProps() {
       ))}
 
       {clones.map((it, i) => (
-        <PackClone key={`ap-${it.prop}-${i}`} template={library[it.prop].pivot} placement={it} />
+        <PackClone
+          key={`ap-${it.prop}-${i}`}
+          ref={(el) => { cloneRefs.current[i] = el }}
+          template={library[it.prop].pivot}
+          placement={it}
+        />
       ))}
     </group>
   )
 }
 
-function PackClone({ template, placement }) {
+
+const PackClone = forwardRef(function PackClone({ template, placement }, ref) {
   const obj = useMemo(() => {
     const clone = template.clone(true)
-    // herda castShadow do template (já filtrado em extractNormalized)
     return clone
   }, [template])
 
   return (
-    <primitive
-      object={obj}
-      position={[placement.x, placement.y, placement.z]}
-      rotation={[0, placement.ry ?? 0, 0]}
-      scale={placement.s ?? 1}
-    />
+    <group ref={ref} position={[placement.x, placement.y, placement.z]} rotation={[0, placement.ry ?? 0, 0]} scale={placement.s ?? 1}>
+      <primitive object={obj} />
+    </group>
   )
-}
+})
 
 useGLTF.preload(MODEL_URL)

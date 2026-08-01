@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { playerPosition } from '../store/playerStore'
@@ -12,24 +12,37 @@ import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 const BOX = 22
 const HEIGHT = 24
 
+function phaseKindAt(z) {
+  if (z <= PHASES.water.zTo + 4 && z >= PHASES.water.zFrom - 4) return 'rain'
+  if (z <= PHASES.snow.zTo + 12 && z >= PHASES.snow.zFrom - 4) return 'snow'
+  if (z <= PHASES.summit.zTo && z >= PHASES.summit.zFrom) return 'snow'
+  return null
+}
+
 /**
  * Clima por fase, tudo na GPU:
  *  fase 2 (vale das águas) → chuva fina e constante
  *  fase 3 (passo nevado)   → nevasca
  *  fase 4 (mirante)        → neve leve
+ *
+ * Só monta o sistema ativo — chuva+neve juntas alocavam ~2× partículas.
  */
 export default function Weather() {
   const quality = useGameStore((s) => s.quality)
   const preset = QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium
-  // um tipo por vez — chuva+neve juntas alocavam ~4k pontos sempre
-  const count = Math.round((preset.id === 'high' ? 1200 : 700) * preset.density)
+  const count = Math.round((preset.id === 'high' ? 1800 : 1100) * preset.density)
+  const [activeKind, setActiveKind] = useState(null)
+  const lastKind = useRef(null)
 
-  return (
-    <group>
-      <Precipitation kind="snow" count={count} />
-      <Precipitation kind="rain" count={count} />
-    </group>
-  )
+  useFrame(() => {
+    const kind = phaseKindAt(playerPosition.z)
+    if (kind === lastKind.current) return
+    lastKind.current = kind
+    setActiveKind(kind)
+  })
+
+  if (!activeKind) return null
+  return <Precipitation kind={activeKind} count={count} />
 }
 
 function Precipitation({ kind, count }) {
@@ -141,7 +154,6 @@ function Precipitation({ kind, count }) {
     const z = playerPosition.z
     let target = 0
     if (snow) {
-      // nevasca no passo nevado; neve leve só no mirante (não no prado florido)
       if (z <= PHASES.snow.zTo + 12 && z >= PHASES.snow.zFrom - 4) target = 1
       else if (z <= PHASES.summit.zTo && z >= PHASES.summit.zFrom) target = 0.4
     } else if (z <= PHASES.water.zTo + 4 && z >= PHASES.water.zFrom - 4) {

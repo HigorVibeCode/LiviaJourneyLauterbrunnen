@@ -56,6 +56,12 @@ export const PROP_HEIGHTS = {
   Mushroom: 0.28,
   bulrush: 1.6,
   Axe: 0.9,
+  House: 8.5,
+  Gate: 4.2,
+  Woddenbridge: 2.4,
+  Pond: 1.8,
+  Pond_Rocks: 0.9,
+  Duck: 0.35,
 }
 
 /**
@@ -91,6 +97,13 @@ export const PROP_COLLIDERS = {
   Mailbox: { r: 0.22, h: 0.6 },
   Sign: { r: 0.22, h: 0.9 },
   Lamp: { r: 0.16, h: 1.1 },
+  Bush: { r: 0.55, h: 0.45 },
+  House: { r: 2.8, h: 2.2 },
+  Gate: { r: 1.2, h: 1.4, depth: 0.35 },
+  Woddenbridge: { r: 2.2, h: 0.35, depth: 8 },
+  Pond: { r: 1.6, h: 0.25 },
+  Pond_Rocks: { r: 0.8, h: 0.3 },
+  Duck: { r: 0.18, h: 0.15 },
 }
 
 const PATH_HALF = 6.5
@@ -101,8 +114,9 @@ const PATH_HALF = 6.5
  */
 export const HERO_PLACEMENTS = [
   // ── Pradaria / casa da Livia (bem visíveis da trilha inicial) ──
-  { prop: 'Maple_Tree', x: -16, z: 96, ry: 0.4, s: 1 },
-  { prop: 'Tree1', x: 15, z: 98, ry: -0.6, s: 0.95 },
+  { prop: 'Maple_Tree', x: -16, z: 96, ry: 0.4, s: 1, hero: true },
+  { prop: 'House', lat: -22, z: 88, ry: 0.5, s: 1.05, hero: true },
+  { prop: 'Tree1', x: 15, z: 98, ry: -0.6, s: 0.95, hero: true },
   { prop: 'PineTree_V1', x: -28, z: 104, ry: 1.1, s: 1.05 },
   { prop: 'Tree2', x: 26, z: 100, ry: 0.3, s: 0.9 },
   { prop: 'Bush', x: -10, z: 100, ry: 0.2, s: 1.15 },
@@ -142,13 +156,38 @@ export const HERO_PLACEMENTS = [
   { prop: 'Lamp', x: -6.5, z: 11.5, ry: 0, s: 1 },
   { prop: 'Lamp', x: 6.5, z: 11.5, ry: Math.PI, s: 1 },
 
-  // ── Pasto / rancho ──
-  { prop: 'Fence', x: -22, z: -10, ry: Math.PI / 2, s: 1 },
-  { prop: 'Fence', x: -22, z: -12.6, ry: Math.PI / 2, s: 1 },
-  { prop: 'Fence', x: -22, z: -15.2, ry: Math.PI / 2, s: 1 },
-  { prop: 'Fence', x: 24, z: -40, ry: 0.2, s: 1 },
-  { prop: 'Fence', x: 26.6, z: -40, ry: 0.2, s: 1 },
-  { prop: 'Fence', x: 29.2, z: -40, ry: 0.2, s: 1 },
+  // ── Pasto / rancho (heroes densos) ──
+  { prop: 'Fence', x: -22, z: -10, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Fence', x: -22, z: -12.6, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Fence', x: -22, z: -15.2, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Fence', x: -22, z: -17.8, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Fence', x: 24, z: -40, ry: 0.2, s: 1, hero: true },
+  { prop: 'Fence', x: 26.6, z: -40, ry: 0.2, s: 1, hero: true },
+  { prop: 'Fence', x: 29.2, z: -40, ry: 0.2, s: 1, hero: true },
+  { prop: 'Fence', x: 31.8, z: -40, ry: 0.2, s: 1, hero: true },
+  { prop: 'Barrel', x: -28, z: -25, ry: 0.4, s: 1, hero: true },
+  { prop: 'Crate', x: -29.5, z: -26.5, ry: -0.5, s: 0.95, hero: true },
+  { prop: 'Barrel', x: -27, z: -55, ry: 0.6, s: 1, hero: true },
+  { prop: 'Crate', x: -28.5, z: -56.5, ry: 0.3, s: 0.95, hero: true },
+  { prop: 'Barrel', x: 26, z: -95, ry: 0.2, s: 1, hero: true },
+  { prop: 'Crate', x: 27.5, z: -96.5, ry: -0.4, s: 1, hero: true },
+  { prop: 'Log', x: -24, z: -70, ry: 0.9, s: 1.1, hero: true },
+  { prop: 'Log', x: 22, z: -130, ry: 1.2, s: 1, hero: true },
+  { prop: 'Fence', x: -20, z: -180, ry: 0, s: 1, hero: true },
+  { prop: 'Fence', x: -17.4, z: -180, ry: 0, s: 1, hero: true },
+  { prop: 'Fence', x: -14.8, z: -180, ry: 0, s: 1, hero: true },
+  { prop: 'Fence', x: 20, z: -220, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Fence', x: 20, z: -222.6, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Barrel', x: 14, z: -45, ry: 0.35, s: 1, hero: true },
+  { prop: 'Crate', x: 15.5, z: -46.5, ry: -0.3, s: 0.95, hero: true },
+  { prop: 'Fence', x: -18, z: -48, ry: 0.15, s: 1, hero: true },
+  { prop: 'Fence', x: -15.4, z: -48, ry: 0.15, s: 1, hero: true },
+  { prop: 'Barrel', x: -12, z: -115, ry: 0.55, s: 1, hero: true },
+  { prop: 'Crate', x: -13.5, z: -116.5, ry: 0.2, s: 0.95, hero: true },
+  { prop: 'Fence', x: 16, z: -150, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Fence', x: 16, z: -152.6, ry: Math.PI / 2, s: 1, hero: true },
+  { prop: 'Barrel', x: -10, z: -185, ry: 0.7, s: 1, hero: true },
+  { prop: 'Crate', x: 12, z: -210, ry: -0.45, s: 1, hero: true },
   { prop: 'Maple_Tree', x: -26, z: -60, ry: 0.4, s: 1 },
   { prop: 'Tree1', x: 28, z: -120, ry: -0.5, s: 0.95 },
   { prop: 'PineTree_V1', x: -32, z: -180, ry: 0.8, s: 1 },
@@ -161,12 +200,22 @@ export const HERO_PLACEMENTS = [
   { prop: 'Wild_flower_Yellow', x: 8, z: -200, ry: 0.3, s: 1.15 },
   { prop: 'Barrel', x: -28, z: -25, ry: 0.4, s: 1 },
   { prop: 'Crate', x: -29.5, z: -26.5, ry: -0.5, s: 0.95 },
+  { prop: 'Maple_Tree', x: -18, z: -105, ry: 0.3, s: 1, hero: true },
+  { prop: 'Lamp', x: -8, z: -145, ry: 0, s: 1, hero: true },
+  { prop: 'Fence', x: 18, z: -165, ry: 0.1, s: 1, hero: true },
+  { prop: 'Fence', x: 20.6, z: -165, ry: 0.1, s: 1, hero: true },
+  { prop: 'Barrel', x: 22, z: -88, ry: 0.5, s: 1, hero: true },
+  { prop: 'Bush', x: -16, z: -200, ry: 0.5, s: 1.1, hero: true },
   { prop: 'Tent', x: 26, z: -100, ry: -0.7, s: 0.85 },
   { prop: 'Fire', x: 23, z: -97, ry: 0.2, s: 1 },
   { prop: 'Log', x: 21, z: -99, ry: 1.1, s: 1 },
   { prop: 'Sign', x: 9, z: -275, ry: -0.25, s: 0.95 },
 
   // ── Entrada do vilarejo / vale das águas (shift −300) ──
+  { prop: 'Pond', lat: -12, z: -330, ry: 0.3, s: 1.2, hero: true },
+  { prop: 'Pond_Rocks', lat: -10, z: -328, ry: 0.8, s: 1, hero: true },
+  { prop: 'Duck', lat: -11, z: -329, ry: 1.2, s: 1.1, hero: true },
+  { prop: 'Woddenbridge', lat: 0, z: -565, ry: 0, s: 1.15, hero: true },
   { prop: 'Lamp', x: -7.5, z: -292, ry: 0, s: 1 },
   { prop: 'Lamp', x: 7.5, z: -292, ry: Math.PI, s: 1 },
   { prop: 'Barrel', x: -28, z: -306, ry: 0.3, s: 1 },
@@ -221,6 +270,12 @@ export const HERO_PLACEMENTS = [
   { prop: 'Barrel', x: 24, z: -568, ry: 0.4, s: 1 },
   { prop: 'Tent', x: -40, z: -630, ry: 0.9, s: 0.9 },
   { prop: 'Fire', x: -37, z: -628, ry: 0.2, s: 1 },
+  { prop: 'Bush', x: -14, z: -565, ry: 0.4, s: 1.15, hero: true },
+  { prop: 'Wild_Flower_Red', x: 12, z: -555, ry: 0.2, s: 1.2, hero: true },
+  { prop: 'Lamp', x: -10, z: -600, ry: 0, s: 1, hero: true },
+  { prop: 'Maple_Tree', x: 20, z: -595, ry: -0.4, s: 1, hero: true },
+  { prop: 'Fence', x: -16, z: -548, ry: 0, s: 1, hero: true },
+  { prop: 'Fence', x: -13.4, z: -548, ry: 0, s: 1, hero: true },
 
   // ── Passo nevado ──
   { prop: 'DeadTree1', x: -28, z: -680, ry: 0.4, s: 1 },
@@ -258,6 +313,12 @@ export const HERO_PLACEMENTS = [
   { prop: 'Trunk', x: -31, z: -1015, ry: 1.2, s: 1 },
   { prop: 'Log', x: 30, z: -1020, ry: 0.3, s: 1 },
 
+  // ── Prado florido (heroes extras) ──
+  { prop: 'Wild_flower_Yellow', x: -12, z: -855, ry: 0.3, s: 1.2, hero: true },
+  { prop: 'Tulip_Purple', x: 14, z: -868, ry: 0.5, s: 1.15, hero: true },
+  { prop: 'Maple_Tree', x: -22, z: -875, ry: 0.6, s: 1, hero: true },
+  { prop: 'Lamp', x: 8, z: -842, ry: Math.PI, s: 1, hero: true },
+
 ]
 
 /** Perfis de espalhamento leve — reforçam biomas sem competir com Vegetation. */
@@ -288,21 +349,22 @@ const SCATTER_PROFILES = [
     zTo: 8,
     halfX: 48,
     counts: {
-      Bush: 16,
-      Grass: 22,
-      Lilie_Red: 12,
-      Liliy_White: 10,
-      Tulip_Red: 10,
-      Dandelion_Yellow: 16,
-      Wild_Flower_Red: 10,
-      Fence: 14,
-      rock: 6,
-      Rock2: 6,
-      Tree1: 3,
-      Tree4: 3,
-      Maple_Tree: 2,
-      Barrel: 4,
-      Crate: 3,
+      Bush: 18,
+      Grass: 28,
+      Lilie_Red: 14,
+      Liliy_White: 12,
+      Tulip_Red: 12,
+      Dandelion_Yellow: 18,
+      Wild_Flower_Red: 12,
+      Fence: 22,
+      Barrel: 10,
+      Crate: 8,
+      Log: 8,
+      rock: 8,
+      Rock2: 8,
+      Tree1: 4,
+      Tree4: 4,
+      Maple_Tree: 3,
     },
   },
   // vale noturno
@@ -448,9 +510,13 @@ export function generateAdventureScatter(density = 1) {
         guard++
         const z = zone.zFrom + rng() * (zone.zTo - zone.zFrom)
         const latMax = Math.min(zone.halfX, 41)
-        const lat = (rng() * 2 - 1) * latMax
+        const lat = keepPathClear
+          ? (rng() * 2 - 1) * latMax
+          : (rng() ** 0.58) * (rng() < 0.5 ? -1 : 1) * Math.min(latMax, 28)
         const x = pathXAt(z) + lat
-        if (keepPathClear && pathLateralDist(x, z) < PATH_HALF) continue
+        const latDist = pathLateralDist(x, z)
+        if (keepPathClear && latDist < PATH_HALF) continue
+        if (!keepPathClear && latDist > 34 && rng() > 0.42) continue
         if (z < RIVER.zTo + 5 && z > RIVER.zFrom - 5 && pathLateralDist(x, z) < RIVER.gapHalfX + 8) continue
         if (z < STAIRS.zStart + 2 && z > STAIRS.zStart - STAIRS.steps * STAIRS.stepDepth - 2 && Math.abs(x) < STAIRS.halfWidth + 2) continue
         if (!isFreeSpot(x, z, blocked, margin)) continue
@@ -484,7 +550,5 @@ export function buildAdventurePlacements(density = 1) {
       s: p.s ?? 1,
     }
   })
-  // medium/low: só heroes — o scatter GLB (centenas de clones) era o segundo maior custo
-  if (density < 0.55) return heroes
-  return heroes.concat(generateAdventureScatter(density * 0.55))
+  return heroes.concat(generateAdventureScatter(density))
 }

@@ -1,10 +1,12 @@
-import { useMemo, useRef } from 'react'
+import { Suspense, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { PHOENIX_PIVOT, SUMMIT_Y } from '../config/world'
 import { phoenixRide } from '../lib/phoenixRide'
 import { playerPosition } from '../store/playerStore'
 import { useProgressStore } from '../store/progressStore'
+import { PHOENIX_GLB } from '../lib/preloadAssets'
 
 const ORBIT_RX = 14
 const ORBIT_RZ = 12
@@ -19,6 +21,26 @@ const tmpFrom = new THREE.Vector3()
 
 function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
+}
+
+function PhoenixGlbBird() {
+  const { scene } = useGLTF(PHOENIX_GLB)
+  const model = useMemo(() => {
+    const c = scene.clone(true)
+    c.traverse((obj) => {
+      if (!obj.isMesh) return
+      obj.castShadow = false
+      obj.material = new THREE.MeshStandardMaterial({
+        color: '#e85a28',
+        flatShading: true,
+        emissive: '#c43a12',
+        emissiveIntensity: 0.4,
+        roughness: 0.55,
+      })
+    })
+    return c
+  }, [scene])
+  return <primitive object={model} scale={2.4} rotation={[0, Math.PI, 0]} position={[0, 0.15, 0]} />
 }
 
 /**
@@ -247,7 +269,11 @@ export default function Phoenix() {
     <group ref={rootRef} position={PIVOT}>
       <group ref={birdRef}>
         <group scale={BIRD_SCALE}>
-          {/* torso */}
+          <Suspense fallback={null}>
+            <PhoenixGlbBird />
+          </Suspense>
+          {/* procedural fallback oculto — GLB é a leitura principal no finale */}
+          <group visible={false}>
           <mesh castShadow position={[0, 0.15, 0]} material={mats.body}>
             <capsuleGeometry args={[0.38, 0.85, 3, 6]} />
           </mesh>
@@ -359,6 +385,7 @@ export default function Phoenix() {
 
           {/* 1 light max */}
           <pointLight color="#ff9a3c" intensity={3.2} distance={20} decay={2} position={[0, 0.4, 0.2]} />
+          </group>
         </group>
 
         <group ref={riderRef} visible={false} scale={0.78}>
@@ -380,6 +407,8 @@ export default function Phoenix() {
     </group>
   )
 }
+
+useGLTF.preload(PHOENIX_GLB)
 
 /** Rider low-poly estático — sem mixer, sem sombra, materiais compartilhados. */
 function PhoenixRider() {

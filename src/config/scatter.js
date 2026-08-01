@@ -16,129 +16,129 @@ import {
  */
 export const BIOMES = {
   meadow: {
-    pines: 14,
-    bushes: 14,
-    grass: 140,
-    flowers: 70,
-    rocks: 12,
-    pebbles: 40,
-    mushrooms: 4,
-    ferns: 8,
-    logs: 4,
-    hay: 5,
-    crates: 4,
-    lanterns: 3,
-    fenceRuns: 3,
+    pines: 26,
+    bushes: 28,
+    grass: 520,
+    flowers: 380,
+    rocks: 18,
+    pebbles: 160,
+    mushrooms: 6,
+    ferns: 16,
+    logs: 6,
+    hay: 3,
+    crates: 0,
+    lanterns: 4,
+    fenceRuns: 5,
     reeds: 0,
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#6a8a5a',
-    foliage: ['#3a5a38', '#456848', '#4a7050'],
+    grassColor: '#5a9a48',
+    foliage: ['#2e6a32', '#3a7838', '#428040'],
     rockColors: ['#7a7e84', '#83878d', '#6e7276'],
   },
   pasture: {
-    pines: 12,
-    bushes: 16,
-    grass: 180,
-    flowers: 90,
-    rocks: 10,
-    pebbles: 36,
-    mushrooms: 3,
-    ferns: 6,
-    logs: 5,
-    hay: 16,
-    crates: 5,
-    lanterns: 4,
-    fenceRuns: 8,
+    pines: 18,
+    bushes: 32,
+    grass: 640,
+    flowers: 420,
+    rocks: 14,
+    pebbles: 140,
+    mushrooms: 4,
+    ferns: 12,
+    logs: 8,
+    hay: 10,
+    crates: 0,
+    lanterns: 6,
+    fenceRuns: 14,
     reeds: 0,
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#6e8e5e',
-    foliage: ['#3c5c3a', '#4a6a48', '#527850'],
+    grassColor: '#5ea048',
+    foliage: ['#307030', '#3a8038', '#428840'],
     rockColors: ['#7a7e84', '#8a8478', '#6e7276'],
   },
   water: {
-    pines: 36,
-    bushes: 18,
-    grass: 120,
-    flowers: 40,
-    rocks: 24,
-    pebbles: 55,
-    mushrooms: 22,
-    ferns: 40,
-    logs: 10,
-    hay: 1,
-    crates: 5,
-    lanterns: 5,
-    fenceRuns: 2,
-    reeds: 40,
+    pines: 70,
+    bushes: 36,
+    grass: 480,
+    flowers: 180,
+    rocks: 40,
+    pebbles: 220,
+    mushrooms: 55,
+    ferns: 120,
+    logs: 18,
+    hay: 2,
+    crates: 0,
+    lanterns: 8,
+    fenceRuns: 4,
+    reeds: 120,
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#5a7a58',
-    foliage: ['#2a4a32', '#345a3c', '#3a6442'],
+    grassColor: '#4a8a48',
+    foliage: ['#1e5a28', '#286832', '#307038'],
     rockColors: ['#5f6b64', '#68746c', '#556158'],
   },
   snow: {
-    pines: 28,
-    bushes: 10,
-    grass: 40,
+    pines: 48,
+    bushes: 16,
+    grass: 70,
     flowers: 0,
-    rocks: 22,
-    pebbles: 40,
+    rocks: 36,
+    pebbles: 140,
     mushrooms: 0,
     ferns: 0,
-    logs: 5,
+    logs: 10,
     hay: 0,
-    crates: 3,
-    lanterns: 5,
-    fenceRuns: 2,
+    crates: 0,
+    lanterns: 8,
+    fenceRuns: 3,
     reeds: 0,
-    snowPatches: 90,
-    snowmen: 6,
-    icicles: 16,
+    snowPatches: 55,
+    snowmen: 10,
+    icicles: 36,
     grassColor: '#a8a890',
     foliage: ['#2a4034', '#304838', '#385040'],
     rockColors: ['#9aa7b0', '#a8b4bc', '#8b98a2'],
   },
   night: {
-    pines: 40,
-    bushes: 14,
-    grass: 80,
-    flowers: 16,
-    rocks: 18,
-    pebbles: 30,
-    mushrooms: 12,
-    ferns: 18,
-    logs: 8,
+    pines: 80,
+    bushes: 28,
+    grass: 280,
+    flowers: 50,
+    rocks: 32,
+    pebbles: 100,
+    mushrooms: 28,
+    ferns: 50,
+    logs: 16,
     hay: 0,
-    crates: 4,
-    lanterns: 12,
+    crates: 0,
+    lanterns: 20,
     fenceRuns: 2,
     reeds: 0,
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
     grassColor: '#2a3a30',
-    foliage: ['#142418', '#1a2c20', '#203428'],
+    foliage: ['#1e3428', '#243c30', '#2a4438'],
     rockColors: ['#3a3a48', '#2e2e3a', '#454558'],
   },
   flower: {
-    pines: 10,
-    bushes: 16,
-    grass: 160,
-    flowers: 180,
-    rocks: 8,
-    pebbles: 28,
-    mushrooms: 6,
-    ferns: 10,
-    logs: 3,
-    hay: 5,
-    crates: 3,
-    lanterns: 4,
-    fenceRuns: 3,
+    pines: 14,
+    bushes: 36,
+    grass: 580,
+    flowers: 720,
+    rocks: 10,
+    pebbles: 80,
+    mushrooms: 12,
+    ferns: 24,
+    logs: 5,
+    hay: 10,
+    crates: 0,
+    lanterns: 6,
+    fenceRuns: 5,
     reeds: 0,
     snowPatches: 0,
     snowmen: 0,
@@ -148,23 +148,23 @@ export const BIOMES = {
     rockColors: ['#8a8a78', '#9a9a86', '#7a7a6a'],
   },
   alpine: {
-    pines: 8,
-    bushes: 6,
-    grass: 50,
-    flowers: 30,
-    rocks: 12,
-    pebbles: 20,
+    pines: 12,
+    bushes: 8,
+    grass: 140,
+    flowers: 90,
+    rocks: 18,
+    pebbles: 50,
     mushrooms: 0,
     ferns: 0,
-    logs: 2,
+    logs: 3,
     hay: 0,
-    crates: 2,
+    crates: 0,
     lanterns: 2,
-    fenceRuns: 1,
+    fenceRuns: 2,
     reeds: 0,
-    snowPatches: 24,
+    snowPatches: 60,
     snowmen: 2,
-    icicles: 4,
+    icicles: 8,
     grassColor: '#6a8070',
     foliage: ['#2a4034', '#344c3c', '#3c5444'],
     rockColors: ['#93a0a8', '#a2aeb6', '#85929a'],
@@ -172,6 +172,10 @@ export const BIOMES = {
 }
 
 const PATH_HALF = 6.5
+/** Anéis laterais à trilha — riqueza na geração, sem LOD em runtime */
+const TRAIL_NEAR = 24
+const TRAIL_MID = 34
+const TRAIL_FAR = 42
 const FRUIT_COLORS = ['#d8452f', '#e07090', '#e8a838', '#8a3fa8']
 /**
  * Paleta de flor alpina: branco e amarelo dominam (margaridas, botão-de-ouro),
@@ -209,16 +213,22 @@ export function generateZoneProps(zoneId, density = 1) {
 
   const n = (base) => Math.max(0, Math.round(base * density * zoneMult))
 
-  const place = (count, { keepPath = true, margin = 2 } = {}) => {
+  const place = (count, { keepPath = true, margin = 2, nearTrail = false, skipFar = false } = {}) => {
     const out = []
     let guard = 0
-    const latMax = Math.min(halfX, CORRIDOR_HALF - 3)
+    let latMax = Math.min(halfX, CORRIDOR_HALF - 3)
+    if (nearTrail) latMax = Math.min(latMax, TRAIL_NEAR)
     while (out.length < count && guard < count * 30) {
       guard++
       const z = zMin + rng() * (zMax - zMin)
-      const lat = (rng() * 2 - 1) * latMax
+      const lat = nearTrail
+        ? (rng() ** 0.55) * (rng() < 0.5 ? -1 : 1) * latMax
+        : (rng() * 2 - 1) * latMax
       const x = pathXAt(z) + lat
-      if (keepPath && pathLateralDist(x, z) < PATH_HALF) continue
+      const latDist = pathLateralDist(x, z)
+      if (keepPath && latDist < PATH_HALF) continue
+      if (skipFar && latDist > TRAIL_FAR && rng() > 0.35) continue
+      if (!nearTrail && skipFar && latDist > TRAIL_MID && rng() > 0.55) continue
       if (!isFreeSpot(x, z, blocked, margin)) continue
       out.push({ x, z, y: groundHeightAt(x, z) })
     }
@@ -226,14 +236,14 @@ export function generateZoneProps(zoneId, density = 1) {
   }
 
   // ── Pinheiros ──
-  const pines = place(n(profile.pines), { margin: 4 }).map((p) => ({
+  const pines = place(n(profile.pines), { margin: 4, skipFar: true }).map((p) => ({
     ...p,
     s: 0.75 + rng() * 0.75,
     ry: rng() * Math.PI * 2,
     color: profile.foliage[Math.floor(rng() * profile.foliage.length)],
   }))
   // capas de neve nas copas (só nos biomas frios)
-  const pineSnow = snowy ? pines.filter(() => rng() > 0.15) : []
+  const pineSnow = snowy ? pines.filter(() => rng() > 0.4) : []
 
   // ── Arbustos com frutas ──
   const bushes = []
@@ -284,23 +294,25 @@ export function generateZoneProps(zoneId, density = 1) {
 
   // ── Grama em moitas ──
   const grass = []
-  place(n(profile.grass), { keepPath: false, margin: 0.5 }).forEach((g) => {
-    // 1 blade por ponto — o “campo” vem da quantidade de pontos, não de clumps
-    grass.push({
-      x: g.x + (rng() - 0.5) * 0.6,
-      y: g.y + 0.01,
-      z: g.z + (rng() - 0.5) * 0.6,
-      s: 0.85 + rng() * 0.5,
-      sy: 0.75 + rng() * 0.7,
-      ry: rng() * Math.PI * 2,
-      color: shade(profile.grassColor, (rng() - 0.5) * 22),
-    })
+  place(n(profile.grass), { keepPath: false, margin: 0.5, nearTrail: true }).forEach((g) => {
+    const clump = 2 + Math.floor(rng() * 2)
+    for (let i = 0; i < clump; i++) {
+      grass.push({
+        x: g.x + (rng() - 0.5) * 1.4,
+        y: g.y + 0.01,
+        z: g.z + (rng() - 0.5) * 1.4,
+        s: 0.75 + rng() * 0.55,
+        sy: 0.7 + rng() * 0.75,
+        ry: rng() * Math.PI * 2,
+        color: shade(profile.grassColor, (rng() - 0.5) * 24),
+      })
+    }
   })
 
   // ── Flores (em canteiros, para parecer campo florido) ──
   const flowers = []
-  place(n(profile.flowers) / 4, { keepPath: false, margin: 0.5 }).forEach((f) => {
-    const cluster = 1 + Math.floor(rng() * 2)
+  place(n(profile.flowers) / 4, { keepPath: false, margin: 0.5, nearTrail: true }).forEach((f) => {
+    const cluster = 2 + Math.floor(rng() * 3)
     const color = FLOWER_COLORS[Math.floor(rng() * FLOWER_COLORS.length)]
     for (let i = 0; i < cluster; i++) {
       flowers.push({
@@ -342,11 +354,11 @@ export function generateZoneProps(zoneId, density = 1) {
       ry: rng() * Math.PI * 2,
       rz: rng() * 0.5,
       color: profile.rockColors[Math.floor(rng() * profile.rockColors.length)],
-      solid: s > 1.5,
+      solid: s > 1.0,
     }
   })
 
-  const pebbles = place(n(profile.pebbles), { keepPath: false, margin: 0.4 }).map((p) => ({
+  const pebbles = place(n(profile.pebbles), { keepPath: false, margin: 0.4, skipFar: true }).map((p) => ({
     ...p,
     y: p.y + 0.1,
     s: 0.18 + rng() * 0.4,
@@ -367,9 +379,9 @@ export function generateZoneProps(zoneId, density = 1) {
     return { ...l, y: l.y + 0.5 * s, s, ry: rng() * Math.PI, rz: Math.PI / 2 }
   })
 
-  const hay = place(n(profile.hay), { margin: 3 }).map((h) => {
-    const s = 0.9 + rng() * 0.6
-    return { ...h, y: h.y + 1.1 * s, s, ry: rng() * Math.PI }
+  const hay = place(n(profile.hay), { margin: 3, nearTrail: true }).map((h) => {
+    const s = 0.65 + rng() * 0.35
+    return { ...h, y: h.y + 0.35 * s, s, ry: rng() * Math.PI, rz: Math.PI / 2 }
   })
 
   const crates = place(n(profile.crates), { margin: 1.5 }).map((c) => {
@@ -386,8 +398,8 @@ export function generateZoneProps(zoneId, density = 1) {
   const snowPatches = place(n(profile.snowPatches), { keepPath: false, margin: 0.3 }).map((p) => ({
     ...p,
     y: p.y + 0.03,
-    s: 1.4 + rng() * 3.4,
-    sy: 0.5 + rng() * 0.6,
+    s: 0.7 + rng() * 1.1,
+    sy: 0.35 + rng() * 0.35,
     ry: rng() * Math.PI,
   }))
 
