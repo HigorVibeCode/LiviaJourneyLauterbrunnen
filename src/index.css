@@ -1,0 +1,21 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', serif;
+  -webkit-font-smoothing: antialiased;
+  background: #87a8c0;
+}
