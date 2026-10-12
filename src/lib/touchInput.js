@@ -10,6 +10,10 @@ export const touchInput = {
   run: false,
   interact: false,
   guide: false,
+  /** joystick analógico: -1..1 (y positivo = para trás, como na tela) */
+  moveX: 0,
+  moveY: 0,
+  analog: false,
 }
 
 export function resetTouchInput() {
@@ -21,6 +25,9 @@ export function resetTouchInput() {
   touchInput.run = false
   touchInput.interact = false
   touchInput.guide = false
+  touchInput.moveX = 0
+  touchInput.moveY = 0
+  touchInput.analog = false
 }
 
 /** Detecta dispositivo touch / tela estreita. */

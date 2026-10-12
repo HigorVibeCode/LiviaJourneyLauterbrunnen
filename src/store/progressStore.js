@@ -4,7 +4,6 @@ import {
   EGG_LORE,
   FINALE_TOAST,
   FINISH_TOAST,
-  ITEM_LORE,
   LANTERN_TOAST,
   UNLOCK_TOASTS,
 } from '../config/story.js'
@@ -17,6 +16,7 @@ import {
 export const ITEMS = {
   chave_portao: {
     id: 'chave_portao',
+    icon: '🗝️',
     name: 'Chave do Portão',
     short: 'Chave',
     consumable: true,
@@ -24,12 +24,14 @@ export const ITEMS = {
   },
   capa_chuva: {
     id: 'capa_chuva',
+    icon: '☂️',
     name: 'Capa de Chuva',
     short: 'Capa',
     pickupHint: 'Capa de chuva encontrada! Livia vestiu a capa amarela.',
   },
   ferramenta: {
     id: 'ferramenta',
+    icon: '🔨',
     name: 'Ferramenta do Carpinteiro',
     short: 'Ferramenta',
     consumable: true,
@@ -37,12 +39,14 @@ export const ITEMS = {
   },
   casaco: {
     id: 'casaco',
+    icon: '🧥',
     name: 'Casaco de Pele',
     short: 'Casaco',
     pickupHint: 'Casaco de pele encontrado! Livia vestiu o casaco quentinho.',
   },
   cristal: {
     id: 'cristal',
+    icon: '💎',
     name: 'Cristal da Cachoeira',
     short: 'Cristal',
     consumable: true,
@@ -50,12 +54,14 @@ export const ITEMS = {
   },
   binoculo: {
     id: 'binoculo',
+    icon: '🔭',
     name: 'Binóculo',
     short: 'Binóculo',
     pickupHint: 'Binóculo encontrado! Ficou pendurado no pescoço da Livia.',
   },
   fungo_brilho: {
     id: 'fungo_brilho',
+    icon: '🍄',
     name: 'Fungo Brilhante',
     short: 'Fungo',
     consumable: true,
@@ -63,6 +69,7 @@ export const ITEMS = {
   },
   pena_coruja: {
     id: 'pena_coruja',
+    icon: '🪶',
     name: 'Pena de Coruja',
     short: 'Pena',
     pickupHint: 'Pena de Coruja encontrada! Um amuleto contra a noite.',
@@ -76,9 +83,9 @@ export const QUESTS = [
     phase: 'meadow',
     gateId: 'gate_pasture',
     itemIds: ['chave_portao', 'capa_chuva'],
-    hint: 'Primeiro rito: encontre a Chave do Portão e a Capa de Chuva na pradaria.',
+    hint: 'Encontre a Chave e a Capa de Chuva pela pradaria.',
     nearGateHint: 'Portão trancado. Faltam a Chave do Portão e a Capa de Chuva',
-    interactHint: 'Pressione E para cumprir o primeiro rito — abrir o pasto',
+    interactHint: 'Aperte E para abrir o portão!',
     unlockedHint: UNLOCK_TOASTS.gate_pasture,
   },
   {
@@ -86,9 +93,9 @@ export const QUESTS = [
     phase: 'night',
     gateId: 'gate_water',
     itemIds: ['fungo_brilho', 'pena_coruja'],
-    hint: 'Vale Noturno: lampião, fale com o Guarda (fungo) e ache a Pena de Coruja.',
+    hint: 'Fale com o Guarda do Vale e ache a Pena de Coruja.',
     nearGateHint: 'Portão trancado. Faltam o Fungo Brilhante e a Pena de Coruja',
-    interactHint: 'Pressione E para abrir o caminho ao Vale das Águas',
+    interactHint: 'Aperte E para abrir o portão!',
     unlockedHint: UNLOCK_TOASTS.gate_water,
   },
   {
@@ -96,9 +103,9 @@ export const QUESTS = [
     phase: 'water',
     gateId: 'gate_snow',
     itemIds: ['ferramenta', 'casaco'],
-    hint: 'Vale das Águas: fale com o Guardião da Ponte e ache o Casaco de Pele.',
+    hint: 'Fale com o Guardião da Ponte e ache o Casaco de Pele.',
     nearGateHint: 'Passagem fechada. Faltam a Ferramenta do Carpinteiro e o Casaco de Pele',
-    interactHint: 'Pressione E para abrir a passagem para a neve',
+    interactHint: 'Aperte E para abrir o portão!',
     unlockedHint: UNLOCK_TOASTS.gate_snow,
   },
   {
@@ -106,9 +113,9 @@ export const QUESTS = [
     phase: 'snow',
     gateId: 'gate_summit',
     itemIds: ['cristal', 'binoculo'],
-    hint: 'Passo Nevado: fale com o Guia da Neve e ache o Binóculo.',
+    hint: 'Fale com a Guia da Neve e ache o Binóculo.',
     nearGateHint: 'Portão de gelo trancado. Faltam o Cristal da Cachoeira e o Binóculo',
-    interactHint: 'Pressione E para abrir o Prado Florido',
+    interactHint: 'Aperte E para abrir o portão!',
     unlockedHint: UNLOCK_TOASTS.gate_summit,
   },
 ]
@@ -192,14 +199,12 @@ export const useProgressStore = create(
     const quest = QUESTS.find((q) => q.itemIds.includes(itemId))
     const missing = missingItems(quest, next)
 
-    let toast = item?.pickupHint ?? 'Item coletado!'
-    const lore = ITEM_LORE[itemId]
-    if (lore) toast = `${toast} ${lore}`
-
+    // curtinho: a criança lê de relance enquanto anda
+    let toast = `${item?.icon ?? '✨'} ${item?.name ?? 'Item'}!`
     if (quest) {
       toast = missing.length
-        ? `${toast} Falta ainda: ${missing.map((id) => ITEMS[id].name).join(' e ')}.`
-        : `${toast} Agora vá ao portão e toque E.`
+        ? `${toast} Falta: ${missing.map((id) => ITEMS[id].name).join(' e ')}.`
+        : `${toast} Tudo pronto — vá ao portão!`
     }
 
     set({

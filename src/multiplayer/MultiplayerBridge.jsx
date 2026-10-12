@@ -57,7 +57,7 @@ export default function MultiplayerBridge() {
       const host = getPartyHost()
       if (!host) {
         useMultiplayerStore.getState().setError(
-          'Falta VITE_PARTYKIT_HOST. Corre: npx partykit deploy',
+          'Falta VITE_PARTYKIT_HOST. Rode: npx partykit deploy',
         )
         return
       }
@@ -87,11 +87,11 @@ export default function MultiplayerBridge() {
       })
       socket.addEventListener('message', handleMessage)
       socket.addEventListener('error', () => {
-        useMultiplayerStore.getState().setError('Falha ao ligar à sala')
+        useMultiplayerStore.getState().setError('Não foi possível entrar na sala')
       })
       socket.addEventListener('close', () => {
         if (useMultiplayerStore.getState().status === 'connecting') {
-          useMultiplayerStore.getState().setError('Ligação fechada')
+          useMultiplayerStore.getState().setError('Conexão encerrada')
         }
       })
     }

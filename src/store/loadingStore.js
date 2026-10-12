@@ -44,5 +44,5 @@ export function markIntroDone() {
 
 /** Label da fase atual para o overlay */
 export function loadingPhaseLabel(phaseId) {
-  return LOADING_PHASES.find((p) => p.id === phaseId)?.label ?? 'A preparar…'
+  return LOADING_PHASES.find((p) => p.id === phaseId)?.label ?? 'Preparando…'
 }

@@ -26,6 +26,8 @@ import RemotePlayers from './components/RemotePlayers'
 import MultiplayerBridge from './multiplayer/MultiplayerBridge'
 import { QUALITY_PRESETS, useGameStore } from './store/gameStore'
 import { useLoadingStore, markIntroDone } from './store/loadingStore'
+import { useProgressStore } from './store/progressStore'
+import { isTyping } from './lib/keyboard'
 import { preloadGameAssets } from './lib/preloadAssets'
 import './App.css'
 
@@ -44,14 +46,43 @@ function PauseListener() {
   const togglePause = useGameStore((s) => s.togglePause)
 
   useEffect(() => {
+    const ready = () => useLoadingStore.getState().introDone && !useProgressStore.getState().finished
     const onKey = (e) => {
-      if (e.code === 'Escape') {
+      if (e.code === 'Escape' || e.code === 'KeyP') {
+        if (isTyping()) return
         e.preventDefault()
-        togglePause()
+        if (ready()) togglePause()
+      }
+    }
+    // Com o mouse capturado o navegador "come" o Esc só para soltar o mouse —
+    // então perder a captura no meio do jogo = abrir o menu de pausa.
+    const onLockChange = () => {
+      if (!document.pointerLockElement && ready() && !useGameStore.getState().paused) {
+        useGameStore.getState().setPaused(true)
+      }
+    }
+    // tecla presa ao trocar de janela (alt-tab segurando W = andava sozinha)
+    const releaseKeys = () => {
+      for (const { keys } of keyboardMap) {
+        for (const code of keys) window.dispatchEvent(new KeyboardEvent('keyup', { code, key: code }))
+      }
+    }
+    const onVisibility = () => {
+      if (document.hidden) {
+        releaseKeys()
+        if (ready()) useGameStore.getState().setPaused(true)
       }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('blur', releaseKeys)
+    document.addEventListener('pointerlockchange', onLockChange)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('blur', releaseKeys)
+      document.removeEventListener('pointerlockchange', onLockChange)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [togglePause])
 
   return null
@@ -85,7 +116,6 @@ function GameCanvas() {
         <Effects />
         <Lighting />
         <LoaderReporter />
-        <BootWarmup />
         <DistanceCuller />
         <LightPool />
 
@@ -103,10 +133,22 @@ function GameCanvas() {
             <GuideBeacon />
             <FinaleDirector />
             <Weather />
+            <BootWarmup />
           </Suspense>
         </ErrorBoundary>
       </Selection>
     </Canvas>
+  )
+}
+
+/** Se o HUD quebrar, o jogo continua — e há um jeito de recarregar */
+function HudCrashed() {
+  return (
+    <div className="hud-crashed">
+      <button type="button" className="btn" onClick={() => window.location.reload()}>
+        Algo deu errado na tela — toque para recarregar (o progresso está salvo)
+      </button>
+    </div>
   )
 }
 
@@ -132,7 +174,11 @@ export default function App() {
         <AudioDirector />
         <MultiplayerBridge />
         <GameCanvas />
-        {gameUnlocked && <Hud />}
+        {gameUnlocked && (
+          <ErrorBoundary name="Hud" fallback={<HudCrashed />}>
+            <Hud />
+          </ErrorBoundary>
+        )}
         {gameUnlocked && <TouchControls />}
         {!gameUnlocked && <LoadingScreen hidden={false} />}
         {showIntro && !introDone && (

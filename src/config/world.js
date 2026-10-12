@@ -136,6 +136,7 @@ export function resolveOnPath(item) {
 export const PHASES = {
   meadow: {
     id: 'meadow',
+    short: 'Pradaria',
     index: 1,
     label: 'Pradaria de Lauterbrunnen',
     biome: 'meadow',
@@ -145,6 +146,7 @@ export const PHASES = {
   },
   pasture: {
     id: 'pasture',
+    short: 'Pasto',
     index: 2,
     label: 'Pasto do Rancho',
     biome: 'pasture',
@@ -154,6 +156,7 @@ export const PHASES = {
   },
   night: {
     id: 'night',
+    short: 'Vale Noturno',
     index: 3,
     label: 'Vale Noturno',
     biome: 'night',
@@ -163,6 +166,7 @@ export const PHASES = {
   },
   water: {
     id: 'water',
+    short: 'Vale das Águas',
     index: 4,
     label: 'Vale das Águas',
     biome: 'water',
@@ -172,6 +176,7 @@ export const PHASES = {
   },
   snow: {
     id: 'snow',
+    short: 'Passo Nevado',
     index: 5,
     label: 'Passo Nevado',
     biome: 'snow',
@@ -181,6 +186,7 @@ export const PHASES = {
   },
   flower: {
     id: 'flower',
+    short: 'Prado Florido',
     index: 6,
     label: 'Prado Florido',
     biome: 'flower',
@@ -190,6 +196,7 @@ export const PHASES = {
   },
   summit: {
     id: 'summit',
+    short: 'Mirante',
     index: 7,
     label: 'Mirante Alpino',
     biome: 'alpine',

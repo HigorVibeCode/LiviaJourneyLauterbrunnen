@@ -34,9 +34,14 @@ import {
   resolveOnPath,
   SUMMIT_Y,
   TREASURE_POS,
+  RIVER,
+  RIVER_CX,
 } from '../config/world'
 import { LiviaLanternLight } from './LanternPickup'
 import { updatePlayerPose } from '../multiplayer/playerPose'
+import { isTyping } from '../lib/keyboard'
+import { cameraState, playerActions } from '../lib/cameraState'
+import { useLoadingStore } from '../store/loadingStore'
 
 const WALK_SPEED = 7.4
 const RUN_SPEED = 12.4
@@ -65,13 +70,14 @@ const CAM_FOLLOW_CORRECT_AIR = 14
 const CAM_DIST_PULL = 11
 const CAM_DIST_RELEASE = 2.2
 const CAM_ORBIT_SMOOTH = 22
-const CAM_OCCLUDE_HOLD = 5
+const CAM_OCCLUDE_HOLD = 2
 const CAM_OCCLUDE_CLEAR = 12
 const HORSE_CAM_STAND_CLEAR = 1.35
 const HORSE_CAM_ORBIT_SMOOTH = 16
 const TURN_SPEED = 14
 const GUIDE_TURN_SPEED = 7
 const complaintIdx = { i: 0 }
+const NO_KEYS = {}
 const HORSE_MAX_LAT = 36
 /** Casas do pasto como discos — o cavalo contorna em vez de atravessar */
 const HOUSE_DISCS = HOUSES.filter((h) => h.z < GATES.gate_pasture.z && h.z > HORSE_DISMOUNT_Z - 10).map(
@@ -266,7 +272,11 @@ export default function Livia() {
       if (useGameStore.getState().paused) return
       const canvas = e.target?.closest?.('canvas') || document.querySelector('canvas')
       if (!canvas || e.target !== canvas) return
-      if (document.pointerLockElement !== canvas) canvas.requestPointerLock?.()
+      if (document.pointerLockElement !== canvas) {
+        // promessa rejeita se clicar logo depois de soltar — ignorar
+        const p = canvas.requestPointerLock?.()
+        if (p && typeof p.catch === 'function') p.catch(() => {})
+      }
     }
     const onMove = (e) => {
       if (document.pointerLockElement == null) return
@@ -523,7 +533,7 @@ export default function Livia() {
       animState.current.guiding = false
       animState.current.riding = true
 
-      const keys = getKeys()
+      const keys = isTyping() ? NO_KEYS : getKeys()
       const interact = keys.interact || touchInput.interact
       if (interact) {
         if (!horseGuideWarnRef.current) {
@@ -552,6 +562,10 @@ export default function Livia() {
       if (back) inputZ += 1
       if (left) inputX -= 1
       if (right) inputX += 1
+      if (!frozen && touchInput.analog) {
+        inputX = touchInput.moveX
+        inputZ = touchInput.moveY
+      }
       const length = Math.hypot(inputX, inputZ)
       if (length > 0) {
         inputX /= length
@@ -652,6 +666,7 @@ export default function Livia() {
       state.camera.lookAt(camLook)
       camQuat.current.copy(state.camera.quaternion)
       camQuatReady.current = true
+      cameraState.yaw = camYaw
       updatePlayerPose({
         x: seatX,
         y: seatY,
@@ -708,6 +723,23 @@ export default function Livia() {
       modelRef.current.rotation.x = 0
     }
 
+    // menu de pausa → "Voltar para a trilha": centro da trilha, um pouco à frente
+    if (playerActions.unstuck) {
+      playerActions.unstuck = false
+      const cur = body.translation()
+      const z = cur.z
+      // no desfiladeiro, o "centro" seguro é a ponte
+      const x = z <= RIVER.zTo + 2 && z >= RIVER.zFrom - 2 ? RIVER_CX : pathXAt(z)
+      const safe = { x, y: groundHeightAt(x, z) + 1.2, z }
+      body.setTranslation(safe, true)
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      camPivot.current.x = safe.x
+      camPivot.current.y = safe.y + CAM_STAND_CLEAR + LOOK_HEIGHT
+      camPivot.current.z = safe.z
+      updatePlayerPosition(safe)
+      setLastSafe({ x: safe.x, y: safe.y - 1.2, z: safe.z })
+    }
+
     const pos = body.translation()
     const vel = body.linvel()
     updatePlayerPosition(pos)
@@ -725,7 +757,11 @@ export default function Livia() {
       undefined,
       body,
     )
-    groundedRef.current = groundHit !== null && vel.y <= 2
+    // folga entre a base da cápsula (origem + 0.06) e o chão (raio sai de +0.3). Antes contava
+    // "no chão" até 0.5 m acima dele e zerava vy → pulos flutuavam ~1 s.
+    const groundGap = groundHit ? groundHit.timeOfImpact - 0.24 : Infinity
+    const snapRange = prevGroundedRef.current && jumpTimerRef.current === 0 ? 0.5 : 0.12
+    groundedRef.current = groundGap <= snapRange && vel.y <= 2
 
     // ── Limbo ──
     if (pos.y < FALL_Y && !respawningRef.current) {
@@ -790,8 +826,9 @@ export default function Livia() {
       }
     }
 
-    // ── Input ──
-    const keys = getKeys()
+    // ── Input ── (nada de andar/pular atrás da introdução ou digitando um nome)
+    const keys =
+      isTyping() || !useLoadingStore.getState().introDone ? NO_KEYS : getKeys()
     const forward = keys.forward || touchInput.forward
     const back = keys.back || touchInput.back
     const left = keys.left || touchInput.left
@@ -873,6 +910,13 @@ export default function Livia() {
     if (back) inputZ += 1
     if (left) inputX -= 1
     if (right) inputX += 1
+    // joystick analógico: inclinar pouco = andar devagar
+    let analogScale = 1
+    if (touchInput.analog) {
+      inputX = touchInput.moveX
+      inputZ = touchInput.moveY
+      analogScale = Math.min(1, Math.hypot(inputX, inputZ))
+    }
 
     const length = Math.hypot(inputX, inputZ)
     if (length > 0) {
@@ -890,10 +934,10 @@ export default function Livia() {
     const worldX = moveForward * fx + inputX * rx
     const worldZ = moveForward * fz + inputX * rz
 
-    const maxSpeed = run ? RUN_SPEED : WALK_SPEED
+    const maxSpeed = run ? RUN_SPEED : WALK_SPEED * Math.max(0.35, analogScale)
     const control = groundedRef.current ? 1 : AIR_CONTROL
     const blend = 1 - Math.exp(-ACCEL * control * dt)
-    const touchMove = touchInput.forward || touchInput.back || touchInput.left || touchInput.right
+    const touchMove = touchInput.analog
     const turnBoost = touchMove ? 1.18 : 1
     let nextX = lerp(vel.x, worldX * maxSpeed, blend)
     let nextZ = lerp(vel.z, worldZ * maxSpeed, blend)
@@ -926,7 +970,8 @@ export default function Livia() {
     // No chão: só zera vy (sem toggle de gravityScale — oscilação causava hops)
     const sticking =
       groundedRef.current && jumpTimerRef.current === 0 && !field && nextY <= JUMP_FORCE * 0.5
-    if (sticking) nextY = 0
+    // gruda no chão descendo rampas/degraus em vez de flutuar e quicar
+    if (sticking) nextY = groundGap > 0.03 ? -Math.min(12, groundGap / Math.max(dt, 1 / 120)) : 0
     if (gravityStuckRef.current) {
       gravityStuckRef.current = false
       body.setGravityScale(1)
@@ -1059,6 +1104,11 @@ export default function Livia() {
     {
       const orbitTarget = camOrbitTarget.current
       const orbit = camOrbit.current
+      // tela de título: câmera balança devagar mostrando o vale
+      if (!useLoadingStore.getState().introDone) {
+        orbitTarget.yaw = Math.sin(state.clock.elapsedTime * 0.12) * 0.55
+        orbitTarget.pitch = 0.3
+      }
       if (camMobileRef.current) {
         const orbitT = 1 - Math.exp(-CAM_ORBIT_SMOOTH * dt)
         orbit.yaw = lerpAngle(orbit.yaw, orbitTarget.yaw, orbitT)
@@ -1087,25 +1137,33 @@ export default function Livia() {
         const corr = 1 - Math.exp(-CAM_FOLLOW_CORRECT * dt)
         camPivot.current.x += (pos.x - camPivot.current.x) * corr
         camPivot.current.z += (pos.z - camPivot.current.z) * corr
-        camPivot.current.y =
-          groundHeightAt(camPivot.current.x, camPivot.current.z) + CAM_STAND_CLEAR + LOOK_HEIGHT
+        // altura pelo chão real sob os pés (pedras, pontes, rampas) — não só o terreno analítico
+        const footY = groundedRef.current ? pos.y + 0.06 : groundHeightAt(camPivot.current.x, camPivot.current.z)
+        camPivot.current.y = expSmooth(
+          camPivot.current.y,
+          footY + CAM_STAND_CLEAR + LOOK_HEIGHT,
+          12,
+          dt,
+        )
       } else {
         const corr = 1 - Math.exp(-CAM_FOLLOW_CORRECT_AIR * dt)
         camPivot.current.x += (pos.x - camPivot.current.x) * corr
         camPivot.current.z += (pos.z - camPivot.current.z) * corr
-        camPivot.current.y = expSmooth(camPivot.current.y, pos.y + LOOK_HEIGHT, 8, dt)
+        // mesmo deslocamento do chão (antes faltava CAM_STAND_CLEAR → câmera "mergulhava" no pulo)
+        camPivot.current.y = expSmooth(
+          camPivot.current.y,
+          pos.y + 0.06 + CAM_STAND_CLEAR + LOOK_HEIGHT,
+          8,
+          dt,
+        )
       }
 
       camLook.set(camPivot.current.x, camPivot.current.y, camPivot.current.z)
 
       // Distância: ao mover no chão fica em CAM_DIST; parado pode aproximar de paredes
+      // Spring-arm sempre ativo (antes era desligado ao andar → câmera entrava nas paredes)
       let dist = camDistRef.current
-      if (!airborne && walkSpeed > 0.2) {
-        dist = expSmooth(dist, CAM_DIST, 3.5, dt)
-        camDistRef.current = dist
-        camOcclude.current.active = false
-        camOcclude.current.locked = CAM_DIST
-      } else {
+      {
         camDesired.set(
           camLook.x + Math.sin(yaw) * cosP * CAM_DIST,
           camLook.y + Math.sin(pitch) * CAM_DIST,
@@ -1138,6 +1196,7 @@ export default function Livia() {
       state.camera.lookAt(camLook)
       camQuat.current.copy(state.camera.quaternion)
       camQuatReady.current = true
+      cameraState.yaw = yaw
     }
 
     // ── Estado para o mixer de animação ──

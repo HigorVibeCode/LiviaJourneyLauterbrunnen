@@ -22,10 +22,11 @@ import { useProgressStore } from '../../store/progressStore'
  * Âncoras do Spine (LiviaRig):
  *  torso ~y 0.27 · ombros ArmL/R (±0.225, 0.45) · pescoço ~y 0.54 · Head y 0.6
  */
-export function useOutfit() {
+export function useOutfit(remote = false) {
   return useProgressStore(
     useShallow((s) => {
-      const has = (id) => s.inventory.includes(id)
+      // avatar de amigo (multijogador) não veste o inventário da jogadora local
+      const has = (id) => !remote && s.inventory.includes(id)
       return {
         raincoat: has('capa_chuva'),
         furcoat: has('casaco'),
@@ -33,7 +34,7 @@ export function useOutfit() {
         key: has('chave_portao'),
         tool: has('ferramenta'),
         crystal: has('cristal'),
-        lantern: s.hasLantern,
+        lantern: !remote && s.hasLantern,
       }
     }),
   )

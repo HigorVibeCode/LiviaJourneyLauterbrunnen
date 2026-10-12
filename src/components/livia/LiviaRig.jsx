@@ -33,14 +33,15 @@ const EYE_IRIS = '#3a2818'
  * Livia low-poly polida: rosto limpo, cabelo sem cobrir olhos,
  * touca sem atravessar o cabelo.
  */
-export default function LiviaRig({ stateRef }) {
+export default function LiviaRig({ stateRef, remote = false }) {
   const root = useRef(null)
   const mixerRef = useRef(null)
   const actionsRef = useRef({})
   const currentRef = useRef('idle')
   const hairOpenRef = useRef(null)
   const hairFrontRef = useRef(null)
-  const outfit = useOutfit()
+  const outfit = useOutfit(remote)
+  const bonesRef = useRef(null)
   const hoodOn = outfit.raincoat || outfit.furcoat
 
   const clips = useMemo(() => createLiviaClips(), [])
@@ -65,7 +66,9 @@ export default function LiviaRig({ stateRef }) {
 
     const armR = root.current.getObjectByName('ArmR')
     const foreR = root.current.getObjectByName('ForeR')
-    guideHand.bone = foreR || armR
+    // só a Livia local segura o feixe da guia (antes um amigo "roubava" a mão)
+    if (!remote) guideHand.bone = foreR || armR
+    bonesRef.current = null
 
     return () => {
       mixer.stopAllAction()
@@ -74,7 +77,7 @@ export default function LiviaRig({ stateRef }) {
       actionsRef.current = {}
       if (guideHand.bone === foreR || guideHand.bone === armR) guideHand.bone = null
     }
-  }, [clips])
+  }, [clips, remote])
 
   useEffect(() => {
     // com touca: some franja/volume aberto; calota + occipital + HairBack ficam
@@ -91,19 +94,26 @@ export default function LiviaRig({ stateRef }) {
     if (!mixer || !s) return
     if (s.paused) return
 
-    const armR = root.current?.getObjectByName('ArmR')
-    const armL = root.current?.getObjectByName('ArmL')
-    const foreR = root.current?.getObjectByName('ForeR')
-    const foreL = root.current?.getObjectByName('ForeL')
-    const hips = root.current?.getObjectByName('Hips')
-    const spine = root.current?.getObjectByName('Spine')
-    const legR = root.current?.getObjectByName('LegR')
-    const legL = root.current?.getObjectByName('LegL')
-    const kneeR = root.current?.getObjectByName('KneeR')
-    const kneeL = root.current?.getObjectByName('KneeL')
+    // ossos buscados uma vez (eram 10 getObjectByName por frame por avatar)
+    if (!bonesRef.current && root.current) {
+      const get = (n) => root.current.getObjectByName(n)
+      bonesRef.current = {
+        armR: get('ArmR'),
+        armL: get('ArmL'),
+        foreR: get('ForeR'),
+        foreL: get('ForeL'),
+        hips: get('Hips'),
+        spine: get('Spine'),
+        legR: get('LegR'),
+        legL: get('LegL'),
+        kneeR: get('KneeR'),
+        kneeL: get('KneeL'),
+      }
+    }
+    const { armR, armL, foreR, foreL, hips, spine, legR, legL, kneeR, kneeL } = bonesRef.current ?? {}
 
     // montada: horseRide.mounted é a fonte da verdade (animState pode atrasar 1 frame)
-    const riding = !!(s.riding || horseRide.mounted)
+    const riding = !!(s.riding || (!remote && horseRide.mounted))
     if (riding) {
       if (currentRef.current !== 'sit') {
         Object.values(actions).forEach((a) => {

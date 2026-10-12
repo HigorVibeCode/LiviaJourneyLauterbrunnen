@@ -8,25 +8,25 @@ export const INTRO_LINES = [
   {
     kicker: 'Lauterbrunnen',
     title: 'A promessa da avó',
-    body: 'Na pradaria onde cresceu, Livia guardava a lenda do Coração do Vale — um tesouro no Mirante que desperta a Fênix Alpina. Quem atravessa cada reino com respeito sobe aos céus e vê o vale como a avó descrevia.',
+    body: 'A avó da Livia contava a lenda do Coração do Vale: um tesouro escondido no alto do Mirante, que acorda a Fênix Alpina. Quem chega até lá voa pelo céu e vê o vale inteirinho lá de cima.',
   },
   {
     kicker: 'Os portões',
-    title: 'Ritos de passagem',
-    body: 'Ancestrais selaram cada bioma. Cada portão pede dois testemunhos do reino anterior: prova de que o viajante está preparado para clima, luz, ofício e visão. Não são muros — são ritos.',
+    title: 'Sete reinos, cinco portões',
+    body: 'O caminho passa por pradarias, pasto, um vale noturno, cachoeiras e neve. Os portões só abrem quando a Livia encontra os objetos certos — e alguns amigos pelo caminho vão ajudar.',
   },
   {
-    kicker: 'A jornada',
-    title: 'O caminho começa',
-    body: 'Encontre o que falta, abra os portões e siga a trilha em S até o topo. Segure E quando precisar da guia luminosa. A promessa da avó espera no mirante.',
+    kicker: 'Dica',
+    title: 'Siga a estrela',
+    body: 'A seta no alto da tela sempre aponta para o próximo objetivo. Segure G (ou o botão ✨) para a luz da guia mostrar o caminho. Boa jornada!',
   },
 ]
 
 /** Capítulos emocionais por bioma (HUD) */
 export const CHAPTER_STORY = {
-  meadow: 'Pradaria florida — a chave e a capa abrem o primeiro rito.',
+  meadow: 'Pradaria florida — onde tudo começa.',
   pasture: 'Pasto do rancho — confie no cavalo e atravesse o dia.',
-  night: 'Vale noturno — acenda o lampião; a noite só cede à luz.',
+  night: 'Vale noturno — um lampião ajuda a enxergar.',
   water: 'Vale das águas — a ponte lembra quem a cuida.',
   snow: 'Passo nevado — o gelo cede ao brilho da cascata.',
   flower: 'Prado florido — respire. A escada é a última prova.',
@@ -68,10 +68,10 @@ export const NPC_DIALOGUES = {
 }
 
 export const UNLOCK_TOASTS = {
-  gate_pasture: 'Primeiro rito cumprido! Monte o cavalo e atravesse o pasto.',
-  gate_water: 'A noite cede! O Vale das Águas te espera além do selo.',
-  gate_snow: 'Passagem aberta! O Passo Nevado testa quem subiu das águas.',
-  gate_summit: 'Último selo! O Prado Florido respira antes da escada final.',
+  gate_pasture: 'Portão aberto! Monte o cavalo e atravesse o pasto.',
+  gate_water: 'A noite cede! O Vale das Águas te espera.',
+  gate_snow: 'Passagem aberta! Agora, o Passo Nevado.',
+  gate_summit: 'Último portão! Siga pelo Prado Florido até a escadaria.',
 }
 
 export const FINALE_TOAST = 'Livia encontrou o Coração do Vale!'
@@ -103,8 +103,8 @@ export const EGG_LORE = {
 }
 
 export const LOADING_PHASES = [
-  { id: 'assets', label: 'A carregar o vale…', weight: 0.45 },
-  { id: 'world', label: 'A assentar trilhas e penhascos…', weight: 0.25 },
-  { id: 'shaders', label: 'A acordar a fênix…', weight: 0.2 },
+  { id: 'assets', label: 'Carregando o vale…', weight: 0.45 },
+  { id: 'world', label: 'Arrumando trilhas e penhascos…', weight: 0.25 },
+  { id: 'shaders', label: 'Acordando a fênix…', weight: 0.2 },
   { id: 'ready', label: 'Quase pronta…', weight: 0.1 },
 ]

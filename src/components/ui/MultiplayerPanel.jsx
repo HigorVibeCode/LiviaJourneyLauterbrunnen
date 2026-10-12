@@ -38,7 +38,7 @@ export default function MultiplayerPanel({ compact = false }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      window.prompt('Copia o link da sala:', url.toString())
+      window.prompt('Copie o link da sala:', url.toString())
     }
   }
 
@@ -63,7 +63,7 @@ export default function MultiplayerPanel({ compact = false }) {
             Sala <strong>{roomId}</strong> · {peerCount + 1} jogador{peerCount + 1 === 1 ? '' : 'es'}
           </span>
           <button type="button" className="pause-btn pause-btn--chip" onClick={share}>
-            {copied ? 'Link copiado' : 'Partilhar'}
+            {copied ? 'Link copiado' : 'Compartilhar'}
           </button>
           <button type="button" className="pause-btn pause-btn--chip" onClick={leave}>
             Sair
@@ -83,13 +83,13 @@ export default function MultiplayerPanel({ compact = false }) {
             </button>
             <span className="hud-panel-label">Multijogador</span>
             <p className="mp-blurb">
-              Criem uma sala, partilhem o link e vejam-se no vale. Cada um avança a própria história.
+              Criem uma sala, compartilhem o link e encontrem-se no vale. Cada um avança a própria história.
             </p>
 
             {!hostOk && (
               <p className="mp-warn">
-                Servidor PartyKit não configurado. Em local: <code>npx partykit dev</code>. Em
-                produção: faz deploy e define <code>VITE_PARTYKIT_HOST</code>.
+                Servidor PartyKit não configurado. Localmente: <code>npx partykit dev</code>. Em
+                produção: faça o deploy e defina <code>VITE_PARTYKIT_HOST</code>.
               </p>
             )}
 
@@ -105,7 +105,7 @@ export default function MultiplayerPanel({ compact = false }) {
                 </p>
                 <div className="mp-actions">
                   <button type="button" className="pause-btn pause-btn--primary" onClick={share}>
-                    {copied ? 'Link copiado' : 'Partilhar link'}
+                    {copied ? 'Link copiado' : 'Compartilhar link'}
                   </button>
                   <button
                     type="button"
@@ -122,7 +122,7 @@ export default function MultiplayerPanel({ compact = false }) {
             ) : (
               <>
                 <label className="mp-field">
-                  O teu nome
+                  Seu nome
                   <input
                     value={nameDraft}
                     maxLength={MAX_NAME_LEN}
@@ -138,7 +138,7 @@ export default function MultiplayerPanel({ compact = false }) {
                     disabled={!hostOk || status === 'connecting'}
                     onClick={() => join(randomRoomId())}
                   >
-                    {status === 'connecting' ? 'A ligar…' : 'Criar sala'}
+                    {status === 'connecting' ? 'Conectando…' : 'Criar sala'}
                   </button>
                   <button
                     type="button"

@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
-import * as THREE from 'three'
 import LiviaModel from './livia/LiviaModel'
 import { remotePeers } from '../multiplayer/multiplayerStore'
 
@@ -46,7 +45,7 @@ function RemoteAvatar({ peerId }) {
   return (
     <group ref={root} position={[peer.x, peer.y, peer.z]}>
       <group ref={model} rotation={[0, peer.yaw, 0]}>
-        <LiviaModel stateRef={stateRef} />
+        <LiviaModel stateRef={stateRef} remote />
       </group>
       <Html position={[0, 2.15, 0]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
         <div className="mp-nameplate">{peer.name}</div>

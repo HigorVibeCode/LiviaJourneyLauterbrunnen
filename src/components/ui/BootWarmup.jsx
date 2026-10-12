@@ -1,35 +1,59 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
+import { useProgress } from '@react-three/drei'
 import { setBootPhase, markBootReady } from '../../store/loadingStore'
 
 /**
- * Compila shaders e força frames iniciais enquanto o overlay cobre a tela.
+ * Compila shaders e força alguns frames enquanto o overlay cobre a tela.
+ * Fica DENTRO do Suspense do mundo e espera os GLBs terminarem — antes
+ * marcava "pronto" com a cena quase vazia e o pack de cenário aparecia
+ * depois, travando o começo do jogo.
  */
 export default function BootWarmup() {
   const { gl, scene, camera } = useThree()
-  const frames = useRef(0)
-  const done = useRef(false)
+  const { active, progress } = useProgress()
+  const started = useRef(false)
+  const unmounted = useRef(false)
+  useEffect(() => () => {
+    unmounted.current = true
+  }, [])
+  // rede lenta/sem loaders rastreados: não fica preso no loading para sempre
+  const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
     setBootPhase('world', 0.5)
+    const id = setTimeout(() => setTimedOut(true), 20000)
+    return () => clearTimeout(id)
   }, [])
 
   useEffect(() => {
-    const id = requestAnimationFrame(function tick() {
-      if (done.current) return
-      gl.compile(scene, camera)
-      frames.current += 1
-      const t = frames.current / 3
-      setBootPhase('shaders', 0.5 + t * 0.45)
-      if (frames.current < 3) requestAnimationFrame(tick)
-      else {
-        done.current = true
-        setBootPhase('ready', 1)
-        markBootReady()
+    if (started.current) return undefined
+    if (!timedOut && (active || progress < 100)) return undefined
+    started.current = true
+    let frames = 0
+    const run = async () => {
+      setBootPhase('shaders', 0.3)
+      try {
+        if (gl.compileAsync) await gl.compileAsync(scene, camera)
+        else gl.compile(scene, camera)
+      } catch {
+        gl.compile(scene, camera)
       }
-    })
-    return () => cancelAnimationFrame(id)
-  }, [gl, scene, camera])
+      const tick = () => {
+        if (unmounted.current) return
+        frames += 1
+        setBootPhase('shaders', 0.5 + (frames / 4) * 0.45)
+        if (frames < 4) requestAnimationFrame(tick)
+        else {
+          setBootPhase('ready', 1)
+          markBootReady()
+        }
+      }
+      requestAnimationFrame(tick)
+    }
+    run()
+    return undefined
+  }, [active, progress, timedOut, gl, scene, camera])
 
   return null
 }

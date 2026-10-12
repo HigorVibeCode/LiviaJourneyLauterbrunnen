@@ -1,105 +1,170 @@
-import { useEffect, useState } from 'react'
-import { useProgressStore, ITEMS, QUESTS, missingItems, resetSavedGame } from '../store/progressStore'
+import { useEffect, useRef, useState } from 'react'
+import {
+  useProgressStore,
+  ITEMS,
+  QUESTS,
+  missingItems,
+  resetSavedGame,
+} from '../store/progressStore'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 import { playerPosition, usePlayerStore } from '../store/playerStore'
-import { PHASES, PHASE_ORDER, CHAPTER_LINES } from '../config/world'
+import { PHASES, PHASE_ORDER, CHAPTER_LINES, phaseAt } from '../config/world'
 import { EASTER_EGGS, EGG_ICONS } from '../config/easterEggs'
 import { NPCS } from '../config/npcs'
-import { npcInteractHint, npcDialogueLine } from './NPC'
+import { npcDialogueLine } from './NPC'
 import { GUIDE_MAX_CHARGE, guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
+import { getObjectiveTarget } from '../lib/objectiveTarget'
+import { cameraState, playerActions } from '../lib/cameraState'
+import { requestGameLock } from '../lib/keyboard'
 import MultiplayerPanel from './ui/MultiplayerPanel'
+import { getPartyHost } from '../multiplayer/config'
 import { ENDING_TEXT } from '../config/story'
+
+/** Re-render leve para o que vive fora do React (cavalo, posição) */
+function useTicker(ms = 250) {
+  const [, setN] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setN((n) => n + 1), ms)
+    return () => clearInterval(id)
+  }, [ms])
+}
 
 function useObjectiveHint() {
   const inventory = useProgressStore((s) => s.inventory)
   const unlockedGates = useProgressStore((s) => s.unlockedGates)
   const nearGateId = useProgressStore((s) => s.nearGateId)
   const finished = useProgressStore((s) => s.finished)
-  const [horseTick, setHorseTick] = useState(0)
+  const hasLantern = useProgressStore((s) => s.hasLantern)
 
-  useEffect(() => {
-    const id = setInterval(() => setHorseTick((n) => n + 1), 200)
-    return () => clearInterval(id)
-  }, [])
-
-  if (finished) return 'O Coração do Vale pulsa no mirante. A promessa foi cumprida.'
+  if (finished) return 'A promessa da avó foi cumprida!'
 
   if (unlockedGates.includes('gate_pasture') && !unlockedGates.includes('gate_night')) {
-    void horseTick
-    if (horseRide.mounted) return 'Cavalgue pelo pasto até o Vale Noturno'
-    if (horseRide.nearMount) return 'Pressione E para montar o cavalo'
-    if (nearGateId === 'gate_night') return 'Pressione E para abrir o portão do Vale Noturno'
+    if (horseRide.mounted) return 'Galope pela trilha até o Vale Noturno!'
+    if (horseRide.nearMount) return 'Aperte E para montar no cavalo'
+    if (nearGateId === 'gate_night') return 'Aperte E para abrir o portão'
     if (playerPosition.z < horseRide.z - 40) return 'Siga a trilha até o portão do Vale Noturno'
-    return 'Monte o cavalo ao lado do portão e atravesse o pasto'
+    return 'Monte no cavalo que espera depois do portão'
   }
 
   const quest = QUESTS.find((q) => !unlockedGates.includes(q.gateId))
   if (!quest) {
-    if (unlockedGates.includes('gate_summit')) {
-      return 'Aproveite o Prado Florido e suba a escadaria até o tesouro alpino!'
-    }
-    return 'Suba a escadaria até o mirante e encontre o tesouro alpino!'
+    if (playerPosition.z > PHASES.summit.zTo) return 'Atravesse o Prado Florido e suba a grande escadaria'
+    return 'Abra o baú dourado no alto do mirante!'
   }
+
+  if (quest.id === 'q_night' && !hasLantern) return 'Pegue o lampião brilhante na entrada do vale'
 
   const missing = missingItems(quest, inventory)
-
   if (nearGateId === quest.gateId) {
     return missing.length
-      ? `${quest.nearGateHint.split('.')[0]}. Falta: ${missing.map((id) => ITEMS[id].name).join(' e ')}`
+      ? `Trancado! Falta: ${missing.map((id) => ITEMS[id].name).join(' e ')}`
       : quest.interactHint
   }
-
-  if (missing.length === 0) return `Tudo em mãos! Vá ao portão e toque E`
-  if (missing.length === 1) return `Falta encontrar: ${ITEMS[missing[0]].name}`
+  if (missing.length === 0) return 'Tudo pronto! Volte ao portão e aperte E'
+  if (missing.length === 1) return `Falta só: ${ITEMS[missing[0]].name}`
   return quest.hint
 }
 
-/** Nome do bioma + linha de capítulo */
+/** Fase pela posição da Livia (não pela contagem de portões) */
 function usePhaseInfo() {
-  const [info, setInfo] = useState({ label: PHASES.meadow.label, chapter: CHAPTER_LINES.meadow })
-
+  const [phase, setPhase] = useState(PHASES.meadow)
   useEffect(() => {
-    const tick = () => {
-      const z = playerPosition.z
-      let found = PHASES.meadow
-      for (const id of PHASE_ORDER) {
-        const p = PHASES[id]
-        if (z >= p.zFrom && z <= p.zTo) {
-          found = p
-          break
-        }
-        if (z < p.zFrom) found = p
-      }
-      setInfo({ label: found.label, chapter: CHAPTER_LINES[found.id] ?? '' })
-    }
+    const tick = () => setPhase(phaseAt(playerPosition.z))
     tick()
     const id = setInterval(tick, 500)
     return () => clearInterval(id)
   }, [])
-
-  return info
+  return phase
 }
 
-/** Tela de vitória: aparece após o voo da fênix */
-function useVictory() {
-  const finished = useProgressStore((s) => s.finished)
-  const [show, setShow] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+/**
+ * Seta-bússola: aponta o próximo objetivo relativo à câmera.
+ * Atualiza o DOM direto (sem re-render) a cada frame.
+ */
+function Compass() {
+  const arrowRef = useRef(null)
+  const labelRef = useRef(null)
+  const rootRef = useRef(null)
 
   useEffect(() => {
-    if (!finished) return undefined
-    const id = setTimeout(() => setShow(true), 900)
-    return () => clearTimeout(id)
-  }, [finished])
+    let raf = 0
+    const tick = () => {
+      raf = requestAnimationFrame(tick)
+      const root = rootRef.current
+      if (!root) return
+      const target = getObjectiveTarget()
+      if (!target) {
+        root.style.opacity = '0'
+        return
+      }
+      const dx = target.position[0] - playerPosition.x
+      const dz = target.position[2] - playerPosition.z
+      const dist = Math.hypot(dx, dz)
+      // ângulo do alvo menos a frente da câmera (yaw + π)
+      let rel = Math.atan2(dx, dz) - (cameraState.yaw + Math.PI)
+      while (rel > Math.PI) rel -= Math.PI * 2
+      while (rel < -Math.PI) rel += Math.PI * 2
+      root.style.opacity = dist < 3 ? '0.35' : '1'
+      if (arrowRef.current) arrowRef.current.style.transform = `rotate(${-rel}rad)`
+      if (labelRef.current) {
+        const text = `${target.label} · ${Math.round(dist)} m`
+        if (labelRef.current.textContent !== text) labelRef.current.textContent = text
+      }
+    }
+    tick()
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
-  return { show: show && !dismissed, dismiss: () => setDismissed(true) }
+  return (
+    <div className="hud-compass" ref={rootRef} aria-hidden>
+      <div className="hud-compass-dial">
+        <svg ref={arrowRef} viewBox="0 0 40 40" className="hud-compass-arrow">
+          <path d="M20 3 L31 30 L20 24 L9 30 Z" />
+        </svg>
+      </div>
+      <span ref={labelRef} className="hud-compass-label" />
+    </div>
+  )
+}
+
+function GuideMeter({ isMobile }) {
+  const [charge, setCharge] = useState(GUIDE_MAX_CHARGE)
+  const [depleted, setDepleted] = useState(false)
+  const [active, setActive] = useState(false)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCharge(guideInput.charge)
+      setDepleted(guideInput.depleted)
+      setActive(guideInput.guiding)
+    }, 100)
+    return () => clearInterval(id)
+  }, [])
+  const pct = Math.max(0, Math.min(100, (charge / GUIDE_MAX_CHARGE) * 100))
+  return (
+    <div className={`hud-guide ${depleted ? 'is-depleted' : ''} ${active ? 'is-active' : ''}`}>
+      <span className="hud-guide-icon" aria-hidden>
+        ✨
+      </span>
+      <div className="hud-guide-track">
+        <div className="hud-guide-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="hud-guide-hint">
+        {depleted ? 'recarregando…' : isMobile ? 'guia: botão ✨' : 'guia: segure G'}
+      </span>
+    </div>
+  )
+}
+
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen?.()
+  else document.documentElement.requestFullscreen?.()?.catch?.(() => {})
 }
 
 export default function Hud() {
+  useTicker(250)
   const hint = useObjectiveHint()
-  const phaseInfo = usePhaseInfo()
-  const victory = useVictory()
+  const phase = usePhaseInfo()
   const toast = useProgressStore((s) => s.toast)
   const inventory = useProgressStore((s) => s.inventory)
   const collectedEver = useProgressStore((s) => s.collectedEver)
@@ -107,20 +172,26 @@ export default function Hud() {
   const nearGateId = useProgressStore((s) => s.nearGateId)
   const nearNpcId = useProgressStore((s) => s.nearNpcId)
   const unlockedGates = useProgressStore((s) => s.unlockedGates)
+  const npcSpoke = useProgressStore((s) => s.npcSpoke)
+  const finished = useProgressStore((s) => s.finished)
   const respawns = usePlayerStore((s) => s.respawns)
   const paused = useGameStore((s) => s.paused)
   const setPaused = useGameStore((s) => s.setPaused)
-  const quality = useGameStore((s) => s.quality)
-  const setQuality = useGameStore((s) => s.setQuality)
   const audio = useGameStore((s) => s.audio)
   const toggleAudio = useGameStore((s) => s.toggleAudio)
   const isMobile = useGameStore((s) => s.isMobile)
 
+  const [victoryOpen, setVictoryOpen] = useState(false)
+  useEffect(() => {
+    if (!finished) return undefined
+    const id = setTimeout(() => setVictoryOpen(true), 900)
+    return () => clearTimeout(id)
+  }, [finished])
+
   const currentQuest = QUESTS.find((q) => !unlockedGates.includes(q.gateId))
   const nearQuest = QUESTS.find((q) => q.gateId === nearGateId)
   const nearNpc = NPCS.find((n) => n.id === nearNpcId)
-  const npcSpoke = useProgressStore((s) => s.npcSpoke)
-  const canInteract =
+  const canOpenGate =
     (nearQuest &&
       !unlockedGates.includes(nearQuest.gateId) &&
       missingItems(nearQuest, inventory).length === 0) ||
@@ -128,271 +199,303 @@ export default function Hud() {
       unlockedGates.includes('gate_pasture') &&
       !unlockedGates.includes('gate_night'))
 
-  const phaseNumber = Math.min(unlockedGates.length + 1, PHASE_ORDER.length)
-  const [guideCharge, setGuideCharge] = useState(GUIDE_MAX_CHARGE)
-  const [guideDepleted, setGuideDepleted] = useState(false)
+  let prompt = null
+  if (horseRide.nearMount) prompt = 'Montar no cavalo'
+  else if (canOpenGate) prompt = 'Abrir o portão'
+  else if (nearNpc) {
+    prompt = npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ?? `Falar com ${nearNpc.name}`
+  }
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setGuideCharge(guideInput.charge)
-      setGuideDepleted(guideInput.depleted)
-    }, 80)
-    return () => clearInterval(id)
-  }, [])
-
-  const chargePct = Math.max(0, Math.min(100, (guideCharge / GUIDE_MAX_CHARGE) * 100))
+  const resume = () => {
+    setPaused(false)
+    requestGameLock()
+  }
 
   return (
     <div className={`hud ${paused ? 'hud--paused' : ''} ${isMobile ? 'hud--touch' : ''}`}>
-      <div className="hud-panel hud-objective hud-magic">
-        {!isMobile && (
-          <>
-            <span className="hud-ornament hud-ornament--tl" aria-hidden>
-              ◆
-            </span>
-            <span className="hud-ornament hud-ornament--br" aria-hidden>
-              ◆
-            </span>
-          </>
-        )}
-        <span className="hud-panel-label">
-          {isMobile
-            ? `Fase ${phaseNumber}/${PHASE_ORDER.length} · ${phaseInfo.label}`
-            : `Fase ${phaseNumber} de ${PHASE_ORDER.length} · ${phaseInfo.label}`}
+      {/* ── objetivo ── */}
+      <section className="hud-card hud-objective">
+        <span className="hud-kicker">
+          Fase {phase.index}/{PHASE_ORDER.length} · {isMobile ? phase.short : phase.label}
         </span>
-        {!isMobile && <p className="hud-chapter">{phaseInfo.chapter}</p>}
         <p className="hud-objective-main">{hint}</p>
-
         {currentQuest && (
-          <ul className={`hud-checklist ${isMobile ? 'hud-checklist--compact' : ''}`}>
-            {currentQuest.itemIds.map((id) => (
-              <li key={id} className={inventory.includes(id) ? 'is-done' : ''}>
-                <span className="hud-check">{inventory.includes(id) ? '✔' : '○'}</span>
-                {ITEMS[id].name}
-              </li>
-            ))}
+          <ul className="hud-checklist">
+            {currentQuest.itemIds.map((id) => {
+              const done = inventory.includes(id) || collectedEver.includes(id)
+              return (
+                <li key={id} className={done ? 'is-done' : ''}>
+                  <span className="hud-item-icon" aria-hidden>
+                    {ITEMS[id].icon}
+                  </span>
+                  {ITEMS[id].short}
+                  {done && <span className="hud-tick">✔</span>}
+                </li>
+              )
+            })}
           </ul>
+        )}
+        {!isMobile && <p className="hud-chapter">{CHAPTER_LINES[phase.id]}</p>}
+        <GuideMeter isMobile={isMobile} />
+      </section>
+
+      <Compass />
+
+      {/* ── canto direito: botões + segredos + mochila ── */}
+      <div className="hud-corner">
+        <div className="hud-buttons">
+          <button
+            type="button"
+            className="hud-icon-btn"
+            onClick={() => setPaused(true)}
+            aria-label="Pausar"
+            title="Pausar (Esc)"
+          >
+            ⏸
+          </button>
+          <button
+            type="button"
+            className="hud-icon-btn"
+            onClick={toggleAudio}
+            aria-label={audio ? 'Desligar som' : 'Ligar som'}
+            title="Som"
+          >
+            {audio ? '🔊' : '🔇'}
+          </button>
+          <button
+            type="button"
+            className="hud-icon-btn"
+            onClick={toggleFullscreen}
+            aria-label="Tela cheia"
+            title="Tela cheia"
+          >
+            ⛶
+          </button>
+        </div>
+        <div className="hud-card hud-eggs" title="Segredos escondidos pelo vale">
+          <span className="hud-kicker">
+            Segredos {foundEggs.length}/{EASTER_EGGS.length}
+          </span>
+          <div className="hud-egg-row">
+            {EASTER_EGGS.map((egg) => (
+              <span
+                key={egg.id}
+                className={`hud-egg-icon ${foundEggs.includes(egg.id) ? 'is-found' : ''}`}
+              >
+                {foundEggs.includes(egg.id) ? EGG_ICONS[egg.icon] : '?'}
+              </span>
+            ))}
+          </div>
+        </div>
+        {inventory.length > 0 && (
+          <div className="hud-card hud-bag" title="Mochila">
+            <span className="hud-kicker">Mochila</span>
+            <div className="hud-bag-row">
+              {inventory.map((id) => (
+                <span key={id} className="hud-bag-item" title={ITEMS[id]?.name}>
+                  {ITEMS[id]?.icon ?? '•'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {getPartyHost() && (
+          <div className="mp-hud-slot">
+            <MultiplayerPanel compact={isMobile} />
+          </div>
         )}
       </div>
 
-      <div
-        className={`hud-panel hud-guide-charge hud-magic ${guideDepleted ? 'is-depleted' : ''}`}
-      >
-        <span className="hud-panel-label">Guia luminosa</span>
-        <div className="hud-charge-track" aria-hidden>
-          <div className="hud-charge-fill" style={{ width: `${chargePct}%` }} />
-        </div>
-        <p className="hud-charge-hint">
-          {guideDepleted
-            ? 'Recarregando… aguarde um momento'
-            : isMobile
-              ? `${guideCharge.toFixed(1)}s · segure o botão E`
-              : `${guideCharge.toFixed(1)}s restantes · segure E`}
-        </p>
-      </div>
-
-      {canInteract && (
-        <div className="hud-interact hud-magic">
-          <kbd>E</kbd>
-          <span>Abrir portão</span>
+      {prompt && !paused && (
+        <div className="hud-prompt">
+          {!isMobile && <kbd>E</kbd>}
+          <span>{prompt}</span>
         </div>
       )}
 
-      {nearNpc && (
-        <div className="hud-interact hud-magic">
-          <kbd>E</kbd>
-          <span>
-            {npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ??
-              (isMobile ? `Falar com ${nearNpc.name}` : npcInteractHint(nearNpc))}
-          </span>
+      {toast && !paused && !victoryOpen && (
+        <div className="hud-toast" key={toast}>
+          {toast}
         </div>
       )}
 
-      <div className="mp-hud-slot">
-        <MultiplayerPanel compact={isMobile} />
-      </div>
-
-      <div className="hud-panel hud-eggs hud-magic">
-        <span className="hud-panel-label">Segredos {foundEggs.length}/{EASTER_EGGS.length}</span>
-        <div className="hud-egg-row">
-          {EASTER_EGGS.map((egg) => (
-            <span
-              key={egg.id}
-              className={`hud-egg-icon ${foundEggs.includes(egg.id) ? 'is-found' : ''}`}
-              title={egg.id}
-            >
-              {foundEggs.includes(egg.id) ? EGG_ICONS[egg.icon] : '○'}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {inventory.length > 0 && (
-        <div className="hud-panel hud-inventory hud-magic">
-          <span className="hud-ornament hud-ornament--tr" aria-hidden>
-            ✦
-          </span>
-          <span className="hud-panel-label">Mochila</span>
-          <ul>
-            {inventory.map((id) => (
-              <li key={id}>{ITEMS[id]?.name ?? id}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {toast && !paused && !victory.show && <div className="hud-toast hud-magic">{toast}</div>}
-
-      {victory.show && (
-        <div className="pause-overlay">
-          <div className="pause-card victory-card hud-magic">
-            <p className="pause-kicker">Fim da jornada</p>
+      {victoryOpen && (
+        <div className="overlay">
+          <div className="dialog victory-card">
+            <div className="victory-burst" aria-hidden>
+              ✦
+            </div>
+            <p className="dialog-kicker">Fim da jornada</p>
             <h2>Coração do Vale</h2>
-            <p className="pause-copy">{ENDING_TEXT}</p>
-
+            <p className="dialog-copy">{ENDING_TEXT}</p>
             <div className="victory-stats">
               <div className="victory-stat">
                 <strong>{collectedEver.length}</strong>
-                <span>itens encontrados</span>
+                <span>itens</span>
               </div>
               <div className="victory-stat">
-                <strong>{unlockedGates.length}</strong>
-                <span>portões abertos</span>
+                <strong>
+                  {foundEggs.length}/{EASTER_EGGS.length}
+                </strong>
+                <span>segredos</span>
               </div>
               <div className="victory-stat">
                 <strong>{respawns}</strong>
-                <span>tombos no caminho</span>
+                <span>tombos</span>
               </div>
             </div>
-
-            <div className="pause-actions">
-              <button
-                type="button"
-                className="pause-btn pause-btn--primary"
-                onClick={resetSavedGame}
-              >
-                Jogar novamente
+            <div className="dialog-actions">
+              <button type="button" className="btn btn--primary" onClick={resetSavedGame}>
+                Jogar de novo
               </button>
-              <button type="button" className="pause-btn" onClick={victory.dismiss}>
-                Fechar
+              <button type="button" className="btn" onClick={() => setVictoryOpen(false)}>
+                Passear pelo vale
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {paused && (
-        <div className="pause-overlay">
-          <div className="pause-card pause-card--menu hud-magic">
-            <p className="pause-kicker">Menu · ESC</p>
-            <h2>A Jornada de Livia</h2>
-            <p className="pause-copy">
-              Explore o vale alpino, colete dois itens por fase e abra os portões até o mirante.
-              O objetivo atual fica no canto da tela enquanto você joga.
-            </p>
+      {paused && <PauseMenu isMobile={isMobile} onResume={resume} />}
+    </div>
+  )
+}
 
-            {!isMobile ? (
-            <div className="pause-help">
-              <span className="hud-panel-label">Controles</span>
-              <ul className="pause-help-list">
-                <li>
+function PauseMenu({ isMobile, onResume }) {
+  const quality = useGameStore((s) => s.quality)
+  const setQuality = useGameStore((s) => s.setQuality)
+  const audio = useGameStore((s) => s.audio)
+  const toggleAudio = useGameStore((s) => s.toggleAudio)
+  const setPaused = useGameStore((s) => s.setPaused)
+  const [confirmReset, setConfirmReset] = useState(false)
+
+  return (
+    <div className="overlay">
+      <div className="dialog pause-card">
+        <p className="dialog-kicker">Pausa</p>
+        <h2>A Jornada de Livia</h2>
+
+        <div className="dialog-actions dialog-actions--stack">
+          <button type="button" className="btn btn--primary" onClick={onResume}>
+            ▶ Continuar
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              playerActions.unstuck = true
+              setPaused(false)
+            }}
+          >
+            🧭 Fiquei presa — voltar para a trilha
+          </button>
+        </div>
+
+        <div className="pause-section">
+          <span className="hud-kicker">Como jogar</span>
+          {isMobile ? (
+            <ul className="pause-tips">
+              <li>
+                <b>Joystick</b> anda (empurre até o fim para correr)
+              </li>
+              <li>
+                <b>Arraste</b> o dedo na tela para olhar em volta
+              </li>
+              <li>
+                <b>Ação</b> abre portões, fala e monta no cavalo
+              </li>
+              <li>
+                <b>✨</b> mostra o caminho até o próximo objetivo
+              </li>
+            </ul>
+          ) : (
+            <ul className="pause-keys">
+              <li>
+                <span>
                   <kbd>W</kbd>
                   <kbd>A</kbd>
                   <kbd>S</kbd>
                   <kbd>D</kbd>
-                  <span>Andar</span>
-                </li>
-                <li>
-                  <kbd>Mouse</kbd>
-                  <span>Olhar / girar a câmera (clique no jogo para capturar)</span>
-                </li>
-                <li>
+                </span>
+                andar
+              </li>
+              <li>
+                <span>
                   <kbd>Shift</kbd>
-                  <span>Correr</span>
-                </li>
-                <li>
+                </span>
+                correr
+              </li>
+              <li>
+                <span>
                   <kbd>Espaço</kbd>
-                  <span>Pular</span>
-                </li>
-                <li>
+                </span>
+                pular
+              </li>
+              <li>
+                <span>
                   <kbd>E</kbd>
-                  <span>Abrir portão, montar o cavalo ou pegar interação próxima</span>
-                </li>
-                <li>
-                  <kbd>Segurar E</kbd>
-                  <span>Ativar a guia luminosa (aponta o próximo objetivo)</span>
-                </li>
-                <li>
-                  <kbd>ESC</kbd>
-                  <span>Pausar / abrir este menu</span>
-                </li>
-              </ul>
-            </div>
-            ) : (
-            <div className="pause-help">
-              <span className="hud-panel-label">Controles (toque)</span>
-              <ul className="pause-help-tips">
-                <li>Joystick esquerdo — andar (empurre ao máximo para correr)</li>
-                <li>Arraste o dedo na tela — girar a câmera</li>
-                <li>Pular e E — botões à direita</li>
-                <li>Segure E — guia luminosa</li>
-              </ul>
-            </div>
-            )}
+                </span>
+                abrir, falar, montar
+              </li>
+              <li>
+                <span>
+                  <kbd>G</kbd>
+                </span>
+                guia luminosa (segure)
+              </li>
+              <li>
+                <span>
+                  <kbd>Mouse</kbd>
+                </span>
+                olhar (clique no jogo)
+              </li>
+            </ul>
+          )}
+        </div>
 
-            <div className="pause-help">
-              <span className="hud-panel-label">Como jogar</span>
-              <ul className="pause-help-tips">
-                <li>Cada fase tem dois itens escondidos — encontre-os antes de abrir o portão.</li>
-                <li>Chegue perto do portão e pressione E quando a mochila estiver completa.</li>
-                <li>No pasto, monte o cavalo com E e cavalque até o Vale Noturno.</li>
-                <li>A guia luminosa gasta carga, mas recarrega lentamente quando não está em uso.</li>
-                <li>Evite cair na água gelada e na cachoeira — a Livia volta ao último lugar seguro.</li>
-                <li>Multijogador: use “Jogar com amigos”, partilhe o link da sala e vejam-se no vale.</li>
-              </ul>
-            </div>
-
-            <div className="pause-quality">
-              <span className="hud-panel-label">Qualidade gráfica</span>
-              <div className="pause-quality-row">
-                {Object.values(QUALITY_PRESETS).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`pause-btn pause-btn--chip ${quality === p.id ? 'is-active' : ''}`}
-                    onClick={() => setQuality(p.id)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="pause-quality">
-              <span className="hud-panel-label">Som</span>
-              <div className="pause-quality-row">
-                <button
-                  type="button"
-                  className={`pause-btn pause-btn--chip ${audio ? 'is-active' : ''}`}
-                  onClick={toggleAudio}
-                >
-                  {audio ? 'Ligado' : 'Desligado'}
-                </button>
-              </div>
-            </div>
-
-            <div className="pause-actions">
+        <div className="pause-section">
+          <span className="hud-kicker">Gráficos</span>
+          <div className="chip-row">
+            {Object.values(QUALITY_PRESETS).map((p) => (
               <button
+                key={p.id}
                 type="button"
-                className="pause-btn pause-btn--primary"
-                onClick={() => setPaused(false)}
+                className={`chip ${quality === p.id ? 'is-active' : ''}`}
+                onClick={() => setQuality(p.id)}
               >
-                Continuar
+                {p.label}
               </button>
-            </div>
+            ))}
+          </div>
+          <span className="hud-kicker">Som</span>
+          <div className="chip-row">
+            <button type="button" className={`chip ${audio ? 'is-active' : ''}`} onClick={toggleAudio}>
+              {audio ? '🔊 Ligado' : '🔇 Desligado'}
+            </button>
           </div>
         </div>
-      )}
+
+        <div className="pause-section pause-danger">
+          {confirmReset ? (
+            <>
+              <span>Apagar todo o progresso e começar do zero?</span>
+              <div className="chip-row">
+                <button type="button" className="chip chip--danger" onClick={resetSavedGame}>
+                  Sim, recomeçar
+                </button>
+                <button type="button" className="chip" onClick={() => setConfirmReset(false)}>
+                  Não
+                </button>
+              </div>
+            </>
+          ) : (
+            <button type="button" className="chip" onClick={() => setConfirmReset(true)}>
+              ↺ Recomeçar do início
+            </button>
+          )}
+        </div>
+        <p className="pause-save-note">O progresso é salvo automaticamente.</p>
+      </div>
     </div>
   )
 }
