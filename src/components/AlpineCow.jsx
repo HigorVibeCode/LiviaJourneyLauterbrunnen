@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { makeToonMaterial } from '../materials/toonMaterial'
+import StaticBatch from './world/StaticBatch'
 import { STAIRS, groundHeightAt, stairsPitch } from '../config/world'
 import {
   cowChase,
@@ -45,8 +46,27 @@ function pickWanderTarget() {
   cowChase.wanderZ = p.z
 }
 
+const BODY_C = [0, 1.02, 0]
+const BODY_AX = [0.62, 0.55, 0.85]
+const COW_SPOTS = [
+  [1, 0.35, 0.3, 0.26],
+  [-1, 0.2, -0.35, 0.28],
+  [0.25, 1, -0.2, 0.22],
+  [0.9, 0.1, -0.7, 0.18],
+  [-0.8, 0.5, 0.55, 0.18],
+]
+
+/** manchinha rente à pele: centro afundado no corpo (só a "tampa" aparece) */
+function spotPos(dx, dy, dz, r) {
+  const len = Math.hypot(dx, dy, dz)
+  const n = [dx / len, dy / len, dz / len]
+  const k = 1 / Math.sqrt((n[0] / BODY_AX[0]) ** 2 + (n[1] / BODY_AX[1]) ** 2 + (n[2] / BODY_AX[2]) ** 2)
+  const d = k - r * 0.8
+  return [BODY_C[0] + n[0] * d, BODY_C[1] + n[1] * d, BODY_C[2] + n[2] * d]
+}
+
 /**
- * Vaca alpina: spawna 1× (posição aleatória) ao abrir o portão do mirante.
+ * Vaca alpina (fofinha, com coroa de flores): spawna 1× (posição aleatória) ao abrir o portão do mirante.
  * Se a Livia sai da fase, a vaca continua pastando por ali — sem respawn.
  * Na zona do mirante, persegue e arrasta de volta ao portão.
  */
@@ -293,71 +313,152 @@ export default function AlpineCow() {
     }
   })
 
-  const s = 1.35
   const mats = useMemo(
     () => ({
-      white: makeToonMaterial({ color: '#f0ebe2',}),
-      black: makeToonMaterial({ color: '#2c2824',}),
-      muzzle: makeToonMaterial({ color: '#3a342e',}),
-      eye: makeToonMaterial({ color: '#1a1410',}),
-      horn: makeToonMaterial({ color: '#e8dcc4',}),
-      bell: makeToonMaterial({
-        color: '#d4a020',}),
+      white: makeToonMaterial({ color: '#fffdf8' }),
+      spot: makeToonMaterial({ color: '#e6b07c' }),
+      muzzle: makeToonMaterial({ color: '#ffc4d2' }),
+      nostril: makeToonMaterial({ color: '#f08aa4' }),
+      inner: makeToonMaterial({ color: '#ffb3c6' }),
+      eye: makeToonMaterial({ color: '#4a3a5e' }),
+      shine: makeToonMaterial({ color: '#ffffff' }),
+      cheek: makeToonMaterial({ color: '#ffb0c4' }),
+      horn: makeToonMaterial({ color: '#fff0c8' }),
+      hoof: makeToonMaterial({ color: '#e6b07c' }),
+      collar: makeToonMaterial({ color: '#ff6b6b' }),
+      bell: makeToonMaterial({ color: '#ffd23f' }),
+      flowerA: makeToonMaterial({ color: '#ff8fb8' }),
+      flowerB: makeToonMaterial({ color: '#ffffff' }),
+      flowerC: makeToonMaterial({ color: '#b48cff' }),
+      leaf: makeToonMaterial({ color: '#6cc85a' }),
     }),
     [],
   )
+  const shadowGeo = useMemo(() => new THREE.CircleGeometry(1, 20), [])
+  const flowers = [mats.flowerA, mats.flowerB, mats.flowerC]
 
   return (
     <group ref={root} visible={false}>
-      <mesh castShadow position={[0, 1.15, 0]} material={mats.white}>
-        <capsuleGeometry args={[0.55 * s, 0.95 * s, 3, 6]} />
+      {/* sombra macia */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} scale={[0.8, 1.15, 1]} geometry={shadowGeo}>
+        <meshBasicMaterial color="#3b5a3a" transparent opacity={0.18} depthWrite={false} />
       </mesh>
-      <mesh position={[0.35, 1.25, 0.2]} material={mats.black}>
-        <sphereGeometry args={[0.35 * s, 5, 4]} />
-      </mesh>
-      <mesh position={[-0.4, 1.1, -0.35]} material={mats.black}>
-        <sphereGeometry args={[0.28 * s, 5, 4]} />
-      </mesh>
+
+      {/* corpão redondo com manchinhas caramelo */}
+      <StaticBatch>
+        <mesh position={BODY_C} scale={BODY_AX} material={mats.white}>
+          <sphereGeometry args={[1, 20, 14]} />
+        </mesh>
+        {COW_SPOTS.map(([dx, dy, dz, r], i) => (
+          <mesh key={i} position={spotPos(dx, dy, dz, r)} material={mats.spot}>
+            <sphereGeometry args={[r, 14, 10]} />
+          </mesh>
+        ))}
+        {/* patas traseiras (paradas) */}
+        {[-1, 1].map((sd) => (
+          <group key={`b${sd}`} position={[sd * 0.3, 0.55, -0.42]}>
+            <mesh position={[0, -0.26, 0]} material={mats.white}>
+              <capsuleGeometry args={[0.17, 0.2, 6, 12]} />
+            </mesh>
+            <mesh position={[0, -0.47, 0.01]} material={mats.hoof}>
+              <cylinderGeometry args={[0.16, 0.17, 0.1, 14]} />
+            </mesh>
+          </group>
+        ))}
+        {/* rabinho com pompom */}
+        <mesh position={[0, 1.0, -0.88]} rotation={[0.3, 0, 0]} material={mats.white}>
+          <capsuleGeometry args={[0.04, 0.4, 4, 8]} />
+        </mesh>
+        <mesh position={[0, 0.74, -0.95]} material={mats.spot}>
+          <sphereGeometry args={[0.08, 10, 8]} />
+        </mesh>
+      </StaticBatch>
+
       <group ref={head} position={[0, 1.45, 0.85]}>
-        <mesh castShadow material={mats.white}>
-          <boxGeometry args={[0.55 * s, 0.5 * s, 0.65 * s]} />
-        </mesh>
-        <mesh position={[0, -0.08, 0.38]} material={mats.muzzle}>
-          <boxGeometry args={[0.32 * s, 0.22 * s, 0.2 * s]} />
-        </mesh>
-        {[-0.18, 0.18].map((x) => (
-          <mesh key={x} position={[x * s, 0.12, 0.28]} material={mats.eye}>
-            <sphereGeometry args={[0.06 * s, 4, 3]} />
+        <StaticBatch>
+          <mesh position={[0, 0.1, 0.15]} material={mats.white}>
+            <sphereGeometry args={[0.5, 20, 16]} />
           </mesh>
-        ))}
-        {[-0.22, 0.22].map((x) => (
-          <mesh key={x} position={[x * s, 0.32, 0]} rotation={[0, 0, x * 2.5]} material={mats.horn}>
-            <coneGeometry args={[0.07 * s, 0.45 * s, 4]} />
+          {/* focinho rosado */}
+          <mesh position={[0, -0.1, 0.58]} scale={[1.3, 0.85, 0.85]} material={mats.muzzle}>
+            <sphereGeometry args={[0.24, 16, 12]} />
           </mesh>
-        ))}
-        <mesh position={[0, -0.35, 0.15]} material={mats.bell}>
-          <sphereGeometry args={[0.1 * s, 5, 4]} />
-        </mesh>
+          {[-1, 1].map((sd) => (
+            <mesh key={`n${sd}`} position={[sd * 0.1, -0.06, 0.78]} scale={[1, 1.2, 0.5]} material={mats.nostril}>
+              <sphereGeometry args={[0.04, 8, 6]} />
+            </mesh>
+          ))}
+          {/* olhinhos com brilho */}
+          {[-1, 1].map((sd) => (
+            <group key={`e${sd}`} position={[sd * 0.2, 0.2, 0.6]} rotation={[0, sd * 0.3, 0]}>
+              <mesh scale={[0.85, 1.15, 0.5]} material={mats.eye}>
+                <sphereGeometry args={[0.075, 12, 10]} />
+              </mesh>
+              <mesh position={[0.022, 0.035, 0.03]} material={mats.shine}>
+                <sphereGeometry args={[0.028, 8, 6]} />
+              </mesh>
+            </group>
+          ))}
+          {[-1, 1].map((sd) => (
+            <mesh key={`k${sd}`} position={[sd * 0.33, 0.0, 0.5]} rotation={[0, sd * 0.6, 0]} scale={[1, 0.65, 0.4]} material={mats.cheek}>
+              <sphereGeometry args={[0.08, 10, 8]} />
+            </mesh>
+          ))}
+          {/* orelhas caídas + chifrinhos */}
+          {[-1, 1].map((sd) => (
+            <group key={`o${sd}`} position={[sd * 0.5, 0.18, 0.1]} rotation={[0, 0, sd * -0.45]}>
+              <mesh scale={[1.6, 0.7, 0.55]} material={mats.white}>
+                <sphereGeometry args={[0.14, 12, 10]} />
+              </mesh>
+              <mesh position={[sd * 0.01, 0, 0.05]} scale={[1.1, 0.45, 0.3]} material={mats.inner}>
+                <sphereGeometry args={[0.14, 10, 8]} />
+              </mesh>
+            </group>
+          ))}
+          {[-1, 1].map((sd) => (
+            <mesh key={`h${sd}`} position={[sd * 0.3, 0.52, 0.08]} rotation={[0, 0, sd * -0.6]} material={mats.horn}>
+              <capsuleGeometry args={[0.06, 0.12, 4, 10]} />
+            </mesh>
+          ))}
+          {/* coroa de florzinhas */}
+          {[-0.27, -0.09, 0.09, 0.27].map((x, i) => {
+            const z = 0.3 - Math.abs(x) * 0.5
+            const y = 0.1 + Math.sqrt(Math.max(0, 0.25 - x * x - (z - 0.15) ** 2))
+            return (
+              <group key={`f${i}`} position={[x, y, z]} rotation={[-0.5, 0, -x * 1.5]}>
+                <mesh scale={[1, 0.6, 1]} material={flowers[i % 3]}>
+                  <sphereGeometry args={[0.09, 12, 8]} />
+                </mesh>
+                <mesh position={[0, 0.045, 0]} material={mats.bell}>
+                  <sphereGeometry args={[0.035, 8, 6]} />
+                </mesh>
+              </group>
+            )
+          })}
+          {/* coleira com sininho */}
+          <mesh position={[0, -0.32, 0.05]} rotation={[Math.PI / 2 - 0.35, 0, 0]} material={mats.collar}>
+            <torusGeometry args={[0.3, 0.05, 8, 22]} />
+          </mesh>
+          <mesh position={[0, -0.5, 0.28]} material={mats.bell}>
+            <sphereGeometry args={[0.11, 12, 10]} />
+          </mesh>
+        </StaticBatch>
       </group>
-      <group ref={legL} position={[-0.28, 0.55, 0.35]}>
-        <mesh position={[0, -0.35, 0]} material={mats.white}>
-          <cylinderGeometry args={[0.1 * s, 0.08 * s, 0.7 * s, 4]} />
-        </mesh>
-      </group>
-      <group ref={legR} position={[0.28, 0.55, 0.35]}>
-        <mesh position={[0, -0.35, 0]} material={mats.white}>
-          <cylinderGeometry args={[0.1 * s, 0.08 * s, 0.7 * s, 4]} />
-        </mesh>
-      </group>
-      <mesh position={[-0.28, 0.2, -0.4]} material={mats.white}>
-        <cylinderGeometry args={[0.1 * s, 0.08 * s, 0.7 * s, 4]} />
-      </mesh>
-      <mesh position={[0.28, 0.2, -0.4]} material={mats.black}>
-        <cylinderGeometry args={[0.1 * s, 0.08 * s, 0.7 * s, 4]} />
-      </mesh>
-      <mesh position={[0, 1.3, -0.85]} rotation={[0.5, 0, 0]} material={mats.muzzle}>
-        <cylinderGeometry args={[0.04 * s, 0.06 * s, 0.55 * s, 4]} />
-      </mesh>
+
+      {/* patas dianteiras (animadas) */}
+      {[
+        [legL, -1],
+        [legR, 1],
+      ].map(([ref, sd]) => (
+        <group key={sd} ref={ref} position={[sd * 0.3, 0.55, 0.4]}>
+          <mesh position={[0, -0.26, 0]} material={mats.white}>
+            <capsuleGeometry args={[0.17, 0.2, 6, 12]} />
+          </mesh>
+          <mesh position={[0, -0.47, 0.01]} material={mats.hoof}>
+            <cylinderGeometry args={[0.16, 0.17, 0.1, 14]} />
+          </mesh>
+        </group>
+      ))}
     </group>
   )
 }

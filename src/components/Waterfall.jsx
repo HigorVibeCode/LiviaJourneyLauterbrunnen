@@ -7,6 +7,8 @@ import { useWaterfallStore } from '../store/waterfallStore'
 import { playerPosition } from '../store/playerStore'
 import { makeToonMaterial } from '../materials/toonMaterial'
 import StaticBatch from './world/StaticBatch'
+import { RoundedBox } from '@react-three/drei'
+import { PAL } from '../config/palette'
 
 /**
  * Cachoeira de Lauterbrunnen.
@@ -20,20 +22,21 @@ const tmpM = new THREE.Matrix4()
 const tmpP = new THREE.Vector3()
 const tmpS = new THREE.Vector3()
 const ID_Q = new THREE.Quaternion()
-const STREAK_GEO = new THREE.BoxGeometry(1, 1, 0.16)
-const MIST_GEO = new THREE.SphereGeometry(1, 6, 5)
-const STREAK_COLORS = ['#f2fbff', '#d6f0fb', '#b9e3f4'].map((c) => new THREE.Color(c))
+// faixa roliça (cápsula achatada) — água de desenho animado
+const STREAK_GEO = new THREE.CapsuleGeometry(0.5, 1, 3, 8).scale(1, 0.5, 0.32)
+const MIST_GEO = new THREE.SphereGeometry(1, 12, 8)
+const STREAK_COLORS = ['#ffffff', '#dcf7ff', '#b5ecfb'].map((c) => new THREE.Color(c))
 const streakMat = makeToonMaterial({
   color: '#ffffff',
-  emissive: '#dff2fb',
-  emissiveIntensity: 0.35,
+  emissive: '#e6fbff',
+  emissiveIntensity: 0.45,
   transparent: true,
-  opacity: 0.82,
+  opacity: 0.92,
 })
 streakMat.depthWrite = false
-const mistMat = makeToonMaterial({ color: '#eef8fc', transparent: true, opacity: 0.26 })
+const mistMat = makeToonMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.25, transparent: true, opacity: 0.5 })
 mistMat.depthWrite = false
-const mistMatFrozen = makeToonMaterial({ color: '#eef8fc', transparent: true, opacity: 0.16 })
+const mistMatFrozen = makeToonMaterial({ color: '#ffffff', transparent: true, opacity: 0.3 })
 mistMatFrozen.depthWrite = false
 
 export default function Waterfall({
@@ -168,41 +171,70 @@ export default function Waterfall({
 
   return (
     <group position={[wx, 0, wz]}>
-      {/* saliência de onde a água salta */}
+      {/* saliência roliça de onde a água salta */}
       <RigidBody type="fixed" position={[0, height + 1.6, -1.8]} colliders={false}>
         <CuboidCollider args={[(width + 6) / 2, 2, 2.6]} />
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[width + 6, 4.2, 5.2]} />
-          <ToonMat color="#6a6d70"/>
-        </mesh>
+        <RoundedBox args={[width + 6, 4.2, 5.2]} radius={1.2} smoothness={2} bevelSegments={2}>
+          <ToonMat color={frozen ? '#e6f2fb' : PAL.cliffSide} />
+        </RoundedBox>
       </RigidBody>
-
-      {/* recorte escuro na rocha atrás da queda: contraste que faz o
-          véu branco saltar aos olhos de longe */}
-      <mesh position={[0, height * 0.5, -0.55]}>
-        <boxGeometry args={[width + 2.4, height, 1]} />
-        <ToonMat color="#39424a"/>
-      </mesh>
-      {/* rocha molhada escorrendo dos lados */}
-      {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * (width / 2 + 1.7), height * 0.4, -0.2]}>
-          <boxGeometry args={[1.2, height * 0.8, 0.7]} />
-          <ToonMat
-            color="#4c585f"/>
+      {/* espuma na crista */}
+      {!frozen && (
+        <mesh position={[0, height + 0.1, 0.55]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.6]}>
+          <capsuleGeometry args={[0.55, width - 0.6, 4, 10]} />
+          <ToonMat color={PAL.foam} />
         </mesh>
-      ))}
+      )}
+
+      <StaticBatch>
+        {/* fundo turquesa atrás da queda: o véu branco salta aos olhos */}
+        <RoundedBox args={[width + 2.4, height, 1]} radius={0.45} smoothness={2} bevelSegments={1} position={[0, height * 0.5, -0.55]}>
+          <ToonMat color={frozen ? PAL.ice : PAL.waterDeep} />
+        </RoundedBox>
+        {/* rocha clarinha dos lados */}
+        {[-1, 1].map((s) => (
+          <RoundedBox
+            key={s}
+            args={[1.6, height * 0.8, 1.1]}
+            radius={0.5}
+            smoothness={2}
+            bevelSegments={1}
+            position={[s * (width / 2 + 1.8), height * 0.4, -0.2]}
+          >
+            <ToonMat color={frozen ? '#dbe8f4' : PAL.cliffBand} />
+          </RoundedBox>
+        ))}
+        {/* pedras roliças na base */}
+        {Array.from({ length: 6 }, (_, i) => (
+          <mesh
+            key={i}
+            position={[(i - 2.5) * (width * 0.5), 0.3, width * 1.5 + (i % 2) * 1.2]}
+            rotation={[0, i, 0]}
+            scale={[1, 0.7, 0.9]}
+          >
+            <sphereGeometry args={[0.75 + (i % 3) * 0.4, 10, 8]} />
+            <ToonMat color={frozen ? '#e8f2fb' : i % 2 ? PAL.rock : '#dbe2ec'} />
+          </mesh>
+        ))}
+        {/* anel de espuma em volta do lago */}
+        {!frozen && (
+          <mesh position={[0, -0.04, width * 0.9]} scale={[width * 1.3, 0.12, width * 0.9]}>
+            <sphereGeometry args={[1, 24, 6]} />
+            <ToonMat color={PAL.foam} />
+          </mesh>
+        )}
+      </StaticBatch>
 
       {frozen ? (
         <group>
-          {iceColumns.map((c, i) => (
-            <mesh key={i} position={[c.x, c.h / 2, 0.3]} castShadow>
-              <cylinderGeometry args={[c.w * 0.6, c.w, c.h, 6]} />
-              <ToonMat
-                color="#cfe8f4"transparent
-                opacity={0.88}
-              />
-            </mesh>
-          ))}
+          <StaticBatch>
+            {iceColumns.map((c, i) => (
+              <mesh key={i} position={[c.x, c.h / 2, 0.3]}>
+                <capsuleGeometry args={[c.w * 0.75, Math.max(0.1, c.h - c.w * 1.5), 4, 10]} />
+                <ToonMat color={i % 2 ? PAL.ice : '#e3f7ff'} />
+              </mesh>
+            ))}
+          </StaticBatch>
           <RigidBody type="fixed" colliders={false}>
             <CuboidCollider position={[0, height * 0.4, 0.3]} args={[width * 0.55, height * 0.4, 0.9]} />
           </RigidBody>
@@ -220,11 +252,14 @@ export default function Waterfall({
             >
               <planeGeometry args={[width - i * 0.5, height]} />
               <ToonMat
-                color={i === 0 ? '#cdeaf6' : '#a9d8ec'}
+                color={i === 0 ? '#bdf1ff' : '#8fe3f7'}
+                emissive={i === 0 ? '#bdf1ff' : '#8fe3f7'}
+                emissiveIntensity={0.25}
                 transparent
-                opacity={0.42 - i * 0.14}
+                opacity={0.7 - i * 0.2}
                 side={THREE.DoubleSide}
-                depthWrite={false}/>
+                depthWrite={false}
+              />
             </mesh>
           ))}
 
@@ -247,20 +282,19 @@ export default function Waterfall({
       {/* lago na base */}
       <RigidBody type="fixed" position={[0, -0.3, width * 0.9]} colliders={false}>
         <CuboidCollider args={[width * 1.3, 0.25, width * 0.9]} />
-        <mesh receiveShadow>
+        <mesh>
           <boxGeometry args={[width * 2.6, 0.45, width * 1.8]} />
-          <ToonMat
-            color={frozen ? '#d8ecf5' : '#4a8ea8'}/>
+          <ToonMat color={frozen ? PAL.ice : PAL.water} />
         </mesh>
       </RigidBody>
 
       {/* anéis de respingo na superfície do lago */}
       {!frozen && (
-        <group ref={splashRef} position={[0, -0.05, 0]}>
+        <group ref={splashRef} position={[0, -0.02, 0]}>
           {splashes.map((s, i) => (
             <mesh key={i} position={[s.x, 0, s.z]} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[0.82, 1, 12]} />
-              <meshBasicMaterial color="#f4fbff" transparent depthWrite={false} />
+              <ringGeometry args={[0.72, 1, 16]} />
+              <meshBasicMaterial color="#ffffff" transparent depthWrite={false} />
             </mesh>
           ))}
         </group>
@@ -270,25 +304,22 @@ export default function Waterfall({
       {hero && !frozen && (
         <group position={[width * 0.4, 1.2, width * 1.1]} rotation={[0, 0.5, 0]}>
           {[
-            ['#ff6a5e', 4.6],
-            ['#ffd24a', 4.25],
-            ['#6ecf7a', 3.9],
-            ['#6aa8e8', 3.55],
+            ['#ff6a6a', 4.9],
+            ['#ffa23a', 4.6],
+            ['#ffd94a', 4.3],
+            ['#7ad96a', 4.0],
+            ['#5fb8ff', 3.7],
+            ['#b48cff', 3.4],
           ].map(([color, radius]) => (
             <mesh key={color}>
-              <torusGeometry args={[radius, 0.16, 5, 24, Math.PI]} />
-              <meshBasicMaterial
-                color={color}
-                transparent
-                opacity={0.2}
-                depthWrite={false}
-              />
+              <torusGeometry args={[radius, 0.16, 6, 32, Math.PI]} />
+              <meshBasicMaterial color={color} transparent opacity={0.42} depthWrite={false} />
             </mesh>
           ))}
         </group>
       )}
 
-      {/* névoa */}
+      {/* névoa: nuvenzinhas brancas e fofas */}
       <group position={[0, 0.4, 1.4]}>
         <instancedMesh
           ref={(el) => {
@@ -298,21 +329,6 @@ export default function Waterfall({
           args={[MIST_GEO, frozen ? mistMatFrozen : mistMat, mist.length]}
         />
       </group>
-
-      {/* pedras molhadas na base */}
-      <StaticBatch>
-      {Array.from({ length: 6 }, (_, i) => (
-        <mesh
-          key={i}
-          position={[(i - 2.5) * (width * 0.5), 0.3, width * 1.5 + (i % 2) * 1.2]}
-          rotation={[i * 0.4, i, 0]}
-          castShadow
-        >
-          <dodecahedronGeometry args={[0.7 + (i % 3) * 0.4, 0]} />
-          <ToonMat color={frozen ? '#b8ccd8' : '#5e6a66'}/>
-        </mesh>
-      ))}
-      </StaticBatch>
     </group>
   )
 }

@@ -22,7 +22,7 @@ const ANIMAL_VIEW = 75
  * (em vez de um por animal), então dá para ter dezenas sem custo de CPU.
  */
 
-export const SPECIES = {
+const SPECIES = {
   rabbit: {
     body: '#f6dcbc', shade: '#e9c69c', belly: '#fff7ec', accent: '#ffb3c6',
     size: 0.42, speed: 2.6, hop: true, ears: 'long', tail: 'puff',
@@ -248,7 +248,7 @@ const DEER_SPOTS = [
   [0.3, 1, 0.1], [-0.3, 1, -0.15], [0.45, 0.9, -0.45], [-0.45, 0.9, 0.35], [0.1, 1, -0.6],
 ]
 
-export function Creature({ def, entries }) {
+function Creature({ def, entries }) {
   const spec = SPECIES[def.type]
   const s = spec.size * def.scale
   const entry = useRef({ ...def, legs: [], root: null, head: null, tail: null })
@@ -958,10 +958,10 @@ function makeBeeGeometry() {
   const body = new THREE.SphereGeometry(0.075, 10, 8)
   body.scale(1, 0.9, 1.25)
   const stripes = [0.025, -0.035].map((z) => {
-    const g = new THREE.TorusGeometry(0.07, 0.014, 6, 14)
+    const g = new THREE.TorusGeometry(0.07, 0.012, 6, 14)
     g.scale(1, 0.92, 1)
     g.translate(0, 0, z)
-    return tint(g, '#8a5a48')
+    return tint(g, '#b9824e')
   })
   const wings = [-1, 1].map((side) => {
     const g = new THREE.SphereGeometry(0.05, 8, 6)

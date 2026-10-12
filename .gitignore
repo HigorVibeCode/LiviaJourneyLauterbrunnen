@@ -30,3 +30,4 @@ dist-ssr
 
 # Local debug/test screenshots at repo root
 /*.png
+.preview/

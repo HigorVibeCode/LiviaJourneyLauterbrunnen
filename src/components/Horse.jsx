@@ -17,6 +17,8 @@ import { useProgressStore } from '../store/progressStore'
 import { guideInput } from '../lib/guideInput'
 import { sfxGallopHoof, sfxNeigh } from '../audio/sfx'
 
+const PONY_SCALE = 0.68
+
 /**
  * Pônei fofinho (crina colorida, sela pastel) — nasce no centro da trilha ao abrir gate_pasture,
  * relincha/empina em cumprimento, depois espera para montar.
@@ -310,11 +312,14 @@ export default function Horse() {
   return (
     <group ref={root} position={[HORSE_WAIT.x, 0, HORSE_WAIT.z]} frustumCulled={false}>
       {/* sombra macia */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} scale={[0.75, 1.25, 1]} geometry={shadowGeo}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} scale={[0.55, 0.9, 1]} geometry={shadowGeo}>
         <meshBasicMaterial color="#3b5a3a" transparent opacity={0.18} depthWrite={false} />
       </mesh>
 
       <group ref={body} frustumCulled={false}>
+        {/* pônei de brinquedo: modelado grande e encolhido para o assento
+            ficar na altura do quadril da Livia montada (~0.95) */}
+        <group scale={PONY_SCALE}>
         {/* ── tronco gordinho + manta + sela pastel (assento ~y 1.40–1.48) ── */}
         <StaticBatch>
           <mesh position={[0, 0.98, -0.02]} rotation={[Math.PI / 2, 0, 0]} scale={[0.95, 1, 1]} material={mats.coat}>
@@ -483,6 +488,7 @@ export default function Horse() {
             </group>
           </group>
         ))}
+        </group>
       </group>
     </group>
   )

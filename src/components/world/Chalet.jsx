@@ -8,6 +8,7 @@ import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics
 import { PHASES } from '../../config/world'
 import { PAL } from '../../config/palette'
 import StaticBatch from './StaticBatch'
+import { tint, mix } from './cuteShapes'
 
 const HALF_W = 6.5
 const HALF_D = 5
@@ -699,21 +700,4 @@ function Smoke({ position }) {
       ))}
     </group>
   )
-}
-
-/** Escurece mantendo o matiz (sombra = tom da mesma cor) */
-function tint(hex, k) {
-  const n = parseInt(hex.slice(1), 16)
-  const r = Math.round(((n >> 16) & 255) * k)
-  const g = Math.round(((n >> 8) & 255) * k)
-  const b = Math.round((n & 255) * k)
-  return `#${((Math.min(255, r) << 16) | (Math.min(255, g) << 8) | Math.min(255, b)).toString(16).padStart(6, '0')}`
-}
-
-/** Mistura duas cores (t=0 → a, t=1 → b) */
-function mix(a, b, t) {
-  const na = parseInt(a.slice(1), 16)
-  const nb = parseInt(b.slice(1), 16)
-  const ch = (s) => Math.round(((na >> s) & 255) * (1 - t) + ((nb >> s) & 255) * t)
-  return `#${((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0')}`
 }

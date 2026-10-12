@@ -314,7 +314,7 @@ export default function Phoenix() {
           <pooledLight color="#ffb05a" intensity={3.2} distance={20} decay={2} position={[0, 0.4, 0.2]} />
         </group>
 
-        <group ref={riderRef} visible={false} scale={0.78}>
+        <group ref={riderRef} visible={false} scale={0.95}>
           <PhoenixRider />
         </group>
       </group>

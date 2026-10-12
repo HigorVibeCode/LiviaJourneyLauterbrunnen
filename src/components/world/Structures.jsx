@@ -13,7 +13,6 @@ import {
   PONDS,
   SUMMIT_Y,
   SUMMIT_HALF_X,
-  VALLEY_HALF_X,
   CORRIDOR_HALF,
   TREASURE_POS,
   CLIMB_STREAM,
@@ -25,7 +24,7 @@ import {
 import { PAL } from '../../config/palette'
 import { SIGN_TEXTS } from '../../config/story'
 import StaticBatch from './StaticBatch'
-import { heartGeometry, starGeometry, tint, mix } from './cuteShapes'
+import { heartGeometry, starGeometry } from './cuteShapes'
 import { useProgressStore } from '../../store/progressStore'
 import { playerPosition } from '../../store/playerStore'
 import Instanced from './Instanced'
@@ -1045,6 +1044,9 @@ export function SummitTreasure() {
     if (d < 5.5) startFinale()
   })
 
+  const gold = '#ffd45a'
+  const pink = '#ff9fc4'
+
   return (
     <group position={position}>
       {/* pedestal */}
@@ -1053,37 +1055,204 @@ export function SummitTreasure() {
       </RigidBody>
       {/* o baú cintila de longe — é o grande prêmio */}
       {!finished && (
-        <Sparkles count={40} scale={[5, 4, 5]} position={[0, 2, 0]} size={7} speed={0.4} color="#ffd970" />
+        <Sparkles count={40} scale={[5, 4, 5]} position={[0, 2, 0]} size={7} speed={0.4} color="#ffe08a" />
       )}
-      <mesh position={[0, 0.3, 0]} receiveShadow castShadow>
-        <boxGeometry args={[4, 0.6, 3.2]} />
-        <ToonMat color="#8d9096"/>
-      </mesh>
 
-      {/* baú */}
-      <mesh position={[0, 1.1, 0]} castShadow>
-        <boxGeometry args={[2.2, 1.1, 1.5]} />
-        <ToonMat color="#6b4a2c"/>
-      </mesh>
-      <group ref={lidRef} position={[0, 1.65, -0.75]}>
-        <mesh position={[0, 0.12, 0.75]} castShadow>
-          <boxGeometry args={[2.25, 0.3, 1.55]} />
-          <ToonMat color="#54381f"/>
+      <StaticBatch>
+        {/* pedestal fofo: base branca + almofada rosada */}
+        <RoundedBox args={[4.4, 0.6, 3.6]} radius={0.25} smoothness={2} bevelSegments={2} position={[0, 0.3, 0]}>
+          <ToonMat color="#fbf6ff" />
+        </RoundedBox>
+        <RoundedBox args={[3.6, 0.22, 2.8]} radius={0.1} smoothness={2} bevelSegments={1} position={[0, 0.66, 0]}>
+          <ToonMat color="#ffc9dc" />
+        </RoundedBox>
+        {/* degrauzinhos dourados nos cantos */}
+        {[
+          [-1, -1],
+          [1, -1],
+          [-1, 1],
+          [1, 1],
+        ].map(([sx, sz]) => (
+          <mesh key={`${sx}${sz}`} position={[sx * 2.05, 0.68, sz * 1.65]}>
+            <sphereGeometry args={[0.26, 10, 8]} />
+            <ToonMat color={gold} />
+          </mesh>
+        ))}
+
+        {/* corpo do baú: rosa com faixas douradas */}
+        <RoundedBox args={[2.3, 1.1, 1.55]} radius={0.18} smoothness={2} bevelSegments={2} position={[0, 1.3, 0]}>
+          <ToonMat color={pink} />
+        </RoundedBox>
+        {[-0.75, 0.75].map((x) => (
+          <RoundedBox key={x} args={[0.26, 1.16, 1.62]} radius={0.08} smoothness={2} bevelSegments={1} position={[x, 1.3, 0]}>
+            <ToonMat color={gold} />
+          </RoundedBox>
+        ))}
+        <RoundedBox args={[2.36, 0.2, 1.6]} radius={0.08} smoothness={2} bevelSegments={1} position={[0, 0.84, 0]}>
+          <ToonMat color={gold} />
+        </RoundedBox>
+        {/* fecho em coração com joia */}
+        <mesh geometry={heartGeometry()} position={[0, 1.42, 0.86]} scale={0.62}>
+          <ToonMat color={gold} />
+        </mesh>
+        <mesh geometry={heartGeometry()} position={[0, 1.42, 0.98]} scale={0.36}>
+          <ToonMat color="#ff5fa2" emissive="#ff3f8a" emissiveIntensity={0.45} />
+        </mesh>
+
+        {/* telescópio pastel */}
+        <group position={[8, 0, 4]}>
+          <mesh position={[0, 0.7, 0]}>
+            <cylinderGeometry args={[0.16, 0.24, 1.4, 10]} />
+            <ToonMat color={PAL.wood} />
+          </mesh>
+          <mesh position={[0, 1.55, 0.3]} rotation={[0.5, 0, 0]}>
+            <cylinderGeometry args={[0.22, 0.3, 1.2, 12]} />
+            <ToonMat color="#6ec8ff" />
+          </mesh>
+          <mesh position={[0, 1.83, 0.82]} rotation={[0.5, 0, 0]}>
+            <cylinderGeometry args={[0.34, 0.34, 0.2, 12]} />
+            <ToonMat color="#ffffff" />
+          </mesh>
+          <mesh position={[0, 1.42, 0.06]}>
+            <sphereGeometry args={[0.24, 10, 8]} />
+            <ToonMat color={gold} />
+          </mesh>
+        </group>
+
+        {/* bandeiras coloridas */}
+        {[
+          [-10, 3],
+          [12, -2],
+          [-14, -6],
+        ].map(([fx, fz], i) => (
+          <group key={`flag-${i}`} position={[fx, 0, fz]}>
+            <mesh position={[0, 3.2, 0]}>
+              <cylinderGeometry args={[0.13, 0.16, 6.4, 10]} />
+              <ToonMat color="#ffffff" />
+            </mesh>
+            <mesh position={[0, 6.5, 0]}>
+              <sphereGeometry args={[0.3, 10, 8]} />
+              <ToonMat color={gold} />
+            </mesh>
+            <RoundedBox args={[2.2, 1.35, 0.14]} radius={0.06} smoothness={2} bevelSegments={1} position={[1.15, 5.5, 0]}>
+              <ToonMat color={['#ff8fb8', '#6ec8ff', '#b48cff'][i]} />
+            </RoundedBox>
+            <mesh geometry={i === 1 ? starGeometry() : heartGeometry()} position={[1.15, 5.5, 0.12]} scale={0.7}>
+              <ToonMat color="#ffffff" />
+            </mesh>
+          </group>
+        ))}
+
+        {/* pilares-lampião do platô (bola acesa no topo) */}
+        {[
+          [-18, -10],
+          [18, -10],
+          [-22, 6],
+          [22, 6],
+          [-12, 14],
+          [12, 14],
+          [0, -18],
+        ].map(([px, pz], i) => (
+          <group key={`pillar-${i}`} position={[px, 0, pz]}>
+            <mesh position={[0, 2.4, 0]}>
+              <cylinderGeometry args={[0.5, 0.65, 4.8, 12]} />
+              <ToonMat color="#f4ede4" />
+            </mesh>
+            <mesh position={[0, 0.25, 0]}>
+              <cylinderGeometry args={[0.9, 0.95, 0.5, 14]} />
+              <ToonMat color={i % 2 ? '#ffc9dc' : '#cfe6ff'} />
+            </mesh>
+            <mesh position={[0, 4.95, 0]}>
+              <cylinderGeometry args={[0.85, 0.7, 0.35, 14]} />
+              <ToonMat color={i % 2 ? '#ffc9dc' : '#cfe6ff'} />
+            </mesh>
+            <mesh position={[0, 5.55, 0]}>
+              <sphereGeometry args={[0.5, 14, 10]} />
+              <ToonMat color="#fff0b0" emissive="#ffc040" emissiveIntensity={1.1} />
+            </mesh>
+          </group>
+        ))}
+
+        {/* portal do mirante: arco branco redondo com coração no topo */}
+        <group position={[0, 0, -22]}>
+          {[-1, 1].map((side) => (
+            <group key={side}>
+              <RoundedBox args={[1.9, 9, 1.9]} radius={0.55} smoothness={2} bevelSegments={2} position={[side * 5.5, 4.5, 0]}>
+                <ToonMat color="#fbf6ff" />
+              </RoundedBox>
+              <mesh position={[side * 5.5, 9.4, 0]}>
+                <sphereGeometry args={[1.25, 14, 10]} />
+                <ToonMat color="#b48cff" />
+              </mesh>
+            </group>
+          ))}
+          <mesh position={[0, 8.6, 0]}>
+            <torusGeometry args={[5.5, 0.75, 10, 28, Math.PI]} />
+            <ToonMat color="#fbf6ff" />
+          </mesh>
+          {Array.from({ length: 11 }, (_, k) => {
+            const ang = 0.18 + (k / 10) * (Math.PI - 0.36)
+            return (
+              <mesh key={k} position={[Math.cos(ang) * 5.5, 8.6 + Math.sin(ang) * 5.5, 0.75]}>
+                <sphereGeometry args={[0.5, 10, 8]} />
+                <ToonMat color={PAL.flowers[k % PAL.flowers.length] === '#ffffff' ? '#ffd6e6' : PAL.flowers[k % PAL.flowers.length]} />
+              </mesh>
+            )
+          })}
+          <mesh geometry={heartGeometry()} position={[0, 15.0, 0]} scale={2.4}>
+            <ToonMat color="#ff8fb8" emissive="#ff6fa0" emissiveIntensity={0.3} />
+          </mesh>
+        </group>
+
+        {/* pedrinhas roliças + tufos floridos no platô */}
+        {[
+          [-9, 8],
+          [11, 10],
+          [-16, 0],
+          [15, -4],
+          [6, 16],
+          [-5, -12],
+        ].map(([rx, rz], i) => (
+          <group key={`orn-${i}`} position={[rx, 0, rz]}>
+            <mesh position={[0, 0.35, 0]} scale={[1.1 + (i % 3) * 0.25, 0.6 + (i % 2) * 0.2, 0.9]}>
+              <sphereGeometry args={[1.1, 10, 8]} />
+              <ToonMat color={i % 2 ? PAL.rock : '#dbe2ec'} />
+            </mesh>
+            <mesh position={[1.2, 0.35, 0.4]} scale={[1, 0.8, 1]}>
+              <sphereGeometry args={[0.6, 10, 8]} />
+              <ToonMat color={PAL.leafLight} />
+            </mesh>
+            {[0, 1, 2].map((k) => (
+              <mesh key={k} position={[1.0 + k * 0.25, 0.85, 0.2 + (k % 2) * 0.4]}>
+                <sphereGeometry args={[0.18, 8, 6]} />
+                <ToonMat color={PAL.flowers[(i + k) % PAL.flowers.length]} />
+              </mesh>
+            ))}
+          </group>
+        ))}
+      </StaticBatch>
+
+      {/* tampa (anima ao abrir) — dobradiça atrás */}
+      <group ref={lidRef} position={[0, 1.8, -0.78]}>
+        <mesh position={[0, 0.05, 0.78]} rotation={[0, 0, Math.PI / 2]} scale={[0.62, 1, 1]}>
+          <cylinderGeometry args={[0.8, 0.8, 2.36, 16, 1, false, 0, Math.PI]} />
+          <ToonMat color={pink} />
+        </mesh>
+        {[-0.75, 0.75].map((x) => (
+          <mesh key={x} position={[x, 0.05, 0.78]} rotation={[0, 0, Math.PI / 2]} scale={[0.66, 1, 1.05]}>
+            <cylinderGeometry args={[0.8, 0.8, 0.28, 16, 1, false, 0, Math.PI]} />
+            <ToonMat color={gold} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* brilho do tesouro: coração-joia flutuante */}
+      {/* (grupo eleva o coração para flutuar acima da tampa) */}
+      <group position={[0, 0.95, 0]}>
+        <mesh ref={glowRef} position={[0, 1.8, 0]} geometry={heartGeometry()} scale={1}>
+          <ToonMat color="#ff9fc8" emissive="#ff5fa2" emissiveIntensity={0.9} />
         </mesh>
       </group>
-      <mesh position={[0, 1.1, 0.78]} castShadow>
-        <boxGeometry args={[0.4, 0.5, 0.12]} />
-        <ToonMat color="#e8c84a"/>
-      </mesh>
-
-      {/* brilho do tesouro */}
-      <mesh ref={glowRef} position={[0, 1.8, 0]}>
-        <octahedronGeometry args={[0.42, 0]} />
-        <ToonMat
-          color="#ffe08a"
-          emissive="#ffc84a"
-          emissiveIntensity={1.8}/>
-      </mesh>
       <pooledLight position={[0, 2.2, 0]} color="#ffcc66" intensity={7} distance={12} decay={2} />
 
       {/* feixe dourado que sobe ao abrir o baú */}
@@ -1097,146 +1266,53 @@ export function SummitTreasure() {
         />
       </mesh>
 
-      {/* fagulhas em espiral */}
+      {/* fagulhas em espiral (estrelinhas e corações) */}
       <group ref={sparksRef} visible={false}>
         {sparks.map((s, i) => (
-          <mesh key={i}>
-            <octahedronGeometry args={[1, 0]} />
-            <meshBasicMaterial color={i % 2 ? '#ffd76a' : '#fff3c4'} transparent depthWrite={false} />
+          <mesh key={i} geometry={i % 2 ? starGeometry() : heartGeometry()}>
+            <meshBasicMaterial color={i % 3 === 0 ? '#ff9fc8' : i % 2 ? '#ffd76a' : '#fff3c4'} transparent depthWrite={false} />
           </mesh>
         ))}
       </group>
 
-      {/* mira/telescópio + bandeiras */}
-      <group position={[8, 0, 4]}>
-        <mesh position={[0, 0.7, 0]} castShadow>
-          <cylinderGeometry args={[0.12, 0.2, 1.4, 6]} />
-          <ToonMat color="#4a4a48"/>
-        </mesh>
-        <mesh position={[0, 1.5, 0.3]} rotation={[0.5, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.16, 0.24, 1.1, 8]} />
-          <ToonMat color="#2f2f2e"/>
-        </mesh>
-      </group>
-      {[
-        [-10, 3],
-        [12, -2],
-        [-14, -6],
-      ].map(([fx, fz], i) => (
-        <group key={`flag-${i}`} position={[fx, 0, fz]}>
-          <mesh position={[0, 3.2, 0]} castShadow>
-            <cylinderGeometry args={[0.1, 0.13, 6.4, 6]} />
-            <ToonMat color="#8a8a86"/>
-          </mesh>
-          <mesh position={[1.15, 5.5, 0]} castShadow>
-            <boxGeometry args={[2.2, 1.35, 0.08]} />
-            <ToonMat color={i === 1 ? '#3a6a9a' : '#d43a3a'}/>
-          </mesh>
-          <mesh position={[1.15, 5.5, 0.06]}>
-            <boxGeometry args={[0.85, 0.28, 0.05]} />
-            <ToonMat color="#f4f4f0"/>
-          </mesh>
-        </group>
-      ))}
-
-      {/* pilares do platô — emissive; 2 pointLights no máximo */}
-      {[
-        [-18, -10],
-        [18, -10],
-        [-22, 6],
-        [22, 6],
-        [-12, 14],
-        [12, 14],
-        [0, -18],
-      ].map(([px, pz], i) => (
-        <group key={`pillar-${i}`} position={[px, 0, pz]}>
-          <mesh position={[0, 2.4, 0]}>
-            <cylinderGeometry args={[0.55, 0.7, 4.8, 6]} />
-            <ToonMat color="#6e7278"/>
-          </mesh>
-          <mesh position={[0, 5.0, 0]}>
-            <boxGeometry args={[1.5, 0.4, 1.5]} />
-            <ToonMat color="#5a5e64"/>
-          </mesh>
-          <mesh position={[0, 5.55, 0]}>
-            <sphereGeometry args={[0.32, 5, 4]} />
-            <ToonMat
-              color="#ffcc88"
-              emissive="#ffaa44"
-              emissiveIntensity={1.5}/>
-          </mesh>
-        </group>
-      ))}
       <pooledLight position={[-18, 5.55, -10]} color="#ffcc88" intensity={5} distance={20} decay={2} />
       <pooledLight position={[18, 5.55, -10]} color="#ffcc88" intensity={5} distance={20} decay={2} />
-
-      {/* portal do mirante (arco atrás do baú) */}
-      <group position={[0, 0, -22]}>
-        {[-1, 1].map((side) => (
-          <mesh key={side} castShadow position={[side * 5.5, 4.5, 0]}>
-            <boxGeometry args={[1.8, 9, 1.8]} />
-            <ToonMat color="#5c6066"/>
-          </mesh>
-        ))}
-        <mesh position={[0, 9.4, 0]}>
-          <boxGeometry args={[13, 1.5, 2.0]} />
-          <ToonMat color="#4a4e54"/>
-        </mesh>
-        <mesh position={[0, 11.2, 0]}>
-          <coneGeometry args={[4.5, 2.6, 3]} />
-          <ToonMat color="#3e4248"/>
-        </mesh>
-      </group>
-
-      {/* pedras ornamentais no platô */}
-      {[
-        [-9, 8],
-        [11, 10],
-        [-16, 0],
-        [15, -4],
-        [6, 16],
-        [-5, -12],
-      ].map(([rx, rz], i) => (
-        <mesh
-          key={`orn-${i}`}
-          position={[rx, 0.35, rz]}
-          rotation={[0, i * 1.1, 0]}
-          scale={[1.1 + (i % 3) * 0.25, 0.55 + (i % 2) * 0.2, 0.9]}
-        >
-          <dodecahedronGeometry args={[1.1, 0]} />
-          <ToonMat color="#7a8086"/>
-        </mesh>
-      ))}
 
       <SummitBalustrade />
     </group>
   )
 }
 
-/** Parapeito do mirante — postes instanciados (1 draw call). */
+/** Parapeito do mirante — balaústres roliços instanciados (2 draw calls). */
 function SummitBalustrade() {
   const geos = useMemo(
     () => ({
-      post: new THREE.BoxGeometry(0.35, 1.9, 0.35),
-      rail: new THREE.BoxGeometry(1, 0.35, 1),
+      post: new THREE.CylinderGeometry(0.2, 0.26, 1.9, 10),
+      rail: new RoundedBoxGeometry(1, 0.35, 1, 2, 0.15),
+      ball: new THREE.SphereGeometry(0.32, 10, 8),
     }),
     [],
   )
   const mats = useMemo(
     () => ({
-      post: makeToonMaterial({ color: '#8d9096',}),
-      rail: makeToonMaterial({ color: '#7f8288',}),
+      post: makeToonMaterial({ color: '#fbf6ff' }),
+      rail: makeToonMaterial({ color: '#ffc9dc' }),
+      ball: makeToonMaterial({ color: '#ffffff' }),
     }),
     [],
   )
-  const { posts, rails } = useMemo(() => {
+  const { posts, rails, balls } = useMemo(() => {
     const posts = []
+    const balls = []
+    const ballC = ['#ff8fb8', '#6ec8ff', '#ffd45a', '#b48cff']
     for (let i = 0; i < 18; i++) {
       posts.push({ x: -25.5 + i * 3, y: 0.95, z: -16 })
+      if (i % 3 === 0) balls.push({ x: -25.5 + i * 3, y: 2.45, z: -16, color: ballC[(i / 3) % 4] })
     }
     for (const side of [-1, 1]) {
       for (let i = 0; i < 8; i++) {
         posts.push({ x: side * 26, y: 0.95, z: -12 + i * 3.5 })
+        if (i % 2 === 0) balls.push({ x: side * 26, y: 2.45, z: -12 + i * 3.5, color: ballC[(i / 2 + (side > 0 ? 1 : 0)) % 4] })
       }
     }
     const rails = [
@@ -1244,13 +1320,14 @@ function SummitBalustrade() {
       { x: -26, y: 2.0, z: 0, sx: 0.55, sz: 28 },
       { x: 26, y: 2.0, z: 0, sx: 0.55, sz: 28 },
     ]
-    return { posts, rails }
+    return { posts, rails, balls }
   }, [])
 
   return (
     <group>
       <Instanced geometry={geos.post} material={mats.post} items={posts} castShadow={false} />
       <Instanced geometry={geos.rail} material={mats.rail} items={rails} castShadow={false} />
+      <Instanced geometry={geos.ball} material={mats.ball} items={balls} castShadow={false} />
     </group>
   )
 }
@@ -1333,7 +1410,7 @@ export function Streams() {
       return Array.from({ length: 26 }, (_, i) => ({
         key: `${si}-${i}`,
         x: cx + (rng() * 2 - 1) * (CORRIDOR_HALF - 6),
-        y: 0.12,
+        y: 0.2,
         z: s.z + (rng() - 0.5) * (s.halfZ * 2.4),
         r: 0.25 + rng() * 0.55,
         rot: rng() * Math.PI,
@@ -1366,20 +1443,20 @@ export function Streams() {
               </mesh>
               {/* espuma nas margens */}
               {[-1, 1].map((f) => (
-                <mesh key={f} position={[cx, 0.1, s.z + f * s.halfZ]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.5]}>
+                <mesh key={f} position={[cx, 0.24, s.z + f * s.halfZ]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.5]}>
                   <capsuleGeometry args={[0.35, width - 1, 4, 8]} />
                   <ToonMat color={PAL.foam} />
                 </mesh>
               ))}
               {/* pontezinha de pranchas */}
-              {Array.from({ length: Math.round((s.halfZ * 2 + 2.4) / 0.9) }, (_, k, arr) => (
+              {Array.from({ length: Math.round((s.halfZ * 2 + 2.4) / 0.9) }, (_, k) => (
                 <RoundedBox
                   key={`pk${k}`}
                   args={[5.2, 0.24, 0.8]}
                   radius={0.1}
                   smoothness={2}
                   bevelSegments={1}
-                  position={[cx, 0.18, s.z - (arr.length - 1) * 0.45 + k * 0.9]}
+                  position={[cx, 0.32, s.z - (Math.round((s.halfZ * 2 + 2.4) / 0.9) - 1) * 0.45 + k * 0.9]}
                 >
                   <ToonMat color={k % 2 ? '#e8b77f' : PAL.wood} />
                 </RoundedBox>
@@ -1418,7 +1495,7 @@ export function Streams() {
 
       {/* lâmina d'água (transparente, fora do batch) */}
       {STREAMS.map((s, i) => (
-        <mesh key={`w${i}`} position={[pathXAt(s.z), 0.04, s.z]}>
+        <mesh key={`w${i}`} position={[pathXAt(s.z), 0.16, s.z]}>
           <boxGeometry args={[width, 0.14, s.halfZ * 2]} />
           <ToonMat color={PAL.water} transparent opacity={0.88} />
         </mesh>
@@ -1426,7 +1503,7 @@ export function Streams() {
 
       <group ref={ref}>
         {STREAMS.map((s, i) => (
-          <mesh key={i} position={[pathXAt(s.z), 0.12, s.z]} scale={[1.8, 0.05, s.halfZ * 0.6]}>
+          <mesh key={i} position={[pathXAt(s.z), 0.25, s.z]} scale={[1.8, 0.05, s.halfZ * 0.6]}>
             <sphereGeometry args={[1, 12, 6]} />
             <ToonMat color={PAL.foam} transparent opacity={0.8} depthWrite={false} />
           </mesh>
@@ -1536,12 +1613,4 @@ export function Signpost({ position = [0, 0, 0], rotation = 0, label = 0 }) {
       )}
     </group>
   )
-}
-
-function shade(hex, amount) {
-  const n = parseInt(hex.slice(1), 16)
-  const r = Math.max(0, Math.min(255, ((n >> 16) & 255) + amount))
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amount))
-  const b = Math.max(0, Math.min(255, (n & 255) + amount))
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
 }

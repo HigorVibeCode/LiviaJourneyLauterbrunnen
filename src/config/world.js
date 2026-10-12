@@ -434,10 +434,10 @@ export const HOUSES = [
   { lat: 26, z: -220, rot: -0.2, scale: 0.85, kind: 'chalet', body: '#d2e9ff', roof: '#ff8fb8' },
 
   // ── Vale noturno ──
-  { lat: -28, z: -330, rot: 0.3, scale: 0.9, kind: 'cabin', body: '#e3ad74', roof: '#4aa3ff' },
-  { lat: 30, z: -380, rot: -0.4, scale: 0.85, kind: 'cabin', body: '#d9a26a', roof: '#46c37b' },
+  { lat: -28, z: -330, rot: 0.3, scale: 0.9, kind: 'cabin', body: '#f2c08c', roof: '#4aa3ff' },
+  { lat: 30, z: -380, rot: -0.4, scale: 0.85, kind: 'cabin', body: '#f0b884', roof: '#46c37b' },
   { lat: -26, z: -450, rot: 0.2, scale: 0.8, kind: 'barn', body: '#ffd3df', roof: '#ff6b6b' },
-  { lat: 28, z: -490, rot: -0.25, scale: 0.85, kind: 'cabin', body: '#e3ad74', roof: '#ff8fb8' },
+  { lat: 28, z: -490, rot: -0.25, scale: 0.85, kind: 'cabin', body: '#f2c08c', roof: '#ff8fb8' },
 
   // ── Vale das águas (igreja um pouco à esquerda da trilha) ──
   { lat: -14, z: -550, rot: 0.05, scale: 1.1, kind: 'church', body: '#fffaf2', roof: '#b07cff' },

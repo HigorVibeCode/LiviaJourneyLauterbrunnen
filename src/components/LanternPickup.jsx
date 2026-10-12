@@ -6,6 +6,7 @@ import { useProgressStore } from '../store/progressStore'
 import { LANTERN_POS, PHASES, pathXAt, groundHeightAt } from '../config/world'
 import { playerPosition } from '../store/playerStore'
 import { sfxPickup } from '../audio/sfx'
+import { starGeometry } from './world/cuteShapes'
 
 
 /**
@@ -37,29 +38,41 @@ export default function LanternPickup() {
 
   return (
     <group position={[x, y, LANTERN_POS.z]}>
+      {/* estrelinha dourada girando acima — dá para achar de longe */}
       <group ref={beaconRef} position={[0, 2.8, 0]}>
-        <mesh>
-          <coneGeometry args={[0.28, 0.62, 5]} />
-          <ToonMat color="#f0d060" emissive="#d4a830" emissiveIntensity={1.35}/>
+        <mesh geometry={starGeometry()} scale={0.75}>
+          <ToonMat color="#ffd45a" emissive="#ffb830" emissiveIntensity={1.1} />
         </mesh>
       </group>
 
+      {/* lampião fofo: base rosa, vidro aceso, chapeuzinho e alça */}
       <group ref={groupRef}>
-        <mesh>
-          <cylinderGeometry args={[0.12, 0.14, 0.5, 6]} />
-          <ToonMat color="#5a4030"/>
+        <mesh position={[0, 0.02, 0]}>
+          <cylinderGeometry args={[0.24, 0.28, 0.14, 14]} />
+          <ToonMat color="#ff8fb8" />
         </mesh>
-        <mesh position={[0, 0.38, 0]}>
-          <boxGeometry args={[0.22, 0.28, 0.22]} />
-          <ToonMat
-            color="#ffd080"
-            emissive="#ffb040"
-            emissiveIntensity={1.6}/>
+        <mesh position={[0, 0.3, 0]}>
+          <cylinderGeometry args={[0.19, 0.19, 0.42, 14]} />
+          <ToonMat color="#fff0b0" emissive="#ffc040" emissiveIntensity={1.5} />
+        </mesh>
+        {[0, 1, 2, 3].map((i) => (
+          <mesh key={i} position={[Math.cos((i * Math.PI) / 2 + 0.78) * 0.2, 0.3, Math.sin((i * Math.PI) / 2 + 0.78) * 0.2]}>
+            <capsuleGeometry args={[0.03, 0.36, 3, 6]} />
+            <ToonMat color="#ff8fb8" />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.58, 0]}>
+          <coneGeometry args={[0.3, 0.22, 14]} />
+          <ToonMat color="#ff8fb8" />
+        </mesh>
+        <mesh position={[0, 0.73, 0]}>
+          <torusGeometry args={[0.12, 0.035, 6, 14]} />
+          <ToonMat color="#ffd45a" />
         </mesh>
       </group>
-      <mesh position={[0, 2.2, 0]}>
-        <coneGeometry args={[0.2, 0.45, 5]} />
-        <ToonMat color="#e8c040" emissive="#c89820" emissiveIntensity={1.1}/>
+      <mesh position={[0, 2.2, 0]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.22, 0.4, 12]} />
+        <ToonMat color="#ffd45a" emissive="#ffb830" emissiveIntensity={0.9} />
       </mesh>
       <pooledLight position={[0, 1.2, 0]} color="#ffd898" intensity={4.5} distance={14} decay={1.6} />
       <RigidBody type="fixed" colliders={false} sensor>

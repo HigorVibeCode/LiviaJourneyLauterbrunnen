@@ -85,9 +85,9 @@ function GiftProp({ itemId }) {
   // cristal
   return (
     <group position={[0.03, -0.3, 0.1]} rotation={[0.2, 0.5, -0.2]}>
-      <mesh rotation={[0.3, 0.4, 0.15]} scale={[0.85, 1.2, 0.85]}>
-        <octahedronGeometry args={[0.14, 0]} />
-        <ToonMat color="#a8ecff" emissive="#48c8f0" emissiveIntensity={1.1} />
+      <mesh rotation={[0.3, 0.4, 0.15]} scale={[1, 1.35, 1]}>
+        <octahedronGeometry args={[0.17, 0]} />
+        <ToonMat color="#6fd8ff" emissive="#22b8f0" emissiveIntensity={0.85} />
       </mesh>
       <mesh position={[0.02, 0.03, 0.03]} scale={[0.5, 0.75, 0.5]} rotation={[0.1, 0.8, 0]}>
         <octahedronGeometry args={[0.1, 0]} />
@@ -471,8 +471,8 @@ function BackFlap({ p, role }) {
     return (
       <group position={[0, -0.05, 0]}>
         {[-1, 0, 1].map((i) => (
-          <mesh key={i} position={[i * 0.08, -0.1, -0.02]} rotation={[0, 0, i * 0.35]} scale={[0.7, 1, 0.4]}>
-            <capsuleGeometry args={[0.07, 0.14, 6, 10]} />
+          <mesh key={i} position={[i * 0.09, -0.1, -0.02]} rotation={[0, 0, i * 0.4]} scale={[1, 1, 0.45]}>
+            <capsuleGeometry args={[0.08, 0.1, 6, 10]} />
             <ToonMat color={i === 0 ? p.furShade : p.fur} />
           </mesh>
         ))}
@@ -722,7 +722,10 @@ export default function NPC({ def }) {
         </StaticBatch>
 
         {/* peça das costas que balança */}
-        <group ref={capeRef} position={[0, role === 'guide' ? 0.78 : 0.34, role === 'guide' ? -0.22 : -0.26]}>
+        <group
+          ref={capeRef}
+          position={role === 'guide' ? [0.17, 0.8, -0.2] : [0, 0.34, -0.26]}
+        >
           <StaticBatch>
             <BackFlap p={p} role={role} />
           </StaticBatch>
@@ -733,7 +736,11 @@ export default function NPC({ def }) {
           <StaticBatch>
             <Arm p={p} role={role} side={-1} />
           </StaticBatch>
-          {role === 'guard' && <OwlLantern />}
+          {role === 'guard' && (
+            <StaticBatch>
+              <OwlLantern />
+            </StaticBatch>
+          )}
         </group>
 
         <group ref={rightArmRef} position={[SHOULDER_X, SHOULDER_Y, 0]} rotation={[0.35, 0, -0.28]}>

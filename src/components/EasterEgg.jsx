@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { useProgressStore } from '../store/progressStore'
 import { resolveEggPosition } from '../config/easterEggs'
 import SecretModel from './secrets/SecretModels'
+import { heartGeometry, starGeometry } from './world/cuteShapes'
 import {
   sfxEggBell,
   sfxEggHay,
@@ -70,11 +71,11 @@ export default function EasterEgg({ egg }) {
 
       {/* halo fraco no chão — pista sutil, não marcador dourado no céu */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[0.5, 0.85, 14]} />
+        <ringGeometry args={[0.5, 0.85, 24]} />
         <meshBasicMaterial
-          color={glow ? '#90ff60' : '#c8a848'}
+          color={glow ? '#c8ff80' : '#ffd6e8'}
           transparent
-          opacity={glow ? 0.22 : 0.14}
+          opacity={glow ? 0.28 : 0.22}
           side={THREE.DoubleSide}
           depthWrite={false}
         />
@@ -84,7 +85,7 @@ export default function EasterEgg({ egg }) {
         <SecretModel kind={egg.icon} />
       </group>
 
-      {burst && <BurstParticles color={glow ? '#c0ff90' : '#ffe8a0'} />}
+      {burst && <BurstParticles color={glow ? '#d8ff90' : '#ffd45a'} />}
     </group>
   )
 }
@@ -112,9 +113,8 @@ function BurstParticles({ color }) {
   return (
     <group ref={ref}>
       {parts.current.map((_, i) => (
-        <mesh key={i}>
-          <octahedronGeometry args={[1, 0]} />
-          <meshBasicMaterial color={color} transparent opacity={1} depthWrite={false} />
+        <mesh key={i} geometry={i % 2 ? starGeometry() : heartGeometry()}>
+          <meshBasicMaterial color={i % 3 === 0 ? '#ff9fc8' : color} transparent opacity={1} depthWrite={false} />
         </mesh>
       ))}
     </group>

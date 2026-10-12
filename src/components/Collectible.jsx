@@ -1,21 +1,23 @@
 import { useRef, useState, useMemo, useEffect } from 'react'
 import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
-import { Sparkles } from '@react-three/drei'
+import { Sparkles, RoundedBox } from '@react-three/drei'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
 import { useProgressStore, QUESTS } from '../store/progressStore'
 import { pickSpawnForItem, isSpawnInsideItemZone } from '../data/itemSpawns'
+import { PAL } from '../config/palette'
+import { heartGeometry, tint } from './world/cuteShapes'
 
 const COLORS = {
   chave_portao: '#f0cf4c',
-  capa_chuva: '#e8d24a',
+  capa_chuva: '#ffd84a',
   fungo_brilho: '#7dff9a',
   pena_coruja: '#e8d8a8',
-  ferramenta: '#9fb0c2',
-  casaco: '#a06a3c',
+  ferramenta: '#9fd0ff',
+  casaco: '#ff9a6a',
   cristal: '#6ec8e8',
-  binoculo: '#4a5560',
+  binoculo: '#6ec8ff',
 }
 
 /**
@@ -192,11 +194,8 @@ export default function Collectible({ itemId }) {
       {/* Anel dourado flutuante — marca o objetivo atual */}
       {isCurrent && !bursting && !dead && (
         <mesh position={[0, 1.55, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.55, 0.06, 6, 16]} />
-          <ToonMat
-            color="#d4b060"
-            emissive="#b89440"
-            emissiveIntensity={0.65}/>
+          <torusGeometry args={[0.55, 0.08, 8, 20]} />
+          <ToonMat color="#ffd45a" emissive="#ffb830" emissiveIntensity={0.6} />
         </mesh>
       )}
 
@@ -225,196 +224,205 @@ export default function Collectible({ itemId }) {
 function ItemModel({ itemId, color }) {
   switch (itemId) {
     case 'chave_portao':
+      // chave dourada gordinha com cabeça de coração
       return (
-        <>
-          <mesh castShadow>
-            <torusGeometry args={[0.22, 0.06, 6, 12]} />
-            <ToonMat
-              color={color}emissive={color}
-              emissiveIntensity={0.8}/>
+        <group rotation={[0, 0, Math.PI / 2]} position={[0, 0.05, 0]} scale={1.25}>
+          <mesh geometry={heartGeometry()} position={[0, 0.3, 0]} rotation={[0, 0, Math.PI]} scale={0.55}>
+            <ToonMat color="#ffd45a" emissive="#ffb830" emissiveIntensity={0.45} />
           </mesh>
-          <mesh castShadow position={[0.3, 0, 0]}>
-            <boxGeometry args={[0.36, 0.08, 0.08]} />
-            <ToonMat color={color}emissive={color} emissiveIntensity={0.5}/>
+          <mesh position={[0, 0.3, 0.12]}>
+            <sphereGeometry args={[0.08, 10, 8]} />
+            <ToonMat color="#ff6fa8" emissive="#ff4f90" emissiveIntensity={0.5} />
           </mesh>
-          <mesh castShadow position={[0.44, -0.1, 0]}>
-            <boxGeometry args={[0.09, 0.14, 0.08]} />
-            <ToonMat color={color}/>
+          <mesh position={[0, -0.12, 0]}>
+            <capsuleGeometry args={[0.06, 0.5, 4, 10]} />
+            <ToonMat color="#ffd45a" emissive="#ffb830" emissiveIntensity={0.35} />
           </mesh>
-        </>
+          {[-0.3, -0.16].map((y) => (
+            <RoundedBox key={y} args={[0.18, 0.09, 0.1]} radius={0.04} smoothness={2} bevelSegments={1} position={[0.1, y, 0]}>
+              <ToonMat color="#ffd45a" emissive="#ffb830" emissiveIntensity={0.35} />
+            </RoundedBox>
+          ))}
+        </group>
       )
 
     case 'capa_chuva':
-      // capa pendurada, com capuz
+      // capinha de chuva amarela com capuz e botões rosa
       return (
-        <>
-          <mesh castShadow position={[0, -0.05, 0]}>
-            <coneGeometry args={[0.34, 0.72, 8]} />
-            <ToonMat color={color}emissive={color} emissiveIntensity={0.25} />
+        <group scale={1.15}>
+          <mesh position={[0, -0.05, 0]}>
+            <cylinderGeometry args={[0.2, 0.38, 0.62, 16]} />
+            <ToonMat color="#ffd84a" emissive="#ffc020" emissiveIntensity={0.15} />
           </mesh>
-          <mesh castShadow position={[0, 0.36, -0.06]}>
-            <sphereGeometry args={[0.2, 8, 6, 0, Math.PI * 2, 0, Math.PI / 1.6]} />
-            <ToonMat color={shade(color, -22)}/>
+          <mesh position={[0, 0.36, -0.03]}>
+            <sphereGeometry args={[0.23, 14, 10]} />
+            <ToonMat color="#ffcf3a" />
           </mesh>
-          <mesh position={[0, 0.16, 0]}>
-            <torusGeometry args={[0.2, 0.03, 5, 10]} />
-            <ToonMat color="#4a4438"/>
+          <mesh position={[0, 0.33, 0.12]} scale={[1, 0.85, 0.5]}>
+            <sphereGeometry args={[0.15, 12, 8]} />
+            <ToonMat color="#fff6dc" />
           </mesh>
-          {[-1, 1].map((s) => (
-            <mesh key={s} castShadow position={[s * 0.3, 0.02, 0]} rotation={[0, 0, s * 0.5]}>
-              <capsuleGeometry args={[0.07, 0.3, 3, 6]} />
-              <ToonMat color={color}/>
+          {[0.12, -0.08].map((y) => (
+            <mesh key={y} position={[0, y, 0.27 - y * 0.25]}>
+              <sphereGeometry args={[0.045, 8, 6]} />
+              <ToonMat color="#ff8fb8" />
             </mesh>
           ))}
-        </>
+          {[-1, 1].map((s) => (
+            <mesh key={s} position={[s * 0.27, 0.04, 0]} rotation={[0, 0, s * 0.45]}>
+              <capsuleGeometry args={[0.08, 0.28, 4, 10]} />
+              <ToonMat color="#ffd84a" />
+            </mesh>
+          ))}
+        </group>
       )
 
     case 'ferramenta':
+      // martelinho fofo: cabo de madeira com punho rosa e cabeça azul-clara
       return (
-        <>
-          <mesh castShadow rotation={[0, 0, 0.35]}>
-            <boxGeometry args={[0.11, 0.7, 0.11]} />
-            <ToonMat color="#5c3a1e"/>
+        <group rotation={[0, 0, 0.35]} scale={1.2}>
+          <mesh position={[0, -0.05, 0]}>
+            <capsuleGeometry args={[0.07, 0.55, 4, 10]} />
+            <ToonMat color={PAL.wood} />
           </mesh>
-          <mesh castShadow position={[0.14, 0.34, 0]} rotation={[0, 0, 0.35]}>
-            <boxGeometry args={[0.42, 0.16, 0.12]} />
-            <ToonMat
-              color={color}emissive={color}
-              emissiveIntensity={0.5}/>
+          <mesh position={[0, -0.27, 0]}>
+            <capsuleGeometry args={[0.09, 0.16, 4, 10]} />
+            <ToonMat color="#ff8fb8" />
           </mesh>
-        </>
+          <RoundedBox args={[0.5, 0.22, 0.22]} radius={0.08} smoothness={2} bevelSegments={2} position={[0, 0.32, 0]}>
+            <ToonMat color="#bfe0ff" emissive="#9fd0ff" emissiveIntensity={0.3} />
+          </RoundedBox>
+          <mesh position={[0.27, 0.32, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />
+            <ToonMat color="#ffffff" />
+          </mesh>
+        </group>
       )
 
     case 'casaco':
-      // casaco de pele dobrado, com gola clara
+      // casaquinho dobrado, cor quente, gola fofinha e botões
       return (
-        <>
-          <mesh castShadow>
-            <boxGeometry args={[0.62, 0.34, 0.4]} />
-            <ToonMat color={color}/>
+        <group scale={1.15}>
+          <RoundedBox args={[0.66, 0.34, 0.44]} radius={0.12} smoothness={2} bevelSegments={2}>
+            <ToonMat color={color} />
+          </RoundedBox>
+          <RoundedBox args={[0.58, 0.2, 0.4]} radius={0.08} smoothness={2} bevelSegments={2} position={[0, 0.25, 0]}>
+            <ToonMat color={tint(color, 0.9)} />
+          </RoundedBox>
+          <mesh position={[0, 0.38, 0.02]} scale={[1.3, 0.6, 1]}>
+            <sphereGeometry args={[0.2, 12, 8]} />
+            <ToonMat color="#fff6ec" />
           </mesh>
-          <mesh castShadow position={[0, 0.25, 0]}>
-            <boxGeometry args={[0.56, 0.2, 0.36]} />
-            <ToonMat color={shade(color, 22)}/>
-          </mesh>
-          <mesh castShadow position={[0, 0.4, 0.02]}>
-            <sphereGeometry args={[0.22, 7, 5]} />
-            <ToonMat color="#efe6d8"/>
-          </mesh>
-          {[-0.18, 0.06].map((y) => (
-            <mesh key={y} position={[0, y, 0.21]}>
-              <sphereGeometry args={[0.045, 5, 4]} />
-              <ToonMat color="#3a2c1e"/>
+          {[-0.08, 0.1].map((y) => (
+            <mesh key={y} position={[0, y, 0.23]}>
+              <sphereGeometry args={[0.05, 8, 6]} />
+              <ToonMat color="#ffd45a" />
             </mesh>
           ))}
-        </>
+        </group>
       )
 
     case 'cristal':
+      // cristal gordinho, azul com irmãozinho rosa
       return (
-        <>
-          <mesh castShadow>
+        <group scale={1.1}>
+          <mesh scale={[1, 1.35, 1]}>
             <octahedronGeometry args={[0.3, 0]} />
-            <ToonMat
-              color={color}emissive={color}
-              emissiveIntensity={1.2}
-              transparent
-              opacity={0.92}
-            />
+            <ToonMat color={color} emissive={color} emissiveIntensity={0.9} transparent opacity={0.95} />
           </mesh>
-          <mesh castShadow scale={0.55} rotation={[0.6, 0.4, 0]}>
+          <mesh position={[0.24, -0.16, 0.05]} rotation={[0, 0, -0.4]} scale={[0.55, 0.8, 0.55]}>
             <octahedronGeometry args={[0.3, 0]} />
-            <ToonMat color="#dff4ff"emissive="#bfe8ff" emissiveIntensity={0.9} />
+            <ToonMat color="#ffb7d6" emissive="#ff8fc0" emissiveIntensity={0.7} />
           </mesh>
-        </>
+          <mesh position={[-0.22, -0.2, -0.04]} rotation={[0, 0, 0.45]} scale={[0.45, 0.65, 0.45]}>
+            <octahedronGeometry args={[0.3, 0]} />
+            <ToonMat color="#dff4ff" emissive="#bfe8ff" emissiveIntensity={0.8} />
+          </mesh>
+        </group>
       )
 
     case 'binoculo':
       return (
-        <>
+        <group scale={1.15}>
           {[-1, 1].map((s) => (
-            <mesh key={s} castShadow position={[s * 0.14, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.12, 0.14, 0.5, 10]} />
-              <ToonMat color={color}/>
-            </mesh>
+            <group key={s} position={[s * 0.15, 0, 0]}>
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.13, 0.15, 0.46, 14]} />
+                <ToonMat color={color} />
+              </mesh>
+              <mesh position={[0, 0, 0.24]}>
+                <torusGeometry args={[0.13, 0.04, 8, 14]} />
+                <ToonMat color="#ffffff" />
+              </mesh>
+              <mesh position={[0, 0, 0.24]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.1, 0.1, 0.03, 14]} />
+                <ToonMat color="#bff4ff" emissive="#8fe8ff" emissiveIntensity={0.7} />
+              </mesh>
+            </group>
           ))}
-          <mesh position={[0, 0, 0]}>
-            <boxGeometry args={[0.16, 0.14, 0.24]} />
-            <ToonMat color={shade(color, -14)}/>
+          <RoundedBox args={[0.18, 0.16, 0.26]} radius={0.06} smoothness={2} bevelSegments={1}>
+            <ToonMat color={tint(color, 0.85)} />
+          </RoundedBox>
+          <mesh position={[0, -0.08, -0.02]} rotation={[0.4, 0, 0]}>
+            <torusGeometry args={[0.24, 0.03, 6, 16]} />
+            <ToonMat color="#ff8fb8" />
           </mesh>
-          {[-1, 1].map((s) => (
-            <mesh key={s} position={[s * 0.14, 0, 0.26]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.1, 0.1, 0.04, 10]} />
-              <ToonMat
-                color="#9fe8f4"emissive="#7fd8ee"
-                emissiveIntensity={0.7}/>
-            </mesh>
-          ))}
-          <mesh position={[0, -0.1, 0]} rotation={[0.4, 0, 0]}>
-            <torusGeometry args={[0.22, 0.02, 4, 10]} />
-            <ToonMat color="#3a3228"/>
-          </mesh>
-        </>
+        </group>
       )
 
     case 'fungo_brilho':
+      // cogumelo fofo que brilha, com pintinhas brancas
       return (
-        <>
-          <mesh castShadow position={[0, -0.12, 0]}>
-            <cylinderGeometry args={[0.08, 0.12, 0.28, 6]} />
-            <ToonMat color="#d8c8a0"/>
+        <group scale={1.15}>
+          <mesh position={[0, -0.12, 0]}>
+            <cylinderGeometry args={[0.1, 0.14, 0.3, 12]} />
+            <ToonMat color="#fff3dc" />
           </mesh>
-          <mesh castShadow position={[0, 0.12, 0]}>
-            <sphereGeometry args={[0.28, 8, 6, 0, Math.PI * 2, 0, Math.PI / 1.7]} />
-            <ToonMat
-              color={color}emissive={color}
-              emissiveIntensity={1.1}
-            />
+          <mesh position={[0, 0.06, 0]} scale={[1, 0.8, 1]}>
+            <sphereGeometry args={[0.32, 16, 10, 0, Math.PI * 2, 0, Math.PI / 1.8]} />
+            <ToonMat color={color} emissive={color} emissiveIntensity={0.85} />
           </mesh>
-          {[0, 1, 2, 3].map((i) => (
-            <mesh
-              key={i}
-              position={[Math.cos(i) * 0.12, 0.18, Math.sin(i) * 0.12]}
-            >
-              <sphereGeometry args={[0.04, 5, 4]} />
-              <ToonMat color="#e8ffe8" emissive="#a0ffb0" emissiveIntensity={1.2} />
-            </mesh>
-          ))}
-        </>
+          {[0, 1, 2, 3, 4].map((i) => {
+            const a = (i / 5) * Math.PI * 2
+            return (
+              <mesh key={i} position={[Math.cos(a) * 0.19, 0.24, Math.sin(a) * 0.19]} scale={[1, 0.6, 1]}>
+                <sphereGeometry args={[0.065, 8, 6]} />
+                <ToonMat color="#ffffff" emissive="#e8fff0" emissiveIntensity={0.6} />
+              </mesh>
+            )
+          })}
+          <mesh position={[0, 0.31, 0]} scale={[1, 0.6, 1]}>
+            <sphereGeometry args={[0.07, 8, 6]} />
+            <ToonMat color="#ffffff" emissive="#e8fff0" emissiveIntensity={0.6} />
+          </mesh>
+        </group>
       )
 
     case 'pena_coruja':
+      // pena macia, creme com pontinha lilás
       return (
-        <>
-          <mesh castShadow rotation={[0.4, 0.2, 0.5]}>
-            <boxGeometry args={[0.18, 0.7, 0.06]} />
-            <ToonMat color={color}emissive="#c8b070" emissiveIntensity={0.35} />
+        <group rotation={[0.3, 0.2, 0.45]} scale={1.2}>
+          <mesh position={[0, 0.06, 0]} scale={[0.32, 1, 0.1]}>
+            <sphereGeometry args={[0.36, 14, 10]} />
+            <ToonMat color={color} emissive="#f0d890" emissiveIntensity={0.25} />
           </mesh>
-          <mesh castShadow position={[0.05, 0.1, 0]} rotation={[0.5, -0.3, 0.2]}>
-            <boxGeometry args={[0.12, 0.55, 0.04]} />
-            <ToonMat color="#f0e6c8"/>
+          <mesh position={[0, 0.3, 0.005]} scale={[0.26, 0.42, 0.11]}>
+            <sphereGeometry args={[0.36, 12, 8]} />
+            <ToonMat color="#c9b4ff" />
           </mesh>
-          <mesh position={[0, -0.32, 0]}>
-            <sphereGeometry args={[0.06, 5, 4]} />
-            <ToonMat color="#5a4030"/>
+          <mesh position={[0, -0.18, 0]}>
+            <capsuleGeometry args={[0.025, 0.4, 3, 6]} />
+            <ToonMat color="#fff6e6" />
           </mesh>
-        </>
+        </group>
       )
 
     default:
       return (
-        <mesh castShadow>
+        <mesh>
           <octahedronGeometry args={[0.3, 0]} />
-          <ToonMat color={color}emissive={color} emissiveIntensity={1} />
+          <ToonMat color={color} emissive={color} emissiveIntensity={1} />
         </mesh>
       )
   }
-}
-
-function shade(hex, amount) {
-  const n = parseInt(hex.slice(1), 16)
-  const r = Math.max(0, Math.min(255, ((n >> 16) & 255) + amount))
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amount))
-  const b = Math.max(0, Math.min(255, (n & 255) + amount))
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
 }
