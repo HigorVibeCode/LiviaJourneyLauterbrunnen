@@ -185,7 +185,9 @@ export default function Lighting() {
 
     if (!state.scene.fog) state.scene.fog = fog
     // o DistanceCuller esconde tudo um pouco além de fog.far (sem pop-in visível)
-    const far = preset.drawDistance * mood.fogFar * (lantern ? 1.15 : 1)
+    // voo da fênix: lá de cima a vista do vale inteiro precisa aparecer
+    const flying = useProgressStore.getState().finalePhase === 'fly'
+    const far = preset.drawDistance * mood.fogFar * (lantern ? 1.15 : 1) * (flying ? 2.4 : 1)
     const near = far * mood.fogNear
     fog.far += (far - fog.far) * k
     fog.near += (near - fog.near) * k

@@ -798,7 +798,8 @@ export default function Livia() {
       const b = blobRef.current
       const gy = groundHit ? pos.y + 0.06 - groundGap : groundHeightAt(pos.x, pos.z)
       const h = Math.max(0, pos.y + 0.06 - gy)
-      b.visible = h < 6
+      // com shadow map de verdade (qualidade Alta) a bolinha duplicaria a sombra
+      b.visible = h < 6 && !useGameStore.getState().getQuality().shadows
       b.position.set(pos.x, gy + 0.05, pos.z)
       const k = Math.max(0.35, 1 - h * 0.18)
       b.scale.set(k, k, k)

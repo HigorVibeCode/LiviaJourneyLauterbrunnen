@@ -1,14 +1,11 @@
-import {
-  EffectComposer,
-  Bloom,
-  Vignette,
-  SMAA,
-  Outline,
-} from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, SMAA } from '@react-three/postprocessing'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 
 /**
- * Pós-processamento: bloom + vinheta; outline cel só em high.
+ * Pós-processamento (só na qualidade Alta): brilho suave nas luzes,
+ * lanternas e estrelinhas + vinheta leve + antisserrilhado.
+ * (O contorno "Outline" antigo usava <Select>, que entrava em loop
+ * infinito de atualização do React — removido.)
  */
 export default function Effects() {
   const quality = useGameStore((s) => s.quality)
@@ -16,38 +13,11 @@ export default function Effects() {
 
   if (!preset.postFx) return null
 
-  const effects = [
-    <Bloom
-      key="bloom"
-      intensity={0.38}
-      luminanceThreshold={0.74}
-      luminanceSmoothing={0.24}
-      mipmapBlur
-      radius={0.55}
-    />,
-    <Vignette key="vignette" offset={0.3} darkness={0.48} eskil={false} />,
-  ]
-
-  if (preset.id === 'high') {
-    effects.push(
-      <Outline
-        key="outline"
-        blur={false}
-        edgeStrength={2.6}
-        width={512}
-        height={512}
-        visibleEdgeColor={0x141820}
-        hiddenEdgeColor={0x141820}
-        xRay={false}
-      />,
-    )
-  } else {
-    effects.push(<SMAA key="smaa" />)
-  }
-
   return (
-    <EffectComposer multisampling={preset.id === 'high' ? 4 : 0} enableNormalPass={false}>
-      {effects}
+    <EffectComposer multisampling={0} enableNormalPass={false}>
+      <Bloom intensity={0.55} luminanceThreshold={0.78} luminanceSmoothing={0.22} mipmapBlur radius={0.6} />
+      <Vignette offset={0.32} darkness={0.42} eskil={false} />
+      <SMAA />
     </EffectComposer>
   )
 }

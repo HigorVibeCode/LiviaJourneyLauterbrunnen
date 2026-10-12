@@ -2,7 +2,6 @@ import { Suspense, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
-import { Selection, Select } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import AudioDirector from './components/AudioDirector'
 import Livia from './components/Livia'
@@ -121,32 +120,28 @@ function GameCanvas() {
           onDecline={() => useGameStore.getState().autoLowerQuality()}
         />
       )}
-      <Selection>
-        <Effects />
-        <SkyDome />
-        <Lighting />
-        <LoaderReporter />
-        <DistanceCuller />
-        <LightPool />
+      <Effects />
+      <SkyDome />
+      <Lighting />
+      <LoaderReporter />
+      <DistanceCuller />
+      <LightPool />
 
-        <ErrorBoundary name="GameScene">
-          <Suspense fallback={null}>
-            {/* paused=true desliga o stepper interno; PhysicsTicker limita o dt */}
-            <Physics gravity={[0, -24, 0]} paused timeStep="vary">
-              <PhysicsTicker paused={paused} />
-              <WorldMap />
-              <Select enabled={preset.id === 'high'}>
-                <Livia />
-              </Select>
-            </Physics>
-            <RemotePlayers />
-            <GuideBeacon />
-            <FinaleDirector />
-            <Weather />
-            <BootWarmup />
-          </Suspense>
-        </ErrorBoundary>
-      </Selection>
+      <ErrorBoundary name="GameScene">
+        <Suspense fallback={null}>
+          {/* paused=true desliga o stepper interno; PhysicsTicker limita o dt */}
+          <Physics gravity={[0, -24, 0]} paused timeStep="vary">
+            <PhysicsTicker paused={paused} />
+            <WorldMap />
+            <Livia />
+          </Physics>
+          <RemotePlayers />
+          <GuideBeacon />
+          <FinaleDirector />
+          <Weather />
+          <BootWarmup />
+        </Suspense>
+      </ErrorBoundary>
     </Canvas>
   )
 }
