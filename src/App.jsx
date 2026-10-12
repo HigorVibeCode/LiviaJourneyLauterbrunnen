@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
@@ -18,7 +18,6 @@ import IntroOverlay from './components/ui/IntroOverlay'
 import BootWarmup from './components/ui/BootWarmup'
 import { LoaderReporter } from './components/ui/LoaderReporter'
 import ErrorBoundary from './components/ErrorBoundary'
-import Effects from './components/Effects'
 import PhysicsTicker from './components/PhysicsTicker'
 import DistanceCuller from './components/DistanceCuller'
 import LightPool from './components/LightPool'
@@ -30,6 +29,9 @@ import { useProgressStore } from './store/progressStore'
 import { isTyping } from './lib/keyboard'
 import { preloadGameAssets } from './lib/preloadAssets'
 import './App.css'
+
+// pós-processamento só existe na qualidade Alta: baixa sob demanda
+const Effects = lazy(() => import('./components/Effects'))
 
 const keyboardMap = [
   { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
@@ -120,7 +122,11 @@ function GameCanvas() {
           onDecline={() => useGameStore.getState().autoLowerQuality()}
         />
       )}
-      <Effects />
+      {preset.postFx && (
+        <Suspense fallback={null}>
+          <Effects />
+        </Suspense>
+      )}
       <SkyDome />
       <Lighting />
       <LoaderReporter />
