@@ -9,7 +9,7 @@ import {
   BRIDGE_HALF_X,
   pathXAt,
   resolveOnPath,
-} from '../config/world'
+} from '../config/world.js'
 
 const PUSH = 1.85
 const PLANK_HALF_X = 4.2

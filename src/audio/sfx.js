@@ -336,3 +336,15 @@ export function sfxDistantBell() {
   tone({ freq: 660, dur: 0.35, type: 'sine', gain: 0.028 })
   tone({ freq: 990, time: 0.08, dur: 0.28, type: 'triangle', gain: 0.018 })
 }
+
+/**
+ * "plim" da estrelinha. `combo` sobe a nota quando a Livia pega várias em
+ * sequência (escala pentatônica — sempre soa bonito).
+ */
+const STAR_SCALE = [783.99, 880, 987.77, 1174.66, 1318.51, 1567.98, 1760, 1975.53]
+export function sfxStar(combo = 0) {
+  const f = STAR_SCALE[Math.min(combo, STAR_SCALE.length - 1)]
+  tone({ freq: f, dur: 0.16, type: 'triangle', gain: 0.05 })
+  tone({ freq: f * 1.5, time: 0.05, dur: 0.18, type: 'sine', gain: 0.03 })
+  tone({ freq: f * 2, time: 0.09, dur: 0.12, type: 'sine', gain: 0.015 })
+}

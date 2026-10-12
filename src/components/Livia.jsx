@@ -60,7 +60,7 @@ const LOOK_HEIGHT = 1.45
 /** Altura fixa do pivô acima do chão analítico — nunca segue bounce do capsule */
 const CAM_STAND_CLEAR = 0.92
 const CAM_SKIN = 0.65
-const CAM_PITCH_MIN = 0.12
+const CAM_PITCH_MIN = 0.05
 const CAM_PITCH_MAX = 1.15
 const CAM_MOUSE_SENS = 0.0022
 const CAM_TOUCH_SENS = 0.0042
@@ -174,13 +174,15 @@ export default function Livia() {
   const camQuatReady = useRef(false)
   const gravityStuckRef = useRef(false)
   /** Órbita da câmera: yaw 0 = atrás no +Z (visão inicial do mapa) */
-  const camOrbit = useRef({ yaw: 0, pitch: 0.42 })
-  const camOrbitTarget = useRef({ yaw: 0, pitch: 0.42 })
+  // pitch mais baixo: mostra mais céu e horizonte (antes olhava muito para o chão)
+  const camOrbit = useRef({ yaw: 0, pitch: 0.3 })
+  const camOrbitTarget = useRef({ yaw: 0, pitch: 0.3 })
   const camMobileRef = useRef(typeof window !== 'undefined' ? detectMobile() : false)
   const prevPosRef = useRef({ x: START.x, z: START.z })
   const stuckTimerRef = useRef(0)
   const horseSafeTimer = useRef(0)
   const finaleLandedRef = useRef(false)
+  const blobRef = useRef(null)
 
   const animState = useRef({
     speed: 0,
@@ -387,6 +389,8 @@ export default function Livia() {
   useFrame((state, delta) => {
     const body = bodyRef.current
     if (!body) return
+    // cavalo/fênix/vaca: a sombra redonda só volta no controle normal
+    if (blobRef.current) blobRef.current.visible = false
 
     // Mesmo teto do PhysicsTicker — input/câmera não aceleram em hitch
     const dt = Math.min(delta, 1 / 30)
@@ -762,6 +766,18 @@ export default function Livia() {
     const groundGap = groundHit ? groundHit.timeOfImpact - 0.24 : Infinity
     const snapRange = prevGroundedRef.current && jumpTimerRef.current === 0 ? 0.5 : 0.12
     groundedRef.current = groundGap <= snapRange && vel.y <= 2
+
+    // sombra redonda sob os pés (sem shadow map ela parecia flutuar)
+    if (blobRef.current) {
+      const b = blobRef.current
+      const gy = groundHit ? pos.y + 0.06 - groundGap : groundHeightAt(pos.x, pos.z)
+      const h = Math.max(0, pos.y + 0.06 - gy)
+      b.visible = h < 6
+      b.position.set(pos.x, gy + 0.05, pos.z)
+      const k = Math.max(0.35, 1 - h * 0.18)
+      b.scale.set(k, k, k)
+      b.material.opacity = 0.32 * k
+    }
 
     // ── Limbo ──
     if (pos.y < FALL_Y && !respawningRef.current) {
@@ -1216,6 +1232,11 @@ export default function Livia() {
   }, -1)
 
   return (
+    <>
+    <mesh ref={blobRef} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
+      <circleGeometry args={[0.55, 20]} />
+      <meshBasicMaterial color="#10141f" transparent opacity={0.32} depthWrite={false} />
+    </mesh>
     <RigidBody
       ref={bodyRef}
       position={[START.x, START.y, START.z]}
@@ -1243,5 +1264,6 @@ export default function Livia() {
         </group>
       </group>
     </RigidBody>
+    </>
   )
 }

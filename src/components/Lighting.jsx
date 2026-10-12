@@ -1,82 +1,133 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { SoftShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import { playerPosition } from '../store/playerStore'
 import { PHASES } from '../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 import { useProgressStore } from '../store/progressStore'
+import { skyState } from '../lib/skyState'
 
 const SUN_DIR = { x: 42, y: 58, z: 26 }
 
 /**
- * Clima de cada trecho — paleta alpina suave (não “cartoon” saturado).
+ * Clima de cada trecho do vale. Cada bioma tem céu, sol, luz ambiente e
+ * neblina próprios; tudo é interpolado suavemente ao atravessar.
+ *
+ * fogFar é uma fração do alcance de visão do preset — a neblina sempre
+ * "come" o mundo antes do DistanceCuller esconder os objetos (sem pop-in).
  */
+const c = (hex) => new THREE.Color(hex)
 const MOODS = {
-  default: {
-    fog: 0.00102,
-    fogColor: new THREE.Color('#6ea8d4'),
-    sun: 2.08,
-    sunColor: new THREE.Color('#ffe0a8'),
-    ambient: 0.17,
-    hemi: 0.32,
-  },
-  night: {
-    fog: 0.0028,
-    fogColor: new THREE.Color('#2a3850'),
-    sun: 0.82,
-    sunColor: new THREE.Color('#8a9ab8'),
-    ambient: 0.21,
-    hemi: 0.34,
-  },
-  water: {
-    fog: 0.0034,
-    fogColor: new THREE.Color('#5a90a8'),
-    sun: 1.48,
-    sunColor: new THREE.Color('#ffd8a0'),
-    ambient: 0.14,
-    hemi: 0.28,
-  },
-  snow: {
-    fog: 0.0026,
-    fogColor: new THREE.Color('#a0c0dc'),
-    sun: 1.82,
-    sunColor: new THREE.Color('#faf6ee'),
-    ambient: 0.22,
-    hemi: 0.38,
-  },
-  flower: {
-    fog: 0.00095,
-    fogColor: new THREE.Color('#78c078'),
-    sun: 2.12,
-    sunColor: new THREE.Color('#ffe4a0'),
-    ambient: 0.19,
-    hemi: 0.38,
+  meadow: {
+    top: c('#3a8ee6'),
+    horizon: c('#c4e6ff'),
+    sun: 2.35,
+    sunColor: c('#fff1d0'),
+    ambient: 0.42,
+    hemiSky: c('#cfe8ff'),
+    hemiGround: c('#6f9a52'),
+    hemi: 0.75,
+    fogFar: 1,
+    fogNear: 0.32,
+    stars: 0,
+    farTint: c('#ffffff'),
   },
   pasture: {
-    fog: 0.00098,
-    fogColor: new THREE.Color('#70b088'),
+    top: c('#4392e6'),
+    horizon: c('#d2ecff'),
+    sun: 2.4,
+    sunColor: c('#fff0c8'),
+    ambient: 0.42,
+    hemiSky: c('#d6ecff'),
+    hemiGround: c('#79a24e'),
+    hemi: 0.75,
+    fogFar: 1,
+    fogNear: 0.35,
+    stars: 0,
+    farTint: c('#ffffff'),
+  },
+  night: {
+    // noite de conto de fadas: azul profundo, lua forte — dá para ver o caminho
+    top: c('#070c2a'),
+    horizon: c('#2b3f78'),
+    sun: 1.05,
+    sunColor: c('#b9ccff'),
+    ambient: 0.4,
+    hemiSky: c('#6a86d8'),
+    hemiGround: c('#1e2a3e'),
+    hemi: 0.65,
+    fogFar: 0.72,
+    fogNear: 0.12,
+    stars: 1,
+    farTint: c('#4a5d92'),
+  },
+  water: {
+    top: c('#4a8ed6'),
+    horizon: c('#c6dfea'),
+    sun: 1.9,
+    sunColor: c('#ffeccc'),
+    ambient: 0.42,
+    hemiSky: c('#cfe6f2'),
+    hemiGround: c('#4f7f58'),
+    hemi: 0.72,
+    fogFar: 0.85,
+    fogNear: 0.22,
+    stars: 0,
+    farTint: c('#e4eef4'),
+  },
+  snow: {
+    top: c('#5ea2ea'),
+    horizon: c('#eaf4ff'),
     sun: 2.05,
-    sunColor: new THREE.Color('#ffe8b0'),
-    ambient: 0.19,
-    hemi: 0.38,
+    sunColor: c('#ffffff'),
+    ambient: 0.48,
+    hemiSky: c('#eaf4ff'),
+    hemiGround: c('#a8bccc'),
+    hemi: 0.8,
+    fogFar: 0.85,
+    fogNear: 0.2,
+    stars: 0,
+    farTint: c('#ffffff'),
+  },
+  flower: {
+    top: c('#4f8fe6'),
+    horizon: c('#ffe6ef'),
+    sun: 2.4,
+    sunColor: c('#ffe6b8'),
+    ambient: 0.44,
+    hemiSky: c('#ffe8f0'),
+    hemiGround: c('#7aa64e'),
+    hemi: 0.75,
+    fogFar: 1,
+    fogNear: 0.35,
+    stars: 0,
+    farTint: c('#fff2f6'),
+  },
+  summit: {
+    // fim de tarde dourado no mirante
+    top: c('#2e6fd0'),
+    horizon: c('#ffe0b0'),
+    sun: 2.5,
+    sunColor: c('#ffd59a'),
+    ambient: 0.44,
+    hemiSky: c('#ffe8c8'),
+    hemiGround: c('#8a9a80'),
+    hemi: 0.75,
+    fogFar: 1.25,
+    fogNear: 0.4,
+    stars: 0,
+    farTint: c('#fff0dc'),
   },
 }
 
 function moodAt(z) {
-  if (z <= PHASES.night.zTo + 4 && z >= PHASES.night.zFrom - 4) return MOODS.night
-  if (z <= PHASES.water.zTo + 6 && z >= PHASES.water.zFrom - 6) return MOODS.water
-  if (z <= PHASES.snow.zTo + 6 && z >= PHASES.snow.zFrom - 8) return MOODS.snow
-  if (z <= PHASES.flower.zTo + 6 && z >= PHASES.flower.zFrom - 6) return MOODS.flower
-  if (z <= PHASES.pasture.zTo + 6 && z >= PHASES.pasture.zFrom - 6) return MOODS.pasture
-  return MOODS.default
+  for (const id of ['night', 'water', 'snow', 'flower', 'pasture', 'summit', 'meadow']) {
+    const p = PHASES[id]
+    if (z <= p.zTo + 6 && z >= p.zFrom - 6) return MOODS[id]
+  }
+  return MOODS.meadow
 }
 
-/**
- * Iluminação alpina.
- * Sem Sky do drei (em vários contextos GL ele “lava” / impede o draw).
- * Céu = clearColor + fog.
- */
 export default function Lighting() {
   const quality = useGameStore((s) => s.quality)
   const preset = QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium
@@ -85,6 +136,7 @@ export default function Lighting() {
   const ambientRef = useRef(null)
   const hemiRef = useRef(null)
   const shadowTick = useRef(0)
+  const fog = useMemo(() => new THREE.Fog('#c4e6ff', 60, 170), [])
 
   useFrame((state, delta) => {
     const light = lightRef.current
@@ -102,53 +154,55 @@ export default function Lighting() {
     if (light.shadow && preset.shadows) {
       light.shadow.autoUpdate = false
       shadowTick.current += 1
-      if (preset.id === 'high' || shadowTick.current % 2 === 0) {
-        light.shadow.needsUpdate = true
-      }
+      if (preset.id === 'high' || shadowTick.current % 2 === 0) light.shadow.needsUpdate = true
     }
 
     const mood = moodAt(p.z)
-    const inNight =
-      p.z <= PHASES.night.zTo + 4 && p.z >= PHASES.night.zFrom - 4
-    const hasLantern = useProgressStore.getState().hasLantern
-    const lanternBoost =
-      inNight && hasLantern ? 0.42 : 0
-    const targetAmbient = mood.ambient + lanternBoost
-    const targetHemi = mood.hemi + lanternBoost * 0.55
-    const k = Math.min(1, delta * 1.6)
+    const inNight = mood === MOODS.night
+    const lantern = inNight && useProgressStore.getState().hasLantern ? 1 : 0
+    // a primeira vez: pula direto para o clima certo (sem "amanhecer" no load)
+    const k = state.scene.fog ? Math.min(1, delta * 1.4) : 1
+
     light.intensity += (mood.sun - light.intensity) * k
     light.color.lerp(mood.sunColor, k)
     if (ambientRef.current) {
-      ambientRef.current.intensity += (targetAmbient - ambientRef.current.intensity) * k
+      const target = mood.ambient + lantern * 0.18
+      ambientRef.current.intensity += (target - ambientRef.current.intensity) * k
+      ambientRef.current.color.lerp(mood.hemiSky, k)
     }
     if (hemiRef.current) {
-      hemiRef.current.intensity += (targetHemi - hemiRef.current.intensity) * k
+      const target = mood.hemi + lantern * 0.12
+      hemiRef.current.intensity += (target - hemiRef.current.intensity) * k
+      hemiRef.current.color.lerp(mood.hemiSky, k)
+      hemiRef.current.groundColor.lerp(mood.hemiGround, k)
     }
-    if (state.scene.fog) {
-      let nextDensity = mood.fog
-      if (inNight && hasLantern) nextDensity *= 0.68
-      if (Number.isFinite(nextDensity)) {
-        state.scene.fog.density += (nextDensity - state.scene.fog.density) * k
-        if (!Number.isFinite(state.scene.fog.density)) state.scene.fog.density = nextDensity
-      }
-      state.scene.fog.color.lerp(mood.fogColor, k)
-      if (state.scene.background?.isColor) state.scene.background.lerp(mood.fogColor, k * 0.55)
-    }
+
+    skyState.top.lerp(mood.top, k)
+    skyState.horizon.lerp(mood.horizon, k)
+    skyState.sunColor.lerp(mood.sunColor, k)
+    skyState.farTint.lerp(mood.farTint, k)
+    skyState.stars += (mood.stars - skyState.stars) * k
+
+    if (!state.scene.fog) state.scene.fog = fog
+    // o DistanceCuller esconde tudo um pouco além de fog.far (sem pop-in visível)
+    const far = preset.drawDistance * mood.fogFar * (lantern ? 1.15 : 1)
+    const near = far * mood.fogNear
+    fog.far += (far - fog.far) * k
+    fog.near += (near - fog.near) * k
+    fog.color.copy(skyState.horizon)
   })
 
   return (
     <>
-      {preset.softShadows && <SoftShadows size={22} samples={8} focus={0.6} />}
-
-      <hemisphereLight ref={hemiRef} args={['#78b0e0', '#3a6a38', 0.32]} />
-      <ambientLight ref={ambientRef} intensity={0.17} color="#a8c8e0" />
+      <hemisphereLight ref={hemiRef} args={['#cfe8ff', '#6f9a52', 0.75]} />
+      <ambientLight ref={ambientRef} intensity={0.42} color="#cfe8ff" />
 
       <object3D ref={targetRef} />
       <directionalLight
         ref={lightRef}
         castShadow={preset.shadows}
-        intensity={2.08}
-        color="#ffe0a8"
+        intensity={2.35}
+        color="#fff1d0"
         shadow-mapSize-width={preset.shadowMapSize}
         shadow-mapSize-height={preset.shadowMapSize}
         shadow-camera-near={1}
@@ -160,11 +214,8 @@ export default function Lighting() {
         shadow-bias={-0.0004}
         shadow-normalBias={0.04}
       />
-
-      <directionalLight position={[-30, 26, -18]} intensity={0.24} color="#8aa0b4" />
-
-      <fogExp2 attach="fog" args={['#6ea8d4', 0.00102]} />
-      <color attach="background" args={['#4a94c0']} />
+      {/* luz de preenchimento fria do lado oposto — volume nos personagens */}
+      <directionalLight position={[-30, 26, -18]} intensity={0.35} color="#9fc0e0" />
     </>
   )
 }

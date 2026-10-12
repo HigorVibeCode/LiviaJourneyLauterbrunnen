@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { makeRng } from '../config/world'
 import { playerPosition } from '../store/playerStore'
+import { skyState } from '../lib/skyState'
 import Instanced from './world/Instanced'
 import StaticBatch from './world/StaticBatch'
 
@@ -53,12 +54,24 @@ export default function AlpsBackdrop() {
 
   const layerRefs = useRef([])
 
+  const tinted = useRef(null)
   useFrame(() => {
     const pz = playerPosition.z
     layerRefs.current.forEach((g, i) => {
       if (!g || !rows[i]) return
       g.visible = Math.abs(rows[i].z - pz) <= 350
     })
+    // montanhas sem neblina, mas escurecem à noite (vertex colors × tint)
+    if (!tinted.current) {
+      const mats = new Set()
+      layerRefs.current.forEach((g) =>
+        g?.traverse((o) => {
+          if (o.isMesh && o.material?.vertexColors) mats.add(o.material)
+        }),
+      )
+      if (mats.size) tinted.current = [...mats]
+    }
+    tinted.current?.forEach((m) => m.color.copy(skyState.farTint))
   })
 
   return (
@@ -75,15 +88,15 @@ export default function AlpsBackdrop() {
             <group key={i} position={[p.x, 0, p.z]} rotation={[0, p.ry, 0]}>
               <mesh>
                 <coneGeometry args={[p.h * 0.66, p.h, 6]} />
-                <meshBasicMaterial color={row.color} fog />
+                <meshBasicMaterial color={row.color} fog={false} />
               </mesh>
               <mesh position={[0, p.h * 0.42, 0]}>
                 <coneGeometry args={[p.h * 0.27, p.h * 0.32, 6]} />
-                <meshBasicMaterial color={row.snow} fog />
+                <meshBasicMaterial color={row.snow} fog={false} />
               </mesh>
               <mesh position={[-p.h * 0.32, -p.h * 0.14, p.h * 0.18]}>
                 <coneGeometry args={[p.h * 0.42, p.h * 0.68, 5]} />
-                <meshBasicMaterial color={shade(row.color, -14)} fog />
+                <meshBasicMaterial color={shade(row.color, -14)} fog={false} />
               </mesh>
             </group>
           ))}
@@ -105,9 +118,9 @@ function Clouds() {
       new THREE.MeshBasicMaterial({
         color: '#f6f9fc',
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.55,
         depthWrite: false,
-        fog: true,
+        fog: false,
       }),
     [],
   )
@@ -133,13 +146,15 @@ function Clouds() {
     return out
   }, [])
 
+  const base = useMemo(() => new THREE.Color('#ffffff'), [])
   useFrame((state) => {
     if (!ref.current) return
     ref.current.position.x = Math.sin(state.clock.elapsedTime * 0.012) * 40
+    material.color.copy(base).multiply(skyState.farTint)
   })
 
   return (
-    <group ref={ref}>
+    <group ref={ref} userData={{ noCull: true }}>
       <Instanced
         geometry={geometry}
         material={material}

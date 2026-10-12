@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { KeyboardControls } from '@react-three/drei'
+import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import { Selection, Select } from '@react-three/postprocessing'
 import * as THREE from 'three'
@@ -8,6 +8,7 @@ import AudioDirector from './components/AudioDirector'
 import Livia from './components/Livia'
 import WorldMap from './components/WorldMap'
 import Lighting from './components/Lighting'
+import SkyDome from './components/SkyDome'
 import Weather from './components/Weather'
 import Hud from './components/Hud'
 import GuideBeacon from './components/GuideBeacon'
@@ -92,6 +93,8 @@ function GameCanvas() {
   const paused = useGameStore((s) => s.paused)
   const quality = useGameStore((s) => s.quality)
   const preset = QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium
+  // só mede FPS com o jogo rodando (o loading/compilação travam de propósito)
+  const playing = useLoadingStore((s) => s.bootReady && s.introDone)
 
   return (
     <Canvas
@@ -102,18 +105,25 @@ function GameCanvas() {
         alpha: false,
         antialias: !preset.postFx,
         powerPreference: 'high-performance',
-        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMapping: THREE.NeutralToneMapping,
         toneMappingExposure: 1.0,
         stencil: false,
       }}
-      performance={{ min: 0.6 }}
       onCreated={({ gl }) => {
-        gl.setClearColor('#87a8c0', 1)
+        gl.setClearColor('#bfe3ff', 1)
         gl.outputColorSpace = THREE.SRGBColorSpace
       }}
     >
+      {/* FPS baixo por alguns segundos → baixa a qualidade sozinho */}
+      {playing && (
+        <PerformanceMonitor
+          flipflops={2}
+          onDecline={() => useGameStore.getState().autoLowerQuality()}
+        />
+      )}
       <Selection>
         <Effects />
+        <SkyDome />
         <Lighting />
         <LoaderReporter />
         <DistanceCuller />

@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { STARS } from '../config/stars.js'
+
+const STAR_TOTAL = STARS.length
 import {
   EGG_LORE,
   FINALE_TOAST,
@@ -147,12 +150,32 @@ export const useProgressStore = create(
   finished: false,
   hasLantern: false,
   foundEggs: [],
+  /** índices das estrelinhas coletadas (STARS em config/stars.js) */
+  stars: [],
   /**
    * Sequência final: pickup (pegar tesouro) → mount (fênix chega) →
    * fly (voo ao céu) → done (tela de vitória).
    */
   finalePhase: null,
   finaleStartedAt: 0,
+
+  collectStar: (index) => {
+    const { stars } = get()
+    if (stars.includes(index)) return
+    const next = [...stars, index]
+    set({ stars: next })
+    // marcos: comemora de tempos em tempos (e quando pega todas)
+    const total = STAR_TOTAL
+    let toast = null
+    if (next.length === total) toast = `🌟 Todas as ${total} estrelas! Que exploradora!`
+    else if (next.length % 25 === 0) toast = `⭐ ${next.length} estrelas!`
+    if (toast) {
+      set({ toast })
+      setTimeout(() => {
+        if (get().toast === toast) set({ toast: null })
+      }, 3000)
+    }
+  },
 
   hasItem: (itemId) => get().inventory.includes(itemId),
   isGateOpen: (gateId) => get().unlockedGates.includes(gateId),
@@ -287,6 +310,7 @@ export const useProgressStore = create(
       npcSpoke: s.npcSpoke,
       hasLantern: s.hasLantern,
       foundEggs: s.foundEggs,
+      stars: s.stars,
     }),
   },
   ),
@@ -306,6 +330,11 @@ export function resetSavedGame() {
 /** Há algum progresso salvo? (tela inicial mostra "Continuar") */
 export function hasSavedGame() {
   const s = useProgressStore.getState()
-  return s.unlockedGates.length > 0 || s.collectedEver.length > 0 || s.foundEggs.length > 0
+  return (
+    s.unlockedGates.length > 0 ||
+    s.collectedEver.length > 0 ||
+    s.foundEggs.length > 0 ||
+    s.stars.length > 0
+  )
 }
 

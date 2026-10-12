@@ -1321,3 +1321,29 @@ kbd {
     padding: 0.4rem 0.55rem;
   }
 }
+
+/* contador de estrelinhas */
+.hud-stars {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  animation: pop-in 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.hud-stars strong {
+  font-size: 1.35rem;
+  color: var(--gold);
+  text-shadow: 0 0 10px rgba(255, 207, 90, 0.6);
+}
+
+.hud-star-icon {
+  font-size: 1.1rem;
+}
+
+.hud-star-total {
+  font-size: 0.9rem;
+  color: var(--muted);
+}

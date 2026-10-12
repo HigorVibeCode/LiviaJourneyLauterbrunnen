@@ -29,7 +29,8 @@ export default function DistanceCuller() {
     frame.current += 1
     if (frame.current % UPDATE_EVERY !== 0) return
     const cam = state.camera.position
-    const maxDist = preset.drawDistance
+    // acompanha a neblina: na noite (neblina curta) desenha menos; no mirante, mais
+    const maxDist = state.scene.fog?.far ? state.scene.fog.far + 12 : preset.drawDistance
 
     const visit = (obj) => {
       if (obj.userData.noCull) return

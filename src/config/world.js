@@ -372,7 +372,7 @@ export function isSummitBuiltArea(x, z) {
 export const GROUND_SEGMENTS = [
   { id: 'meadow', zFrom: 16, zTo: 118, halfX: CORRIDOR_HALF, y: 0, biome: 'meadow', color: '#6a8a62', followPath: true },
   { id: 'pasture', zFrom: -288, zTo: 16, halfX: CORRIDOR_HALF, y: 0, biome: 'pasture', color: '#6e8e66', followPath: true },
-  { id: 'night', zFrom: -520, zTo: -288, halfX: CORRIDOR_HALF, y: 0, biome: 'night', color: '#2a3a32', followPath: true },
+  { id: 'night', zFrom: -520, zTo: -288, halfX: CORRIDOR_HALF, y: 0, biome: 'night', color: '#36584c', followPath: true },
   { id: 'water-n', zFrom: -570, zTo: -520, halfX: CORRIDOR_HALF, y: 0, biome: 'water', color: '#5a7a58', followPath: true },
   // margens do rio: X FIXO alinhado com a ponte (antes seguiam a curva da
   // trilha e abriam buracos ao lado da ponte)

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { PHASES, pathXAt, groundHeightAt, makeRng } from '../config/world'
 import { playerPosition } from '../store/playerStore'
+import { getDotTexture } from '../materials/dotTexture'
 
 /**
  * Efeitos de atmosfera dos biomas novos:
@@ -41,6 +42,11 @@ function Fireflies() {
   useFrame((state) => {
     const mesh = ref.current
     if (!mesh) return
+    const zNow = playerPosition.z
+    if (zNow < PHASES.night.zFrom - 10 || zNow > PHASES.night.zTo + 10) {
+      mesh.visible = false
+      return
+    }
     const t = state.clock.elapsedTime
     const arr = mesh.geometry.attributes.position.array
     for (let i = 0; i < count; i++) {
@@ -66,8 +72,9 @@ function Fireflies() {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        color="#d4f06a"
-        size={0.35}
+        map={getDotTexture()}
+        color="#e4ff8a"
+        size={0.55}
         sizeAttenuation
         transparent
         depthWrite={false}
@@ -99,6 +106,11 @@ function PetalDust() {
   useFrame((state) => {
     const mesh = ref.current
     if (!mesh) return
+    const zNow = playerPosition.z
+    if (zNow < PHASES.flower.zFrom - 8 || zNow > PHASES.flower.zTo + 8) {
+      mesh.visible = false
+      return
+    }
     const t = state.clock.elapsedTime
     const arr = mesh.geometry.attributes.position.array
     for (let i = 0; i < count; i++) {
@@ -125,8 +137,9 @@ function PetalDust() {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        color="#f2b8d0"
-        size={0.28}
+        map={getDotTexture()}
+        color="#ffc4dc"
+        size={0.34}
         sizeAttenuation
         transparent
         opacity={0.75}

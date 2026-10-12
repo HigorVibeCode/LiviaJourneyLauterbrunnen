@@ -41,22 +41,66 @@ export const QUALITY_PRESETS = {
   },
 }
 
-/** Permite abrir o jogo já numa qualidade: ?q=low | medium | high */
+const QUALITY_KEY = 'livia-quality'
+
+/**
+ * Qualidade inicial: ?q=low|medium|high > escolha salva > automático
+ * (toque = baixa; computador = média). O PerformanceMonitor ainda pode
+ * baixar sozinho se o FPS cair, enquanto a pessoa não escolher na mão.
+ */
 function initialQuality() {
-  if (typeof window === 'undefined') return 'medium'
+  if (typeof window === 'undefined') return { quality: 'medium', manual: false }
   const q = new URLSearchParams(window.location.search).get('q')
-  return QUALITY_PRESETS[q] ? q : 'medium'
+  if (QUALITY_PRESETS[q]) return { quality: q, manual: true }
+  try {
+    const saved = localStorage.getItem(QUALITY_KEY)
+    if (QUALITY_PRESETS[saved]) return { quality: saved, manual: true }
+  } catch {
+    /* sem storage */
+  }
+  return { quality: detectMobile() ? 'low' : 'medium', manual: false }
 }
+
+const START_QUALITY = initialQuality()
 
 export const useGameStore = create((set, get) => ({
   paused: false,
-  quality: initialQuality(),
-  audio: true,
+  quality: START_QUALITY.quality,
+  qualityManual: START_QUALITY.manual,
+  audio: (() => {
+    try {
+      return localStorage.getItem('livia-audio') !== 'off'
+    } catch {
+      return true
+    }
+  })(),
   isMobile: typeof window !== 'undefined' ? detectMobile() : false,
 
   togglePause: () => set((s) => ({ paused: !s.paused })),
   setPaused: (paused) => set({ paused }),
-  setQuality: (quality) => set({ quality }),
-  toggleAudio: () => set((s) => ({ audio: !s.audio })),
+  setQuality: (quality) => {
+    try {
+      localStorage.setItem(QUALITY_KEY, quality)
+    } catch {
+      /* sem storage */
+    }
+    set({ quality, qualityManual: true })
+  },
+  /** queda automática de qualidade (FPS baixo) — não grava como escolha */
+  autoLowerQuality: () => {
+    const { quality, qualityManual } = get()
+    if (qualityManual) return
+    const next = quality === 'high' ? 'medium' : quality === 'medium' ? 'low' : null
+    if (next) set({ quality: next })
+  },
+  toggleAudio: () =>
+    set((s) => {
+      try {
+        localStorage.setItem('livia-audio', s.audio ? 'off' : 'on')
+      } catch {
+        /* sem storage */
+      }
+      return { audio: !s.audio }
+    }),
   getQuality: () => QUALITY_PRESETS[get().quality] ?? QUALITY_PRESETS.medium,
 }))

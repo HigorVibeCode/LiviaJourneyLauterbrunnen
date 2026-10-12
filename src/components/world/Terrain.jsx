@@ -27,7 +27,7 @@ const PLATE_W = 20
 const CLIFF_BANDS = [
   { zFrom: 16, zTo: 120, color: '#767a80', top: '#7f8f78' },
   { zFrom: -288, zTo: 16, color: '#6a7a58', top: '#4a9a42' },
-  { zFrom: -520, zTo: -288, color: '#2a3040', top: '#1a2030' },
+  { zFrom: -520, zTo: -288, color: '#3e4a68', top: '#2c3a58' },
   { zFrom: -656, zTo: -520, color: '#5a7868', top: '#4a8a48' },
   { zFrom: -780, zTo: -656, color: '#96a3ac', top: '#e0e8ee' },
   { zFrom: -916, zTo: -780, color: '#6a7a62', top: '#6a8a5e' },
@@ -85,7 +85,7 @@ export default function Terrain() {
           } else if (seg.biome === 'water') {
             base = rng() > 0.5 ? '#4a8a48' : '#428040'
           } else if (seg.biome === 'night') {
-            base = rng() > 0.5 ? '#243028' : '#1e2a24'
+            base = rng() > 0.5 ? '#36584c' : '#2f5046'
           } else if (seg.biome === 'flower') {
             const r = rng()
             base = r > 0.6 ? '#5a9a52' : r > 0.3 ? '#68a858' : '#4e8e48'

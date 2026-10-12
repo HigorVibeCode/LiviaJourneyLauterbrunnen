@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
+import { Sparkles } from '@react-three/drei'
 import * as THREE from 'three'
 import { makeToonMaterial } from '../../materials/toonMaterial'
 import {
@@ -864,6 +865,10 @@ export function SummitTreasure() {
       <RigidBody type="fixed" colliders={false}>
         <CuboidCollider position={[0, 0.3, 0]} args={[2, 0.3, 1.6]} />
       </RigidBody>
+      {/* o baú cintila de longe — é o grande prêmio */}
+      {!finished && (
+        <Sparkles count={40} scale={[5, 4, 5]} position={[0, 2, 0]} size={7} speed={0.4} color="#ffd970" />
+      )}
       <mesh position={[0, 0.3, 0]} receiveShadow castShadow>
         <boxGeometry args={[4, 0.6, 3.2]} />
         <ToonMat color="#8d9096"/>

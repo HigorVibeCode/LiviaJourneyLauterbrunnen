@@ -7,7 +7,8 @@ export function getToonGradientMap() {
   if (gradientMap) return gradientMap
   const steps = 4
   const data = new Uint8Array(steps * 4)
-  const levels = [0.22, 0.52, 0.78, 1.0]
+  // sombra mais clara: com 0.22 os lados na sombra ficavam marrom-lamacentos
+  const levels = [0.46, 0.68, 0.86, 1.0]
   for (let i = 0; i < steps; i++) {
     const v = Math.round(levels[i] * 255)
     data[i * 4] = v

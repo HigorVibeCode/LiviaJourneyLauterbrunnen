@@ -20,6 +20,7 @@ import { requestGameLock } from '../lib/keyboard'
 import MultiplayerPanel from './ui/MultiplayerPanel'
 import { getPartyHost } from '../multiplayer/config'
 import { ENDING_TEXT } from '../config/story'
+import { STARS } from '../config/stars'
 
 /** Re-render leve para o que vive fora do React (cavalo, posição) */
 function useTicker(ms = 250) {
@@ -169,6 +170,7 @@ export default function Hud() {
   const inventory = useProgressStore((s) => s.inventory)
   const collectedEver = useProgressStore((s) => s.collectedEver)
   const foundEggs = useProgressStore((s) => s.foundEggs)
+  const stars = useProgressStore((s) => s.stars.length)
   const nearGateId = useProgressStore((s) => s.nearGateId)
   const nearNpcId = useProgressStore((s) => s.nearNpcId)
   const unlockedGates = useProgressStore((s) => s.unlockedGates)
@@ -272,6 +274,13 @@ export default function Hud() {
             ⛶
           </button>
         </div>
+        <div className="hud-card hud-stars" title="Estrelinhas coletadas" key={`s${stars}`}>
+          <span className="hud-star-icon" aria-hidden>
+            ⭐
+          </span>
+          <strong>{stars}</strong>
+          <span className="hud-star-total">/{STARS.length}</span>
+        </div>
         <div className="hud-card hud-eggs" title="Segredos escondidos pelo vale">
           <span className="hud-kicker">
             Segredos {foundEggs.length}/{EASTER_EGGS.length}
@@ -330,8 +339,10 @@ export default function Hud() {
             <p className="dialog-copy">{ENDING_TEXT}</p>
             <div className="victory-stats">
               <div className="victory-stat">
-                <strong>{collectedEver.length}</strong>
-                <span>itens</span>
+                <strong>
+                  {stars}/{STARS.length}
+                </strong>
+                <span>estrelas</span>
               </div>
               <div className="victory-stat">
                 <strong>

@@ -32,7 +32,6 @@ import {
   PHASES,
   RIVER,
   STAIRS,
-  CORRIDOR_HALF,
   WATERFALLS,
   groundHeightAt,
   makeRng,
@@ -43,6 +42,7 @@ import {
   worldFromPath,
 } from '../config/world'
 import EasterEgg from './EasterEgg'
+import StarTrail from './StarTrail'
 import NPC from './NPC'
 import LanternPickup from './LanternPickup'
 import { EASTER_EGGS } from '../config/easterEggs'
@@ -126,6 +126,7 @@ export default function WorldMap() {
       ))}
 
       <LanternPickup />
+      <StarTrail />
 
       {EASTER_EGGS.map((egg) => (
         <EasterEgg key={egg.id} egg={egg} />
@@ -220,7 +221,8 @@ function PathStones() {
     const palettes = {
       meadow: ['#8a7050', '#7a6048', '#9a8060', '#6a5840', '#a08868'],
       pasture: ['#847058', '#746048', '#948060', '#685038', '#988868'],
-      night: ['#3a3a48', '#2e2e3a', '#4a4a58', '#353544'],
+      // pedras claras de luar: a trilha aparece no escuro
+      night: ['#8a96b8', '#7c88aa', '#97a3c4', '#8490b2'],
       water: ['#7a6848', '#6a5838', '#8a7858', '#5a4830'],
       snow: ['#d0dae4', '#c0ccd6', '#dae2ea', '#b4c0ca'],
       flower: ['#8a7050', '#9a8060', '#7a6048', '#a08868'],

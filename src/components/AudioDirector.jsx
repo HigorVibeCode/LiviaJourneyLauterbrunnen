@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { resumeAudio, setMuted, audioRunning } from '../audio/engine'
 import { setAmbientTargets } from '../audio/ambient'
+import { setMusicMood, setMusicVolume, startMusic } from '../audio/music'
 import {
   sfxPickup,
   sfxGate,
@@ -9,7 +10,6 @@ import {
   sfxThunder,
   sfxRespawn,
   sfxOwl,
-  sfxWolfHowl,
   sfxDistantBell,
 } from '../audio/sfx'
 import { useProgressStore } from '../store/progressStore'
@@ -37,6 +37,7 @@ export default function AudioDirector() {
       void resumeAudio().then((ok) => {
         if (!ok) return
         done = true
+        startMusic()
         window.removeEventListener('pointerdown', unlock, true)
         window.removeEventListener('touchstart', unlock, true)
         window.removeEventListener('keydown', unlock, true)
@@ -89,6 +90,8 @@ export default function AudioDirector() {
       if (!audioRunning()) return
 
       const { paused, audio: enabled } = useGameStore.getState()
+      startMusic()
+      setMusicVolume(paused ? 0.45 : 1)
       if (paused || !enabled) {
         setAmbientTargets({ wind: 0, rain: 0, water: 0, tension: 0 })
         return
@@ -103,26 +106,27 @@ export default function AudioDirector() {
       const inMeadow = z <= PHASES.meadow.zTo + 6 && z >= PHASES.meadow.zFrom - 6
       const inSummit = z <= PHASES.summit.zTo && z >= PHASES.summit.zFrom
       const gateOpen = useProgressStore.getState().unlockedGates.includes('gate_summit')
-      const tensionOn =
-        (inSummit && gateOpen && !useProgressStore.getState().finished) || inNight
+      // tensão só com a vaca do mirante (no vale noturno era assustador demais)
+      const tensionOn = inSummit && gateOpen && !useProgressStore.getState().finished
+
+      setMusicMood(
+        inNight ? 'night' : inWater ? 'water' : inSnow ? 'snow' : inSummit ? 'summit' : 'day',
+      )
 
       setAmbientTargets({
         wind: inSummit ? 0.12 : inSnow ? 0.075 : inNight ? 0.055 : inPasture ? 0.04 : 0.032,
         rain: inWater ? 0.085 : 0,
         water: inWater ? 0.08 : inNight ? 0.012 : 0,
-        tension: tensionOn ? (inNight ? 0.06 : 0.085) : 0,
+        tension: tensionOn ? 0.035 : 0,
       })
 
       if (inMeadow && Math.random() < 0.025) sfxDistantBell()
       if (!inSnow && !inSummit && !inNight && Math.random() < (inFlower ? 0.2 : inPasture ? 0.12 : inMeadow ? 0.15 : inWater ? 0.045 : 0.13)) {
         sfxChirp()
       }
-      if (inWater && Math.random() < 0.013) sfxThunder()
-      // vale noturno: corujas e uivos ocasionais
-      if (inNight) {
-        if (Math.random() < 0.07) sfxOwl()
-        if (Math.random() < 0.028) sfxWolfHowl()
-      }
+      if (inWater && Math.random() < 0.006) sfxThunder()
+      // vale noturno: só corujas (os uivos de lobo assustavam)
+      if (inNight && Math.random() < 0.05) sfxOwl()
     }, TICK_MS)
     return () => clearInterval(id)
   }, [])

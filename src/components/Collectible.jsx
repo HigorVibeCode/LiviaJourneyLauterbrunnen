@@ -1,6 +1,7 @@
 import { useRef, useState, useMemo, useEffect } from 'react'
 import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
+import { Sparkles } from '@react-three/drei'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
 import { useProgressStore, QUESTS } from '../store/progressStore'
@@ -184,6 +185,10 @@ export default function Collectible({ itemId }) {
           depthWrite={false}
         />
       </mesh>
+      {/* brilhinhos em volta do item da etapa atual */}
+      {isCurrent && !bursting && !dead && (
+        <Sparkles count={18} scale={[2.4, 2.6, 2.4]} position={[0, 0.6, 0]} size={5} speed={0.5} color={color} opacity={0.9} />
+      )}
       {/* Anel dourado flutuante — marca o objetivo atual */}
       {isCurrent && !bursting && !dead && (
         <mesh position={[0, 1.55, 0]} rotation={[Math.PI / 2, 0, 0]}>

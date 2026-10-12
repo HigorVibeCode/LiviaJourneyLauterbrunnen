@@ -121,8 +121,9 @@ export const BIOMES = {
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#2a3a30',
-    foliage: ['#1e3428', '#243c30', '#2a4438'],
+    // azul-esverdeado de luar (antes quase preto — não se via nada)
+    grassColor: '#3e6a5a',
+    foliage: ['#2f5a52', '#356458', '#3c6e60'],
     rockColors: ['#3a3a48', '#2e2e3a', '#454558'],
   },
   flower: {
