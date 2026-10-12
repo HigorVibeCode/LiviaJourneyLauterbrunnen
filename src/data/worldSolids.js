@@ -59,7 +59,9 @@ export function isClearOfSolids(x, z, margin = SPAWN_MARGIN, circles = SPAWN_SOL
 }
 
 /** Bake uma vez — usado por spawn e validate:world */
-export const SPAWN_SOLIDS = buildSpawnSolidCircles(1)
+// A posição dos props muda com a densidade (qualidade gráfica); juntando todas
+// as densidades, nenhum item nasce dentro de pedra/árvore em qualquer preset.
+export const SPAWN_SOLIDS = [0.55, 0.75, 1, 1.2].flatMap((d) => buildSpawnSolidCircles(d))
 
 /** Física completa (inclui fences, logs, hay) — debug / futuro */
 export { buildWorldSolidCircles, WORLD_SOLIDS } from './worldSolidsPhysics.js'

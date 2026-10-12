@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useKeyboardControls } from '@react-three/drei'
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier'
 import * as THREE from 'three'
-import { usePlayerStore, INITIAL_SPAWN, updatePlayerPosition } from '../store/playerStore'
+import { usePlayerStore, startPosition, updatePlayerPosition } from '../store/playerStore'
 import { useWaterfallStore } from '../store/waterfallStore'
 import { useGameStore } from '../store/gameStore'
 import { useProgressStore } from '../store/progressStore'
@@ -25,7 +25,16 @@ import { resolveWaterPush, WATER_COMPLAINTS } from '../lib/waterPush'
 import LiviaModel from './livia/LiviaModel'
 import { sfxFootstep, sfxJump, sfxLand, sfxComplaintSplash, surfaceAt } from '../audio/sfx'
 import { touchInput, detectMobile } from '../lib/touchInput'
-import { groundHeightAt, pathXAt } from '../config/world'
+import {
+  GATES,
+  HORSE_DISMOUNT_Z,
+  HOUSES,
+  groundHeightAt,
+  pathXAt,
+  resolveOnPath,
+  SUMMIT_Y,
+  TREASURE_POS,
+} from '../config/world'
 import { LiviaLanternLight } from './LanternPickup'
 import { updatePlayerPose } from '../multiplayer/playerPose'
 
@@ -63,6 +72,14 @@ const HORSE_CAM_ORBIT_SMOOTH = 16
 const TURN_SPEED = 14
 const GUIDE_TURN_SPEED = 7
 const complaintIdx = { i: 0 }
+const HORSE_MAX_LAT = 36
+/** Casas do pasto como discos — o cavalo contorna em vez de atravessar */
+const HOUSE_DISCS = HOUSES.filter((h) => h.z < GATES.gate_pasture.z && h.z > HORSE_DISMOUNT_Z - 10).map(
+  (h) => {
+    const { x, z } = resolveOnPath(h)
+    return { x, z, r: 9 * h.scale }
+  },
+)
 
 function expSmooth(current, target, speed, dt) {
   return lerp(current, target, 1 - Math.exp(-speed * dt))
@@ -122,6 +139,8 @@ function easeOutCubic(x) {
 }
 
 export default function Livia() {
+  // continua de onde parou (progresso salvo) — calculado uma vez por montagem
+  const START = useMemo(() => startPosition(), [])
   const bodyRef = useRef(null)
   const modelRef = useRef(null)
   const hopRef = useRef(null)
@@ -137,9 +156,9 @@ export default function Livia() {
   const camDistRef = useRef(CAM_DIST)
   const camDebugRef = useRef({ ideal: CAM_DIST, wanted: CAM_DIST, occluded: false })
   const camPivot = useRef({
-    x: INITIAL_SPAWN.x,
-    y: groundHeightAt(INITIAL_SPAWN.x, INITIAL_SPAWN.z) + CAM_STAND_CLEAR + LOOK_HEIGHT,
-    z: INITIAL_SPAWN.z,
+    x: START.x,
+    y: groundHeightAt(START.x, START.z) + CAM_STAND_CLEAR + LOOK_HEIGHT,
+    z: START.z,
   })
   /** Histerese do spring arm — evita flicker quando o ray oscila em emendas */
   const camOcclude = useRef({ hitFrames: 0, clearFrames: 0, locked: CAM_DIST, active: false })
@@ -152,8 +171,10 @@ export default function Livia() {
   const camOrbit = useRef({ yaw: 0, pitch: 0.42 })
   const camOrbitTarget = useRef({ yaw: 0, pitch: 0.42 })
   const camMobileRef = useRef(typeof window !== 'undefined' ? detectMobile() : false)
-  const prevPosRef = useRef({ x: INITIAL_SPAWN.x, z: INITIAL_SPAWN.z })
+  const prevPosRef = useRef({ x: START.x, z: START.z })
   const stuckTimerRef = useRef(0)
+  const horseSafeTimer = useRef(0)
+  const finaleLandedRef = useRef(false)
 
   const animState = useRef({
     speed: 0,
@@ -164,6 +185,8 @@ export default function Livia() {
     riding: false,
   })
   const eWasDown = useRef(false)
+  const pressTapRef = useRef(false)
+  const pressConsumed = useRef(false)
   const horseGuideWarnRef = useRef(false)
   const finaleHopStarted = useRef(false)
 
@@ -171,10 +194,6 @@ export default function Livia() {
   const camLook = useMemo(() => new THREE.Vector3(), [])
   const camDesired = useMemo(() => new THREE.Vector3(), [])
   const camDir = useMemo(() => new THREE.Vector3(), [])
-  const camTarget = useMemo(() => new THREE.Vector3(), [])
-  const camUp = useMemo(() => new THREE.Vector3(0, 1, 0), [])
-  const camRotMat = useMemo(() => new THREE.Matrix4(), [])
-  const camQuatTarget = useMemo(() => new THREE.Quaternion(), [])
   // raios reutilizados: criar 2 objetos novos por frame alimentava o GC
   const groundRay = useMemo(() => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 }), [rapier])
   const camRay = useMemo(() => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 }), [rapier])
@@ -479,6 +498,23 @@ export default function Livia() {
     if (modelRef.current) modelRef.current.visible = true
     finaleHopStarted.current = false
 
+    // fim do voo da fênix: a Livia "desce" de volta ao mirante (antes caía do céu no vazio)
+    if (finalePhase === 'done' && !finaleLandedRef.current) {
+      finaleLandedRef.current = true
+      const land = { x: TREASURE_POS.x + 3, y: SUMMIT_Y + 1, z: TREASURE_POS.z + 7 }
+      body.setTranslation(land, true)
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      body.setGravityScale(1, true)
+      updatePlayerPosition(land)
+      setLastSafe(land)
+      camPivot.current.x = land.x
+      camPivot.current.y = land.y + CAM_STAND_CLEAR + LOOK_HEIGHT
+      camPivot.current.z = land.z
+      if (modelRef.current) modelRef.current.rotation.y = Math.PI
+      return
+    }
+    if (!finalePhase) finaleLandedRef.current = false
+
     // cavalgada no pasto: Livia sentada no dorso, câmera mais afastada
     if (horseRide.mounted && !inFinale) {
       guideInput.holding = false
@@ -492,7 +528,7 @@ export default function Livia() {
       if (interact) {
         if (!horseGuideWarnRef.current) {
           horseGuideWarnRef.current = true
-          const toast = 'Desça do cavalo para usar a guia luminosa.'
+          const toast = 'A cavalo, é só seguir a trilha até o fim do pasto!'
           useProgressStore.setState({ toast })
           setTimeout(() => {
             if (useProgressStore.getState().toast === toast) {
@@ -504,10 +540,11 @@ export default function Livia() {
         horseGuideWarnRef.current = false
       }
 
-      const forward = keys.forward || touchInput.forward
-      const back = keys.back || touchInput.back
-      const left = keys.left || touchInput.left
-      const right = keys.right || touchInput.right
+      const frozen = paused
+      const forward = !frozen && (keys.forward || touchInput.forward)
+      const back = !frozen && (keys.back || touchInput.back)
+      const left = !frozen && (keys.left || touchInput.left)
+      const right = !frozen && (keys.right || touchInput.right)
       const run = keys.run || touchInput.run
       let inputX = 0
       let inputZ = 0
@@ -535,9 +572,27 @@ export default function Livia() {
       const speed = lerp(velH, targetSpeed, blend)
       horseRide.speed = speed
 
-      const hx = horseRide.x + worldX * speed * dt
-      const hz = horseRide.z + worldZ * speed * dt
+      let hx = horseRide.x + worldX * speed * dt
+      let hz = horseRide.z + worldZ * speed * dt
+      // o cavalo não tem física: mantém dentro do pasto e fora das casas
+      hz = THREE.MathUtils.clamp(hz, HORSE_DISMOUNT_Z - 2, GATES.gate_pasture.z - 3)
+      const lat = hx - pathXAt(hz)
+      if (Math.abs(lat) > HORSE_MAX_LAT) hx = pathXAt(hz) + Math.sign(lat) * HORSE_MAX_LAT
+      for (const h of HOUSE_DISCS) {
+        const dx = hx - h.x
+        const dz = hz - h.z
+        const d = Math.hypot(dx, dz)
+        if (d < h.r && d > 1e-3) {
+          hx = h.x + (dx / d) * h.r
+          hz = h.z + (dz / d) * h.r
+        }
+      }
       const hy = groundHeightAt(hx, hz)
+      horseSafeTimer.current += dt
+      if (horseSafeTimer.current > 0.5) {
+        horseSafeTimer.current = 0
+        setLastSafe({ x: hx, y: hy, z: hz })
+      }
       horseRide.x = hx
       horseRide.z = hz
       horseRide.y = hy
@@ -680,6 +735,10 @@ export default function Livia() {
       body.setLinvel({ x: 0, y: 0, z: 0 }, true)
       body.setAngvel({ x: 0, y: 0, z: 0 }, true)
       groundedRef.current = true
+      camPivot.current.x = spawn.x
+      camPivot.current.y = spawn.y + CAM_STAND_CLEAR + LOOK_HEIGHT
+      camPivot.current.z = spawn.z
+      updatePlayerPosition(spawn)
       countRespawn()
       requestAnimationFrame(() => {
         respawningRef.current = false
@@ -741,8 +800,13 @@ export default function Livia() {
     const run = keys.run || touchInput.run
     const interact = keys.interact || touchInput.interact
 
-    // E: tap curto → portão / montar; segurar → guia (consome carga, recarrega fora de uso)
+    // E: interage NO APERTO (portão, NPC, cavalo). Se nada perto consumiu o
+    // aperto e a tecla continua segura, vira a guia luminosa. G/Q (ou o botão
+    // ✨ no touch) acendem a guia direto. Antes a interação só saía num
+    // "toque curto" (<0.28 s) — criança segura o botão e nada acontecia.
     if (guideInput.tapStale) {
+      if (pressTapRef.current && !guideInput.tapPending) pressConsumed.current = true
+      pressTapRef.current = false
       guideInput.tapPending = false
       guideInput.tapStale = false
     }
@@ -750,9 +814,7 @@ export default function Livia() {
       if (!horseRide.nearMount || horseRide.mounted || horseRide.finished) return false
       horseRide.mounted = true
       guideInput.tapPending = false
-      guideInput.holding = false
-      guideInput.holdTime = 0
-      const toast = 'Livia montou o cavalo! Atravessa o pasto cavalgando.'
+      const toast = 'Livia montou o cavalo! Galope pela trilha até o fim do pasto.'
       useProgressStore.setState({ toast })
       setTimeout(() => {
         if (useProgressStore.getState().toast === toast) {
@@ -761,38 +823,32 @@ export default function Livia() {
       }, 3500)
       return true
     }
-    if (interact) {
-      if (!eWasDown.current) {
-        guideInput.holdTime = 0
-        guideInput.tapPending = false
+    const guideKey = keys.guide || touchInput.guide
+    if (interact && !eWasDown.current) {
+      guideInput.holdTime = 0
+      pressConsumed.current = false
+      if (tryMountHere()) {
+        pressConsumed.current = true
+      } else {
+        guideInput.tapPending = true
         guideInput.tapStale = false
+        pressTapRef.current = true
       }
-      eWasDown.current = true
+    }
+    eWasDown.current = interact
+    const holdingAny = interact || guideKey
+    if (holdingAny) {
       guideInput.holding = true
       guideInput.holdTime += dt
-      // montar no hold curto (Horse roda antes da Livia — o tap sozinho podia perder o frame)
-      if (guideInput.holdTime > 0.1 && tryMountHere()) {
-        /* montou */
-      } else if (
-        guideInput.holdTime >= GUIDE_HOLD_SEC &&
-        guideInput.charge > 0 &&
-        !guideInput.depleted
-      ) {
+      const wantsGuide =
+        guideKey || (!pressConsumed.current && guideInput.holdTime >= GUIDE_HOLD_SEC)
+      if (wantsGuide && guideInput.charge > 0 && !guideInput.depleted) {
         guideInput.guiding = true
       } else if (guideInput.charge <= 0) {
         guideInput.guiding = false
         guideInput.depleted = true
       }
     } else {
-      if (eWasDown.current) {
-        if (!guideInput.guiding && guideInput.holdTime > 0 && guideInput.holdTime < GUIDE_HOLD_SEC) {
-          if (!tryMountHere()) {
-            guideInput.tapPending = true
-            guideInput.tapStale = false
-          }
-        }
-      }
-      eWasDown.current = false
       guideInput.holding = false
       guideInput.guiding = false
       guideInput.holdTime = 0
@@ -913,8 +969,9 @@ export default function Livia() {
         body.setTranslation({ x: pushed.x, y: Math.max(pos.y, ny), z: pushed.z }, true)
         body.setLinvel({ x: 0, y: Math.min(nextY, 0), z: 0 }, true)
         updatePlayerPosition({ x: pushed.x, y: pos.y, z: pushed.z })
-        if (pushed.complained) {
-          sfxComplaintSplash()
+        if (pushed.complained) sfxComplaintSplash()
+        // reclamação da água não atropela mensagens importantes (item, portão…)
+        if (pushed.complained && !useProgressStore.getState().toast) {
           const msg = WATER_COMPLAINTS[complaintIdx.i % WATER_COMPLAINTS.length]
           complaintIdx.i += 1
           useProgressStore.setState({ toast: msg })
@@ -1102,7 +1159,7 @@ export default function Livia() {
   return (
     <RigidBody
       ref={bodyRef}
-      position={[INITIAL_SPAWN.x, INITIAL_SPAWN.y, INITIAL_SPAWN.z]}
+      position={[START.x, START.y, START.z]}
       colliders={false}
       lockRotations
       enabledRotations={[false, false, false]}

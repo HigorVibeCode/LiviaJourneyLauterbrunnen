@@ -19,6 +19,8 @@ import { sfxMooChase, sfxMooCatch } from '../audio/sfx'
 const HUNT_SPEED = 2.15
 const WANDER_SPEED = 1.35
 const CATCH_DIST = 2.35
+const CALM_SECONDS = 8
+const MAX_CATCHES = 2
 const STAIRS_PITCH = stairsPitch()
 const STAIRS_Z_TOP = STAIRS.zStart - (STAIRS.steps - 1) * STAIRS.stepDepth
 
@@ -54,6 +56,8 @@ export default function AlpineCow() {
   const legR = useRef(null)
   const head = useRef(null)
   const dragTimer = useRef(0)
+  const calmUntil = useRef(0)
+  const catches = useRef(0)
   const mooCooldown = useRef(0)
   const zigPhase = useRef(0)
   const wanderWait = useRef(0)
@@ -107,7 +111,10 @@ export default function AlpineCow() {
       playerPosition.z < STAIRS.zStart - 2 &&
       playerPosition.z > COW_BOUNDS.zFar - 40
 
-    cowChase.hunting = playerInSummit && !paused
+    // depois de um arrasto a vaca fica um tempo distraída; após 2 arrastos
+    // desiste de vez (antes podia arrastar a Livia a escada inteira, sem fim)
+    const calm = state.clock.elapsedTime < calmUntil.current || catches.current >= MAX_CATCHES
+    cowChase.hunting = playerInSummit && !paused && !calm
 
     // saiu da fase no meio do arrasto: solta a Livia, vaca volta a pastar
     if (!playerInSummit && cowChase.dragging) {
@@ -180,12 +187,14 @@ export default function AlpineCow() {
       }
 
       if (dragTimer.current >= COW_DRAG_DURATION || distGate < 1.4) {
+        calmUntil.current = state.clock.elapsedTime + CALM_SECONDS
+        catches.current += 1
         cowChase.dragging = false
         cowChase.dragProgress = 0
         dragTimer.current = 0
         pickWanderTarget()
       }
-    } else if (playerInSummit) {
+    } else if (playerInSummit && cowChase.hunting) {
       // persegue a Livia
       const dx = playerPosition.x - rootG.position.x
       const dz = playerPosition.z - rootG.position.z

@@ -1,4 +1,4 @@
-import { GATES, TREASURE_POS, HORSE_WAIT, pathXAt } from '../config/world'
+import { GATES, TREASURE_POS, HORSE_WAIT, LANTERN_POS, pathXAt } from '../config/world'
 import { ITEMS, QUESTS, missingItems, useProgressStore } from '../store/progressStore'
 import { playerPosition } from '../store/playerStore'
 import { horseRide } from './horseRide'
@@ -39,13 +39,27 @@ function resolveItemPosition(id, itemPositions) {
  * Próximo objetivo em world-space (item, portão, cavalo ou tesouro).
  */
 export function getObjectiveTarget() {
-  const { unlockedGates, inventory, itemPositions, finished, finalePhase } =
+  const { unlockedGates, inventory, itemPositions, finished, finalePhase, hasLantern } =
     useProgressStore.getState()
   if (finished || finalePhase) return null
 
+  // vale noturno: primeiro o lampião (fica logo na entrada e clareia tudo)
+  if (
+    unlockedGates.includes('gate_night') &&
+    !unlockedGates.includes('gate_water') &&
+    !hasLantern
+  ) {
+    return {
+      position: [pathXAt(LANTERN_POS.z) + LANTERN_POS.lat, 1.6, LANTERN_POS.z],
+      label: 'Lampião',
+    }
+  }
+
   // pasto: cavalo → vale noturno
   if (unlockedGates.includes('gate_pasture') && !unlockedGates.includes('gate_night')) {
-    if (!horseRide.mounted) {
+    // a pé e já longe do cavalo: aponta para o portão, não de volta ao cavalo
+    const walkedAway = playerPosition.z < horseRide.z - 40
+    if (!horseRide.mounted && !walkedAway) {
       return {
         position: [horseRide.x || HORSE_WAIT.x, 1.4, horseRide.z || HORSE_WAIT.z],
         label: 'Cavalo',

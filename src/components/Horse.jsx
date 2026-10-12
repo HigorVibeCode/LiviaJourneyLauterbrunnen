@@ -90,6 +90,18 @@ export default function Horse() {
     }
     if (root.current) root.current.visible = true
 
+    // jogo carregado do save já depois da cavalgada: cavalo espera no fim do pasto
+    if (
+      !horseRide.finished &&
+      !horseRide.mounted &&
+      useProgressStore.getState().unlockedGates.includes('gate_night')
+    ) {
+      horseRide.finished = true
+      horseRide.waitZ = GATES.gate_night.z + 6
+      horseRide.waitX = pathXAt(horseRide.waitZ)
+      greetDone.current = true
+    }
+
     // cumprimento: empina + relincha (tempo de relógio — independente do FPS)
     if (!greetDone.current && !horseRide.mounted && !horseRide.finished) {
       if (greetStart.current < 0) {

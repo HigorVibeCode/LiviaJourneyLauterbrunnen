@@ -498,12 +498,11 @@ export default function NPC({ def }) {
     if (guideInput.tapPending) {
       guideInput.tapPending = false
       guideInput.tapStale = true
-      if (!npcSpoke) {
-        markNpcSpoke(def.id)
-      } else {
-        handoffActive.current = true
-        handoffT.current = 0
-      }
+      // um único E: fala a linha de entrega e já passa o item (antes o 1º E
+      // só mostrava "Leve este…" e nada era entregue)
+      if (!npcSpoke) markNpcSpoke(def.id)
+      handoffActive.current = true
+      handoffT.current = 0
     }
   })
 

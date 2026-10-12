@@ -35,8 +35,9 @@ export default function Gate({
   const wasNear = useRef(false)
 
   // progresso da animação de abertura (0 fechado → 1 escancarado)
-  const openT = useRef(0)
-  const [passable, setPassable] = useState(false)
+  // já aberto no save: começa escancarado, sem refazer a cerimônia
+  const openT = useRef(useProgressStore.getState().unlockedGates.includes(gateId) ? 1 : 0)
+  const [passable, setPassable] = useState(() => openT.current >= 1)
   const shakeRef = useRef(null)
   const leftRef = useRef(null)
   const rightRef = useRef(null)

@@ -9,6 +9,7 @@ export const touchInput = {
   jump: false,
   run: false,
   interact: false,
+  guide: false,
 }
 
 export function resetTouchInput() {
@@ -19,6 +20,7 @@ export function resetTouchInput() {
   touchInput.jump = false
   touchInput.run = false
   touchInput.interact = false
+  touchInput.guide = false
 }
 
 /** Detecta dispositivo touch / tela estreita. */

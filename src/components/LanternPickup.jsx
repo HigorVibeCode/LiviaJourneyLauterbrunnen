@@ -3,11 +3,10 @@ import ToonMat from '../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { useProgressStore } from '../store/progressStore'
-import { PHASES, pathXAt, groundHeightAt } from '../config/world'
+import { LANTERN_POS, PHASES, pathXAt, groundHeightAt } from '../config/world'
 import { playerPosition } from '../store/playerStore'
 import { sfxPickup } from '../audio/sfx'
 
-const LANTERN_POS = { lat: -10, z: PHASES.night.zTo - 12 }
 
 /**
  * Lampião coletável no início do Vale Noturno.

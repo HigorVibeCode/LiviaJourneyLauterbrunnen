@@ -44,5 +44,5 @@ export function randomCowPoint() {
   return { x, z }
 }
 
-export const COW_DRAG_DURATION = 7.5
+export const COW_DRAG_DURATION = 4
 export const COW_DRAG_SPEED = 5.8

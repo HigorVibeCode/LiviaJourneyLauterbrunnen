@@ -193,7 +193,7 @@ const RAMP = (() => {
   const zTop = STAIRS.zStart - (STAIRS.steps - 1) * STAIRS.stepDepth
   const slope = SUMMIT_Y / (zBottom - zTop)
   const padBottom = 2
-  const padTop = 8
+  const padTop = 0.6
 
   const az = zBottom + padBottom
   const ay = -slope * padBottom
@@ -511,7 +511,7 @@ export function SummitStairs() {
         />
         {/* platô de chegada — evita queda no limbo entre rampa e chão do mirante */}
         <CuboidCollider
-          position={[0, SUMMIT_Y - 0.5, RAMP.zTop - 5]}
+          position={[0, SUMMIT_Y - 1.2, RAMP.zTop - 5]}
           args={[STAIRS.halfWidth + 2, 1.2, 10]}
         />
         <CuboidCollider

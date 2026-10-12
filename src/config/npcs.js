@@ -36,8 +36,8 @@ export const NPCS = [
     id: 'npc_bridge_keeper',
     name: 'Guardião da Ponte',
     phase: 'water',
-    lat: -8,
-    z: -552,
+    lat: -6,
+    z: -566,
     itemId: 'ferramenta',
     role: 'carpenter',
     // carpinteiro alpino — verde musgo + avental de couro

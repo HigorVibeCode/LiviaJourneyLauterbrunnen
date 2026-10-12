@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useProgressStore, ITEMS, QUESTS, missingItems } from '../store/progressStore'
+import { useProgressStore, ITEMS, QUESTS, missingItems, resetSavedGame } from '../store/progressStore'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 import { playerPosition, usePlayerStore } from '../store/playerStore'
 import { PHASES, PHASE_ORDER, CHAPTER_LINES } from '../config/world'
@@ -9,6 +9,7 @@ import { npcInteractHint, npcDialogueLine } from './NPC'
 import { GUIDE_MAX_CHARGE, guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
 import MultiplayerPanel from './ui/MultiplayerPanel'
+import { ENDING_TEXT } from '../config/story'
 
 function useObjectiveHint() {
   const inventory = useProgressStore((s) => s.inventory)
@@ -28,6 +29,8 @@ function useObjectiveHint() {
     void horseTick
     if (horseRide.mounted) return 'Cavalgue pelo pasto até o Vale Noturno'
     if (horseRide.nearMount) return 'Pressione E para montar o cavalo'
+    if (nearGateId === 'gate_night') return 'Pressione E para abrir o portão do Vale Noturno'
+    if (playerPosition.z < horseRide.z - 40) return 'Siga a trilha até o portão do Vale Noturno'
     return 'Monte o cavalo ao lado do portão e atravesse o pasto'
   }
 
@@ -118,9 +121,12 @@ export default function Hud() {
   const nearNpc = NPCS.find((n) => n.id === nearNpcId)
   const npcSpoke = useProgressStore((s) => s.npcSpoke)
   const canInteract =
-    nearQuest &&
-    !unlockedGates.includes(nearQuest.gateId) &&
-    missingItems(nearQuest, inventory).length === 0
+    (nearQuest &&
+      !unlockedGates.includes(nearQuest.gateId) &&
+      missingItems(nearQuest, inventory).length === 0) ||
+    (nearGateId === 'gate_night' &&
+      unlockedGates.includes('gate_pasture') &&
+      !unlockedGates.includes('gate_night'))
 
   const phaseNumber = Math.min(unlockedGates.length + 1, PHASE_ORDER.length)
   const [guideCharge, setGuideCharge] = useState(GUIDE_MAX_CHARGE)
@@ -263,7 +269,7 @@ export default function Hud() {
               <button
                 type="button"
                 className="pause-btn pause-btn--primary"
-                onClick={() => window.location.reload()}
+                onClick={resetSavedGame}
               >
                 Jogar novamente
               </button>

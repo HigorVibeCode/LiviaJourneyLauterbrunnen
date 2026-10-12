@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import {
   EGG_LORE,
   FINALE_TOAST,
@@ -118,7 +119,11 @@ export function missingItems(quest, inventory) {
   return quest.itemIds.filter((id) => !inventory.includes(id))
 }
 
-export const useProgressStore = create((set, get) => ({
+export const PROGRESS_SAVE_KEY = 'livia-progress-v1'
+
+export const useProgressStore = create(
+  persist(
+  (set, get) => ({
   inventory: [],
   /** Tudo que já foi coletado (não encolhe quando um item é consumido) */
   collectedEver: [],
@@ -265,4 +270,37 @@ export const useProgressStore = create((set, get) => ({
       if (get().toast === FINISH_TOAST) set({ toast: null })
     }, 8000)
   },
-}))
+}),
+  {
+    name: PROGRESS_SAVE_KEY,
+    version: 1,
+    // só o progresso de verdade — nada de toasts, fases do final, posições sorteadas
+    partialize: (s) => ({
+      inventory: s.inventory,
+      collectedEver: s.collectedEver,
+      unlockedGates: s.unlockedGates,
+      npcSpoke: s.npcSpoke,
+      hasLantern: s.hasLantern,
+      foundEggs: s.foundEggs,
+    }),
+  },
+  ),
+)
+
+/** Apaga o progresso salvo e recomeça do início */
+export function resetSavedGame() {
+  try {
+    localStorage.removeItem(PROGRESS_SAVE_KEY)
+    localStorage.removeItem('livia-player-v1')
+  } catch {
+    /* sem storage — só recarrega */
+  }
+  window.location.reload()
+}
+
+/** Há algum progresso salvo? (tela inicial mostra "Continuar") */
+export function hasSavedGame() {
+  const s = useProgressStore.getState()
+  return s.unlockedGates.length > 0 || s.collectedEver.length > 0 || s.foundEggs.length > 0
+}
+

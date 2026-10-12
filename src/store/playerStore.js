@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 /** Ponto inicial — pradaria, de frente para o vale */
 const INITIAL_SPAWN = { x: 0, y: 2.5, z: 96 }
@@ -20,7 +21,9 @@ export function updatePlayerPosition(pos) {
  * Estado persistente do jogador — checkpoint = último ponto seguro no chão
  * antes de cair no limbo / rio.
  */
-export const usePlayerStore = create((set, get) => ({
+export const usePlayerStore = create(
+  persist(
+  (set, get) => ({
   spawn: { ...INITIAL_SPAWN },
   lastSafe: { ...INITIAL_SPAWN },
   respawns: 0,
@@ -49,6 +52,23 @@ export const usePlayerStore = create((set, get) => ({
     updatePlayerPosition(INITIAL_SPAWN)
     set({ spawn: { ...INITIAL_SPAWN }, lastSafe: { ...INITIAL_SPAWN } })
   },
-}))
+}),
+  {
+    name: 'livia-player-v1',
+    version: 1,
+    partialize: (s) => ({ lastSafe: s.lastSafe }),
+    onRehydrateStorage: () => (state) => {
+      if (state?.lastSafe) updatePlayerPosition(state.lastSafe)
+    },
+  },
+  ),
+)
+
+/** Onde a Livia aparece ao abrir o jogo: último ponto seguro salvo */
+export function startPosition() {
+  const p = usePlayerStore.getState().lastSafe ?? INITIAL_SPAWN
+  return { x: p.x, y: p.y + 0.6, z: p.z }
+}
+
 
 export { INITIAL_SPAWN }

@@ -56,7 +56,7 @@ export default function Terrain() {
         const z1 = Math.max(seg.zFrom, z0 - GROUND_SLICE)
         const cz = (z0 + z1) / 2
         const sliceHalfZ = (z0 - z1) / 2 + 0.1
-        const cx = pathXAt(cz) + lat0
+        const cx = seg.followPath === false ? seg.xCenter : pathXAt(cz) + lat0
         const skipCollider =
           seg.y === SUMMIT_Y &&
           isSummitBuiltArea(cx, cz)
@@ -261,6 +261,9 @@ function Cliffs() {
           />
         ))}
         <CuboidCollider position={[-SUMMIT_HALF_X - 4, SUMMIT_Y + 14, TREASURE_POS.z]} args={[4, 16, 50]} />
+        {/* pontas do mapa: atrás da casa e no fim do mirante não há mais chão */}
+        <CuboidCollider position={[0, 10, 120.5]} args={[70, 20, 1]} />
+        <CuboidCollider position={[0, SUMMIT_Y + 10, -1115]} args={[70, 20, 1]} />
         <CuboidCollider position={[SUMMIT_HALF_X + 4, SUMMIT_Y + 14, TREASURE_POS.z]} args={[4, 16, 50]} />
       </RigidBody>
 

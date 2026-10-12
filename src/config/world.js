@@ -237,6 +237,9 @@ export const RIVER = {
   waterY: -3.2,
 }
 
+/** Centro X do desfiladeiro/ponte (fixo) */
+export const RIVER_CX = pathXAt((RIVER.zFrom + RIVER.zTo) / 2)
+
 /** Riachos rasos (fase água) */
 export const STREAMS = [
   { z: -536, halfZ: 2.4, color: '#4a8ea8' },
@@ -276,6 +279,9 @@ export const CLIMB_STREAM = {
   color: '#4a8ea8',
 }
 
+/** Lampião coletável logo na entrada do Vale Noturno */
+export const LANTERN_POS = { lat: -10, z: PHASES.night.zTo - 12 }
+
 /** Desmonta no fim do pasto → entra no vale noturno */
 export const HORSE_DISMOUNT_Z = -284
 
@@ -293,7 +299,7 @@ export const GATES = {
     y: 0,
     width: 11,
     height: 6,
-    halfWidth: CORRIDOR_HALF,
+    halfWidth: CORRIDOR_HALF + 8,
     color: '#6B4423',
     style: 'wood',
   },
@@ -302,7 +308,7 @@ export const GATES = {
     y: 0,
     width: 11,
     height: 6,
-    halfWidth: CORRIDOR_HALF,
+    halfWidth: CORRIDOR_HALF + 8,
     color: '#2a2438',
     style: 'wood',
   },
@@ -311,7 +317,7 @@ export const GATES = {
     y: 0,
     width: 11,
     height: 6,
-    halfWidth: CORRIDOR_HALF,
+    halfWidth: CORRIDOR_HALF + 8,
     color: '#3a4a5a',
     style: 'wood',
   },
@@ -320,7 +326,7 @@ export const GATES = {
     y: 0,
     width: 11,
     height: 6,
-    halfWidth: CORRIDOR_HALF,
+    halfWidth: CORRIDOR_HALF + 8,
     color: '#5c6a72',
     style: 'stone',
   },
@@ -329,7 +335,7 @@ export const GATES = {
     y: 0,
     width: 10,
     height: 6,
-    halfWidth: CORRIDOR_HALF,
+    halfWidth: CORRIDOR_HALF + 8,
     color: '#4a5560',
     style: 'ice',
   },
@@ -350,9 +356,9 @@ export const STAIRS_Z_TOP = STAIRS.zStart - (STAIRS.steps - 1) * STAIRS.stepDept
 export function isSummitBuiltArea(x, z) {
   const px = pathXAt(z)
   const lat = Math.abs(x - px)
-  if (z <= STAIRS.zStart + 4 && z >= STAIRS_Z_TOP - 10 && lat < STAIRS.halfWidth + 4) return true
-  if (z <= STAIRS_Z_TOP + 4 && z >= TREASURE_POS.z - 24 && lat < 34) return true
-  return false
+  // só a própria escadaria: o platô do mirante PRECISA de chão (antes um
+  // trecho de ~30 m ficava sem collider e a Livia caía ao chegar no baú)
+  return z <= STAIRS.zStart + 4 && z > STAIRS_Z_TOP && lat < STAIRS.halfWidth + 4
 }
 
 /** Segmentos de chão. followPath: xCenter = pathXAt(mid) + latCenter */
@@ -361,8 +367,10 @@ export const GROUND_SEGMENTS = [
   { id: 'pasture', zFrom: -288, zTo: 16, halfX: CORRIDOR_HALF, y: 0, biome: 'pasture', color: '#6e8e66', followPath: true },
   { id: 'night', zFrom: -520, zTo: -288, halfX: CORRIDOR_HALF, y: 0, biome: 'night', color: '#2a3a32', followPath: true },
   { id: 'water-n', zFrom: -570, zTo: -520, halfX: CORRIDOR_HALF, y: 0, biome: 'water', color: '#5a7a58', followPath: true },
-  { id: 'river-w', zFrom: -600, zTo: -570, halfX: 17, latCenter: -(RIVER.gapHalfX + 17), y: 0, biome: 'water', color: '#4a6a4e', followPath: true },
-  { id: 'river-e', zFrom: -600, zTo: -570, halfX: 17, latCenter: RIVER.gapHalfX + 17, y: 0, biome: 'water', color: '#4a6a4e', followPath: true },
+  // margens do rio: X FIXO alinhado com a ponte (antes seguiam a curva da
+  // trilha e abriam buracos ao lado da ponte)
+  { id: 'river-w', zFrom: -600, zTo: -570, halfX: 30, xCenter: RIVER_CX - RIVER.gapHalfX - 30, y: 0, biome: 'water', color: '#4a6a4e', followPath: false },
+  { id: 'river-e', zFrom: -600, zTo: -570, halfX: 30, xCenter: RIVER_CX + RIVER.gapHalfX + 30, y: 0, biome: 'water', color: '#4a6a4e', followPath: false },
   { id: 'water-s', zFrom: -656, zTo: -600, halfX: CORRIDOR_HALF, y: 0, biome: 'water', color: '#5e7e5c', followPath: true },
   { id: 'snow', zFrom: -780, zTo: -656, halfX: CORRIDOR_HALF, y: 0, biome: 'snow', color: '#d8e2ea', followPath: true },
   { id: 'flower', zFrom: -912, zTo: -780, halfX: CORRIDOR_HALF, y: 0, biome: 'flower', color: '#6a8a60', followPath: true },
@@ -390,8 +398,8 @@ export const GROUND_SEGMENTS = [
   },
   {
     id: 'summit',
-    zFrom: -1110,
-    zTo: STAIRS_Z_TOP + 4,
+    zFrom: -1114,
+    zTo: STAIRS_Z_TOP,
     halfX: SUMMIT_HALF_X,
     y: SUMMIT_Y,
     biome: 'alpine',
