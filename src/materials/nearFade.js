@@ -10,8 +10,8 @@ import * as THREE from 'three'
  * 1 / gl_FragCoord.w = profundidade na câmera (perspectiva).
  * Mapas de sombra (DEPTH_PACKING / DISTANCE) ficam de fora.
  */
-const FADE_START = 0.9
-const FADE_END = 2.2
+const FADE_START = 2.2
+const FADE_END = 4.6
 
 let installed = false
 

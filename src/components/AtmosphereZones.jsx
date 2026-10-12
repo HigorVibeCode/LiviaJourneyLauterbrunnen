@@ -15,7 +15,6 @@ export default function AtmosphereZones() {
     <group>
       <Fireflies />
       <PetalDust />
-      <NightGroundMist />
     </group>
   )
 }
@@ -146,35 +145,5 @@ function PetalDust() {
         depthWrite={false}
       />
     </points>
-  )
-}
-
-function NightGroundMist() {
-  const group = useRef(null)
-  const mats = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) => {
-        const z = PHASES.night.zTo - 18 - i * 18
-        const x = pathXAt(z)
-        return { x, z, s: 14 + (i % 3) * 4 }
-      }),
-    [],
-  )
-
-  useFrame(() => {
-    if (!group.current) return
-    const z = playerPosition.z
-    group.current.visible = z >= PHASES.night.zFrom - 12 && z <= PHASES.night.zTo + 12
-  })
-
-  return (
-    <group ref={group} visible={false}>
-      {mats.map((m, i) => (
-        <mesh key={i} position={[m.x, 0.35, m.z]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[m.s, 12]} />
-          <meshBasicMaterial color="#1a2030" transparent opacity={0.22} depthWrite={false} />
-        </mesh>
-      ))}
-    </group>
   )
 }

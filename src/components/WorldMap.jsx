@@ -1,6 +1,4 @@
-import { Suspense, useMemo } from 'react'
-import * as THREE from 'three'
-import { makeToonMaterial } from '../materials/toonMaterial'
+import { Suspense } from 'react'
 import Waterfall from './Waterfall'
 import Collectible from './Collectible'
 import Gate from './Gate'
@@ -14,7 +12,6 @@ import Terrain from './world/Terrain'
 import Vegetation from './world/Vegetation'
 import AdventureProps from './world/AdventureProps'
 import Chalet from './world/Chalet'
-import Instanced from './world/Instanced'
 import {
   BarrierWall,
   WoodenBridge,
@@ -29,15 +26,10 @@ import {
 import {
   GATES,
   HOUSES,
-  PHASES,
-  RIVER,
-  STAIRS,
   WATERFALLS,
   groundHeightAt,
-  makeRng,
   pathXAt,
   pathYawAt,
-  phaseAt,
   resolveOnPath,
   worldFromPath,
 } from '../config/world'
@@ -48,7 +40,6 @@ import LanternPickup from './LanternPickup'
 import { EASTER_EGGS } from '../config/easterEggs'
 import { NPCS } from '../config/npcs'
 import AtmosphereZones from './AtmosphereZones'
-import VillageGlow from './world/VillageGlow'
 import ErrorBoundary from './ErrorBoundary'
 
 export default function WorldMap() {
@@ -112,7 +103,6 @@ export default function WorldMap() {
       })}
 
       <AtmosphereZones />
-      <VillageGlow />
 
       {/* ── Itens: 2 por fase, sorteados dentro da própria fase ── */}
       <Collectible itemId="chave_portao" />
@@ -201,60 +191,4 @@ export default function WorldMap() {
       <AlpineCow />
     </group>
   )
-}
-
-/**
- * Trilha de pedras irregulares guiando o jogador pelo vale.
- * A cor acompanha o bioma: terrosa na pradaria, escura na floresta,
- * clara e nevada no passo.
- */
-function PathStones() {
-  const geometry = useMemo(() => new THREE.CylinderGeometry(0.6, 0.52, 0.14, 6), [])
-  const material = useMemo(
-    () => makeToonMaterial({ color: '#ffffff',}),
-    [],
-  )
-
-  const items = useMemo(() => {
-    const rng = makeRng(31337)
-    const out = []
-    const palettes = {
-      meadow: ['#8a7050', '#7a6048', '#9a8060', '#6a5840', '#a08868'],
-      pasture: ['#847058', '#746048', '#948060', '#685038', '#988868'],
-      // pedras claras de luar: a trilha aparece no escuro
-      night: ['#8a96b8', '#7c88aa', '#97a3c4', '#8490b2'],
-      water: ['#7a6848', '#6a5838', '#8a7858', '#5a4830'],
-      snow: ['#d0dae4', '#c0ccd6', '#dae2ea', '#b4c0ca'],
-      flower: ['#8a7050', '#9a8060', '#7a6048', '#a08868'],
-      alpine: ['#b4c0b8', '#a8b4ac', '#c0cac2', '#9aa69e'],
-    }
-
-    for (let z = 112; z > PHASES.summit.zFrom + 20; z -= 2.4) {
-      if (z < RIVER.zTo + 6 && z > RIVER.zFrom - 6) continue
-      if (z < STAIRS.zStart + 4) continue
-
-      const biome = phaseAt(z).biome
-      const palette = palettes[biome] ?? palettes.alpine
-      const cx = pathXAt(z)
-      const lanes = [-2.1, 0, 2.1]
-
-      lanes.forEach((lx, i) => {
-        const edge = Math.abs(lx) > 1.5
-        if (rng() < (edge ? 0.35 : 0.55)) return
-        const x = cx + lx + (rng() - 0.5) * 0.7
-        out.push({
-          x,
-          y: groundHeightAt(x, z) + 0.05,
-          z: z + (rng() - 0.5) * 0.8 + i * 0.15,
-          s: (edge ? 0.65 : 0.95) + rng() * 0.45,
-          sy: 0.55 + rng() * 0.45,
-          ry: rng() * Math.PI,
-          color: palette[Math.floor(rng() * palette.length)],
-        })
-      })
-    }
-    return out
-  }, [])
-
-  return <Instanced geometry={geometry} material={material} items={items} castShadow={false} />
 }

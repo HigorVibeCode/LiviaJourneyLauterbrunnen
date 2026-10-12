@@ -338,6 +338,22 @@ export function buildCliffs(step = 4) {
 }
 
 function pushQuadWall(pos, col, idx, p0, p1, height, flip, biome) {
+  // parede comprida em pedaços de ~4 m: o mundo curvo entorta por vértice
+  const len = Math.hypot(p1[0] - p0[0], p1[2] - p0[2])
+  const parts = Math.max(1, Math.ceil(len / 4))
+  if (parts > 1) {
+    for (let i = 0; i < parts; i++) {
+      const a = i / parts
+      const b = (i + 1) / parts
+      const lerp3 = (t) => [p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t, p0[2] + (p1[2] - p0[2]) * t]
+      pushQuadWallPart(pos, col, idx, lerp3(a), lerp3(b), height, flip, biome)
+    }
+    return
+  }
+  pushQuadWallPart(pos, col, idx, p0, p1, height, flip, biome)
+}
+
+function pushQuadWallPart(pos, col, idx, p0, p1, height, flip, biome) {
   const s = pos.length / 3
   const corners = [
     [p0[0], p0[1], p0[2]],

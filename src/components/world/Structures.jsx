@@ -106,18 +106,23 @@ export function BarrierWall({ z, gateWidth, halfWidth, height = 6, y = 0, color 
       </RigidBody>
 
       <StaticBatch>
-        {[-1, 1].map((side) => (
-          <RoundedBox
-            key={side}
-            args={[segLen, deco.bodyH, 1.9]}
-            radius={0.7}
-            smoothness={2}
-            bevelSegments={2}
-            position={[side * (gapHalf + segLen / 2), y + deco.bodyH / 2, z]}
-          >
-            <ToonMat color={pal.body} />
-          </RoundedBox>
-        ))}
+        {/* corpo da sebe em pedaços (~6 m): acompanha a curvatura do mundo */}
+        {[-1, 1].map((side) => {
+          const n = Math.max(1, Math.round(segLen / 6))
+          const L = segLen / n
+          return Array.from({ length: n }, (_, k) => (
+            <RoundedBox
+              key={`${side}${k}`}
+              args={[L + 0.5, deco.bodyH, 1.9]}
+              radius={0.7}
+              smoothness={2}
+              bevelSegments={2}
+              position={[side * (gapHalf + (k + 0.5) * L), y + deco.bodyH / 2, z]}
+            >
+              <ToonMat color={pal.body} />
+            </RoundedBox>
+          ))
+        })}
         {deco.blobs.map((b, i) => (
           <mesh key={`b${i}`} position={[b.x, b.y, b.z]} scale={[b.s, b.s * 0.8, b.s * 0.9]}>
             <sphereGeometry args={[1, 10, 8]} />
@@ -156,7 +161,7 @@ export function BarrierWall({ z, gateWidth, halfWidth, height = 6, y = 0, color 
           [-1, 1].map((side) =>
             [0.45, 1.0].map((h) => (
               <mesh key={`r${side}${h}`} position={[side * (gapHalf + 0.6 + (segLen - 0.8) / 2), y + h, z + 1.24]}>
-                <boxGeometry args={[segLen - 0.8, 0.16, 0.1]} />
+                <boxGeometry args={[segLen - 0.8, 0.16, 0.1, 24, 1, 1]} />
                 <ToonMat color="#ffffff" />
               </mesh>
             )),
@@ -303,7 +308,7 @@ export function RiverWater() {
   return (
     <group position={[px, 0, 0]}>
       <mesh position={[0, RIVER.waterY, zMid]}>
-        <boxGeometry args={[RIVER.gapHalfX * 2, 1.2, len]} />
+        <boxGeometry args={[RIVER.gapHalfX * 2, 1.2, len, 4, 1, 28]} />
         <ToonMat color={PAL.water} transparent opacity={0.92} />
       </mesh>
       {/* espuma correndo (bolotas brancas achatadas) */}
@@ -319,23 +324,28 @@ export function RiverWater() {
         {/* espuma fixa nas margens */}
         {[-1, 1].map((side) => (
           <mesh key={`f${side}`} position={[side * (RIVER.gapHalfX - 0.4), RIVER.waterY + 0.6, zMid]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, 0.35]}>
-            <capsuleGeometry args={[0.7, len - 22, 4, 10]} />
+            <capsuleGeometry args={[0.7, len - 22, 4, 10, 20]} />
             <ToonMat color={PAL.foam} />
           </mesh>
         ))}
-        {/* paredes do desfiladeiro, roliças e claras */}
-        {[-1, 1].map((side) => (
-          <RoundedBox
-            key={side}
-            args={[1.8, 4.2, len - 20]}
-            radius={0.6}
-            smoothness={2}
-            bevelSegments={2}
-            position={[side * (RIVER.gapHalfX + 0.6), -1.6, zMid]}
-          >
-            <ToonMat color={PAL.cliffSide} />
-          </RoundedBox>
-        ))}
+        {/* paredes do desfiladeiro, roliças e claras (em pedaços: seguem a curvatura) */}
+        {[-1, 1].map((side) =>
+          Array.from({ length: 6 }, (_, k) => {
+            const L = (len - 20) / 6
+            return (
+              <RoundedBox
+                key={`${side}${k}`}
+                args={[1.8, 4.2, L + 0.6]}
+                radius={0.6}
+                smoothness={2}
+                bevelSegments={2}
+                position={[side * (RIVER.gapHalfX + 0.6), -1.6, zMid - (len - 20) / 2 + (k + 0.5) * L]}
+              >
+                <ToonMat color={PAL.cliffSide} />
+              </RoundedBox>
+            )
+          }),
+        )}
       </StaticBatch>
     </group>
   )
@@ -734,18 +744,23 @@ export function SummitStairs() {
 
       <StaticBatch>
         {/* muretas laterais roliças, pedra clarinha */}
-        {[-1, 1].map((side) => (
-          <RoundedBox
-            key={side}
-            args={[1.4, SUMMIT_Y + 1.6, stairsLen + 4]}
-            radius={0.6}
-            smoothness={2}
-            bevelSegments={2}
-            position={[side * (STAIRS.halfWidth + 0.7), SUMMIT_Y / 2 + 0.8, midZ]}
-          >
-            <ToonMat color="#e9e2f2" />
-          </RoundedBox>
-        ))}
+        {[-1, 1].map((side) =>
+          Array.from({ length: 8 }, (_, k) => {
+            const L = (stairsLen + 4) / 8
+            return (
+              <RoundedBox
+                key={`${side}${k}`}
+                args={[1.4, SUMMIT_Y + 1.6, L + 0.4]}
+                radius={0.6}
+                smoothness={2}
+                bevelSegments={2}
+                position={[side * (STAIRS.halfWidth + 0.7), SUMMIT_Y / 2 + 0.8, midZ + (stairsLen + 4) / 2 - (k + 0.5) * L]}
+              >
+                <ToonMat color="#e9e2f2" />
+              </RoundedBox>
+            )
+          }),
+        )}
 
         {[-1, 1].map((side) => (
           <mesh
@@ -753,7 +768,7 @@ export function SummitStairs() {
             position={[side * (STAIRS.halfWidth - 0.35), SUMMIT_Y / 2 + 1.1, midZ]}
             rotation={[RAMP.angle + Math.PI / 2, 0, 0]}
           >
-            <capsuleGeometry args={[0.16, stairsLen + 2, 3, 8]} />
+            <capsuleGeometry args={[0.16, stairsLen + 2, 3, 8, 40]} />
             <ToonMat color={PAL.wood} />
           </mesh>
         ))}
@@ -1438,13 +1453,13 @@ export function Streams() {
             <group key={i}>
               {/* leito de areia clarinha */}
               <mesh position={[cx, -0.06, s.z]}>
-                <boxGeometry args={[width, 0.2, s.halfZ * 2 + 1.6]} />
+                <boxGeometry args={[width, 0.2, s.halfZ * 2 + 1.6, 42, 1, 1]} />
                 <ToonMat color={PAL.sand} />
               </mesh>
               {/* espuma nas margens */}
               {[-1, 1].map((f) => (
                 <mesh key={f} position={[cx, 0.24, s.z + f * s.halfZ]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.5]}>
-                  <capsuleGeometry args={[0.35, width - 1, 4, 8]} />
+                  <capsuleGeometry args={[0.35, width - 1, 4, 8, 40]} />
                   <ToonMat color={PAL.foam} />
                 </mesh>
               ))}
@@ -1464,7 +1479,7 @@ export function Streams() {
               {[-2.4, 2.4].map((x) => (
                 <group key={x}>
                   <mesh position={[cx + x, 0.75, s.z]} rotation={[Math.PI / 2, 0, 0]}>
-                    <capsuleGeometry args={[0.12, s.halfZ * 2 + 2.2, 3, 8]} />
+                    <capsuleGeometry args={[0.12, s.halfZ * 2 + 2.2, 3, 8, 4]} />
                     <ToonMat color="#f6dfb0" />
                   </mesh>
                   {[-1, 1].map((f) => (
@@ -1496,7 +1511,8 @@ export function Streams() {
       {/* lâmina d'água (transparente, fora do batch) */}
       {STREAMS.map((s, i) => (
         <mesh key={`w${i}`} position={[pathXAt(s.z), 0.16, s.z]}>
-          <boxGeometry args={[width, 0.14, s.halfZ * 2]} />
+          {/* subdividida: acompanha a curvatura do "mundo que rola" */}
+          <boxGeometry args={[width, 0.14, s.halfZ * 2, 42, 1, 1]} />
           <ToonMat color={PAL.water} transparent opacity={0.88} />
         </mesh>
       ))}

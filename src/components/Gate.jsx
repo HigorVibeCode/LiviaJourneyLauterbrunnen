@@ -271,7 +271,7 @@ export default function Gate({
  */
 function gateLook(gateId, color) {
   const style = GATES[gateId]?.style ?? 'wood'
-  const paint = pastelOf(color, 0.85, 0.72)
+  const paint = pastelOf(color, 0.85, 0.79)
   if (style === 'stone') {
     return { style, post: '#dfe5ee', postDark: '#c4cfdc', door: paint, trim: '#ffffff', cap: '#ffd45a' }
   }

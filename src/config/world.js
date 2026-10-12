@@ -249,14 +249,16 @@ export const RIVER_CX = pathXAt((RIVER.zFrom + RIVER.zTo) / 2)
 
 /** Riachos rasos (fase água) */
 export const STREAMS = [
-  { z: -536, halfZ: 2.4, color: '#4a8ea8' },
+  // longe das casas do vilarejo (z −538/−540)
+  { z: -530, halfZ: 2.4, color: '#4a8ea8' },
   { z: -626, halfZ: 3, color: '#4a8ea8' },
   { z: -644, halfZ: 2.2, color: '#4a8ea8' },
 ]
 
 /** Lagos/poças */
 export const PONDS = [
-  { lat: -28, z: -552, r: 9 },
+  // lago menor e mais para fora: não encosta na igreja nem no chalé
+  { lat: -34, z: -558, r: 6 },
   { lat: 30, z: -616, r: 11 },
   { lat: -30, z: -690, r: 8, frozen: true },
 ]
