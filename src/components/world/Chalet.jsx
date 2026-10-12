@@ -639,15 +639,15 @@ function Interior({ home, seed }) {
   return (
     <group>
       {/* piso de madeira clara — rente ao terreno, sem degrau na porta */}
-      <mesh position={[0, 0.03, 0]}>
-        <boxGeometry args={[HALF_W * 2 - 0.8, 0.06, HALF_D * 2 - 0.8]} />
+      <mesh position={[0, 0.08, 0]}>
+        <boxGeometry args={[HALF_W * 2 - 0.8, 0.12, HALF_D * 2 - 0.8]} />
         <ToonMat color="#e8c391" />
       </mesh>
-      <mesh position={[0.3, 0.08, 0.8]}>
+      <mesh position={[0.3, 0.16, 0.8]}>
         <cylinderGeometry args={[2.3, 2.3, 0.05, 20]} />
         <ToonMat color={rug} />
       </mesh>
-      <mesh position={[0.3, 0.1, 0.8]}>
+      <mesh position={[0.3, 0.18, 0.8]}>
         <cylinderGeometry args={[1.5, 1.5, 0.05, 20]} />
         <ToonMat color={mix(rug, '#ffffff', 0.45)} />
       </mesh>

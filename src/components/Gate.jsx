@@ -271,7 +271,7 @@ export default function Gate({
  */
 function gateLook(gateId, color) {
   const style = GATES[gateId]?.style ?? 'wood'
-  const paint = pastelOf(color, 0.6, 0.72)
+  const paint = pastelOf(color, 0.85, 0.72)
   if (style === 'stone') {
     return { style, post: '#dfe5ee', postDark: '#c4cfdc', door: paint, trim: '#ffffff', cap: '#ffd45a' }
   }
@@ -407,6 +407,10 @@ function GateLandmark({ width, height, color, look }) {
       <group position={[0, height + 0.35 + archR * archSY + 0.15, 0.1]}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.95, 0.95, 0.35, 20]} />
+          <ToonMat color="#ff8fb8" />
+        </mesh>
+        <mesh position={[0, 0, 0.12]}>
+          <torusGeometry args={[0.95, 0.14, 8, 22]} />
           <ToonMat color="#ffffff" />
         </mesh>
         <mesh geometry={starGeometry()} position={[0, 0, 0.3]} scale={1.35}>
@@ -426,10 +430,9 @@ function GateLandmark({ width, height, color, look }) {
       {Array.from({ length: 9 }, (_, i) => {
         const k = (i + 0.5) / 9
         const x = (k - 0.5) * (width - 0.6)
-        const sag = Math.sin(k * Math.PI) * 0.55
         return (
-          <mesh key={`b${i}`} position={[x, height - 0.05 - sag, 0.38]} rotation={[0, 0, Math.PI / 4]} scale={[1, 1, 0.25]}>
-            <boxGeometry args={[0.42, 0.42, 0.42]} />
+          <mesh key={`b${i}`} position={[x, height - 0.4, 0.4]} rotation={[Math.PI, 0, 0]} scale={[1, 1, 0.3]}>
+            <coneGeometry args={[0.36, 0.7, 3]} />
             <ToonMat color={PAL.flowers[(i * 2 + 1) % PAL.flowers.length] === '#ffffff' ? '#ff9fbf' : PAL.flowers[(i * 2 + 1) % PAL.flowers.length]} />
           </mesh>
         )

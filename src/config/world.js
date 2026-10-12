@@ -421,7 +421,7 @@ export const GROUND_SEGMENTS = [
 export const HOUSES = [
   // lat = offset da trilha (não X absoluto). Alterna lados, longe do caminho.
   // ── Pradaria ──
-  { lat: -28, z: 64, rot: 0.18, scale: 1.15, kind: 'chalet', body: '#ffe6c0', roof: '#ff8fb8', home: true },
+  { lat: -28, z: 64, rot: 0.18, scale: 1.15, kind: 'chalet', body: '#fff0a8', roof: '#ff8fb8', home: true },
   { lat: 26, z: 86, rot: -0.3, scale: 0.95, kind: 'barn', body: '#ffd3df', roof: '#ff6b6b' },
   { lat: 30, z: 52, rot: -0.5, scale: 0.9, kind: 'chalet', body: '#d2e9ff', roof: '#4aa3ff' },
   { lat: -32, z: 34, rot: 0.4, scale: 1, kind: 'chalet', body: '#fff0a8', roof: '#46c37b' },

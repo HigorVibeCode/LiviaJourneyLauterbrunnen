@@ -1,13 +1,12 @@
-import { Suspense, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { makeToonMaterial } from '../materials/toonMaterial'
+import StaticBatch from './world/StaticBatch'
 import { PHOENIX_PIVOT, SUMMIT_Y } from '../config/world'
 import { phoenixRide } from '../lib/phoenixRide'
 import { playerPosition } from '../store/playerStore'
 import { useProgressStore } from '../store/progressStore'
-import { PHOENIX_GLB } from '../lib/preloadAssets'
 
 const ORBIT_RX = 14
 const ORBIT_RZ = 12
@@ -24,24 +23,9 @@ function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
 }
 
-function PhoenixGlbBird() {
-  const { scene } = useGLTF(PHOENIX_GLB)
-  const model = useMemo(() => {
-    const c = scene.clone(true)
-    c.traverse((obj) => {
-      if (!obj.isMesh) return
-      obj.castShadow = false
-      obj.material = makeToonMaterial({
-        color: '#e85a28',emissive: '#c43a12',
-        emissiveIntensity: 0.4,})
-    })
-    return c
-  }, [scene])
-  return <primitive object={model} scale={2.4} rotation={[0, Math.PI, 0]} position={[0, 0.15, 0]} />
-}
-
 /**
- * Fênix do mirante — low-poly procedural; órbita, pousa e leva a Livia.
+ * Fênix do mirante — passarinho mágico fofo (procedural): corpo redondo,
+ * olhões, crista de chamas e cauda longa. Órbita, pousa e leva a Livia.
  */
 export default function Phoenix() {
   const rootRef = useRef(null)
@@ -58,43 +42,23 @@ export default function Phoenix() {
   const lastOrbitWorld = useRef(new THREE.Vector3(PIVOT[0] + ORBIT_RX, PIVOT[1], PIVOT[2]))
   const prevPhase = useRef(null)
 
-  const mats = useMemo(
-    () => ({
-      body: makeToonMaterial({
-        color: '#e85a28',emissive: '#c43a12',
-        emissiveIntensity: 0.35,}),
-      bodyDark: makeToonMaterial({
-        color: '#b83214',emissive: '#8a2008',
-        emissiveIntensity: 0.25,}),
-      wing: makeToonMaterial({
-        color: '#ff7a2a',emissive: '#ff5510',
-        emissiveIntensity: 0.45,side: THREE.DoubleSide,
-      }),
-      wingTip: makeToonMaterial({
-        color: '#ffc040',emissive: '#ff9020',
-        emissiveIntensity: 0.55,side: THREE.DoubleSide,
-      }),
-      crest: makeToonMaterial({
-        color: '#ffb028',emissive: '#ff8010',
-        emissiveIntensity: 0.5,}),
-      beak: makeToonMaterial({
-        color: '#f0c040',}),
-      eye: makeToonMaterial({
-        color: '#1a1008',emissive: '#402008',
-        emissiveIntensity: 0.2,
-      }),
-      tail: makeToonMaterial({
-        color: '#ff6a20',emissive: '#e04010',
-        emissiveIntensity: 0.4,side: THREE.DoubleSide,
-      }),
-      tailTip: makeToonMaterial({
-        color: '#ffd060',emissive: '#ff9020',
-        emissiveIntensity: 0.6,}),
-      leg: makeToonMaterial({
-        color: '#d49030',}),
-    }),
-    [],
-  )
+  const mats = useMemo(() => {
+    const glow = (color, emissive, emissiveIntensity) =>
+      makeToonMaterial({ color, emissive, emissiveIntensity })
+    return {
+      body: glow('#ff9a4a', '#ff7a2a', 0.3),
+      head: glow('#ffa860', '#ff8040', 0.28),
+      belly: glow('#ffe07a', '#ffc040', 0.3),
+      wing: glow('#ff7a5a', '#ff5a3a', 0.3),
+      wingTip: glow('#ffc94a', '#ffa020', 0.4),
+      pink: glow('#ff8fc0', '#ff5a9a', 0.4),
+      gold: glow('#ffe58a', '#ffc840', 0.55),
+      beak: makeToonMaterial({ color: '#ffd23f' }),
+      eye: makeToonMaterial({ color: '#4a2a5e' }),
+      white: makeToonMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.3 }),
+      cheek: makeToonMaterial({ color: '#ff8fb0', emissive: '#ff6a9a', emissiveIntensity: 0.25 }),
+    }
+  }, [])
 
   useFrame((state) => {
     const root = rootRef.current
@@ -229,123 +193,125 @@ export default function Phoenix() {
     <group ref={rootRef} position={PIVOT}>
       <group ref={birdRef}>
         <group scale={BIRD_SCALE}>
-          <Suspense fallback={null}>
-            <PhoenixGlbBird />
-          </Suspense>
-          {/* procedural fallback oculto — GLB é a leitura principal no finale */}
-          <group visible={false}>
-          <mesh castShadow position={[0, 0.15, 0]} material={mats.body}>
-            <capsuleGeometry args={[0.38, 0.85, 3, 6]} />
-          </mesh>
-          <mesh position={[0, 0.22, 0.15]} scale={[0.9, 0.75, 1.1]} material={mats.bodyDark}>
-            <sphereGeometry args={[0.32, 6, 5]} />
-          </mesh>
-
-          {/* pescoço + cabeça */}
-          <group ref={neckRef} position={[0, 0.35, 0.55]}>
-            <mesh castShadow position={[0, 0.15, 0.12]} rotation={[0.6, 0, 0]} material={mats.body}>
-              <capsuleGeometry args={[0.14, 0.35, 2, 5]} />
+          {/* corpo redondo + barriguinha dourada */}
+          <StaticBatch noNearFade>
+            <mesh scale={[0.95, 0.85, 1.15]} material={mats.body}>
+              <sphereGeometry args={[0.34, 20, 14]} />
             </mesh>
-            <mesh castShadow position={[0, 0.42, 0.32]} material={mats.body}>
-              <sphereGeometry args={[0.22, 6, 5]} />
+            <mesh position={[0, -0.07, 0.1]} scale={[0.82, 0.72, 1.0]} material={mats.belly}>
+              <sphereGeometry args={[0.3, 16, 12]} />
             </mesh>
-            {/* crista */}
-            {[0, 0.08, -0.08].map((x, i) => (
-              <mesh
-                key={i}
-                castShadow
-                position={[x, 0.58 + (i === 0 ? 0.06 : 0), 0.28 - Math.abs(x)]}
-                rotation={[0.3, 0, x * 2]}
-                material={mats.crest}
-              >
-                <coneGeometry args={[0.06, 0.28 - Math.abs(x) * 0.4, 4]} />
-              </mesh>
-            ))}
-            {/* bico */}
-            <mesh castShadow position={[0, 0.38, 0.52]} rotation={[Math.PI / 2, 0, 0]} material={mats.beak}>
-              <coneGeometry args={[0.07, 0.28, 4]} />
-            </mesh>
+            {/* pezinhos recolhidos */}
             {[-1, 1].map((side) => (
-              <mesh key={side} position={[side * 0.14, 0.48, 0.38]} material={mats.eye}>
-                <sphereGeometry args={[0.04, 4, 3]} />
+              <mesh key={side} position={[side * 0.1, -0.27, -0.02]} rotation={[0.9, 0, 0]} material={mats.beak}>
+                <capsuleGeometry args={[0.04, 0.08, 4, 8]} />
               </mesh>
             ))}
+          </StaticBatch>
+
+          {/* cabeça */}
+          <group ref={neckRef} position={[0, 0.16, 0.3]}>
+            <StaticBatch noNearFade>
+              <mesh position={[0, 0.14, 0.1]} material={mats.head}>
+                <sphereGeometry args={[0.25, 18, 14]} />
+              </mesh>
+              {/* olhões com brilho */}
+              {[-1, 1].map((side) => (
+                <group key={`e${side}`} position={[side * 0.11, 0.18, 0.31]} rotation={[0, side * 0.3, 0]}>
+                  <mesh scale={[0.85, 1.15, 0.5]} material={mats.eye}>
+                    <sphereGeometry args={[0.06, 12, 10]} />
+                  </mesh>
+                  <mesh position={[0.018, 0.03, 0.025]} material={mats.white}>
+                    <sphereGeometry args={[0.022, 8, 6]} />
+                  </mesh>
+                </group>
+              ))}
+              {[-1, 1].map((side) => (
+                <mesh
+                  key={`c${side}`}
+                  position={[side * 0.17, 0.09, 0.27]}
+                  rotation={[0, side * 0.6, 0]}
+                  scale={[1, 0.65, 0.4]}
+                  material={mats.cheek}
+                >
+                  <sphereGeometry args={[0.05, 8, 6]} />
+                </mesh>
+              ))}
+              {/* biquinho */}
+              <mesh position={[0, 0.1, 0.36]} rotation={[Math.PI / 2 + 0.25, 0, 0]} scale={[1.2, 1, 0.8]} material={mats.beak}>
+                <coneGeometry args={[0.05, 0.11, 10]} />
+              </mesh>
+              {/* crista de chamas */}
+              {[
+                [0, 0.38, 0.06, -0.35, 0.07, 0.16, mats.gold],
+                [-0.07, 0.34, 0.0, -0.6, 0.055, 0.13, mats.pink],
+                [0.07, 0.34, 0.0, -0.6, 0.055, 0.13, mats.pink],
+                [0, 0.3, -0.08, -1.0, 0.05, 0.12, mats.wingTip],
+              ].map(([x, y, z, rx, r, l, m], i) => (
+                <mesh key={`f${i}`} position={[x, y, z]} rotation={[rx, 0, x * 3]} material={m}>
+                  <capsuleGeometry args={[r, l, 4, 10]} />
+                </mesh>
+              ))}
+            </StaticBatch>
           </group>
 
           {/* asas */}
-          <group ref={wingLRef} position={[-0.35, 0.3, 0.05]}>
-            <mesh castShadow position={[-0.55, 0, 0]} rotation={[0.1, 0.15, -0.15]} material={mats.wing}>
-              <boxGeometry args={[1.2, 0.06, 0.55]} />
-            </mesh>
-            <group ref={wingLOuterRef} position={[-1.1, 0, 0]}>
-              <mesh castShadow position={[-0.45, 0, -0.05]} rotation={[0.05, 0.2, -0.1]} material={mats.wingTip}>
-                <boxGeometry args={[0.9, 0.04, 0.4]} />
-              </mesh>
-              {/* penas tip */}
-              {[-0.15, 0, 0.15].map((z, i) => (
-                <mesh
-                  key={i}
-                  position={[-0.85, 0, z]}
-                  rotation={[0, 0, -0.3]}
-                  material={i === 1 ? mats.crest : mats.wingTip}
-                >
-                  <coneGeometry args={[0.08, 0.35, 3]} />
+          {[
+            [wingLRef, wingLOuterRef, -1],
+            [wingRRef, wingROuterRef, 1],
+          ].map(([inner, outer, side]) => (
+            <group key={side} ref={inner} position={[side * 0.26, 0.08, 0.02]}>
+              <StaticBatch noNearFade>
+                <mesh position={[side * 0.36, 0, 0]} scale={[1, 0.13, 0.55]} material={mats.wing}>
+                  <sphereGeometry args={[0.42, 16, 10]} />
                 </mesh>
-              ))}
-            </group>
-          </group>
-
-          <group ref={wingRRef} position={[0.35, 0.3, 0.05]}>
-            <mesh castShadow position={[0.55, 0, 0]} rotation={[0.1, -0.15, 0.15]} material={mats.wing}>
-              <boxGeometry args={[1.2, 0.06, 0.55]} />
-            </mesh>
-            <group ref={wingROuterRef} position={[1.1, 0, 0]}>
-              <mesh castShadow position={[0.45, 0, -0.05]} rotation={[0.05, -0.2, 0.1]} material={mats.wingTip}>
-                <boxGeometry args={[0.9, 0.04, 0.4]} />
-              </mesh>
-              {[0.15, 0, -0.15].map((z, i) => (
-                <mesh
-                  key={i}
-                  position={[0.85, 0, z]}
-                  rotation={[0, 0, 0.3]}
-                  material={i === 1 ? mats.crest : mats.wingTip}
-                >
-                  <coneGeometry args={[0.08, 0.35, 3]} />
-                </mesh>
-              ))}
-            </group>
-          </group>
-
-          {/* cauda em leque */}
-          <group ref={tailRef} position={[0, 0.1, -0.55]}>
-            {[-0.35, -0.18, 0, 0.18, 0.35].map((x, i) => (
-              <mesh
-                key={i}
-                castShadow
-                position={[x * 0.6, 0.05, -0.55 - Math.abs(x) * 0.15]}
-                rotation={[0.5, x * 0.4, x * 0.5]}
-                material={Math.abs(i - 2) <= 1 ? mats.tailTip : mats.tail}
-              >
-                <boxGeometry args={[0.18 - Math.abs(x) * 0.08, 0.04, 1.1 + (2 - Math.abs(i - 2)) * 0.15]} />
-              </mesh>
-            ))}
-          </group>
-
-          {/* patas */}
-          {[-1, 1].map((side) => (
-            <group key={side} position={[side * 0.18, -0.25, 0.1]}>
-              <mesh castShadow position={[0, -0.2, 0]} material={mats.leg}>
-                <cylinderGeometry args={[0.04, 0.03, 0.4, 4]} />
-              </mesh>
-              <mesh position={[0, -0.4, 0.06]} material={mats.beak}>
-                <boxGeometry args={[0.12, 0.04, 0.16]} />
-              </mesh>
+              </StaticBatch>
+              <group ref={outer} position={[side * 0.72, 0, -0.02]}>
+                <StaticBatch noNearFade>
+                  <mesh position={[side * 0.3, 0, -0.04]} scale={[1, 0.12, 0.5]} material={mats.wingTip}>
+                    <sphereGeometry args={[0.38, 16, 10]} />
+                  </mesh>
+                  {/* penas da ponta, arredondadas */}
+                  {[-0.14, 0, 0.14].map((z, i) => (
+                    <mesh
+                      key={i}
+                      position={[side * 0.62, 0, z - 0.06]}
+                      rotation={[0, side * (0.3 - i * 0.3), Math.PI / 2]}
+                      scale={[1, 1, 0.45]}
+                      material={i === 1 ? mats.pink : mats.gold}
+                    >
+                      <capsuleGeometry args={[0.07, 0.18, 4, 10]} />
+                    </mesh>
+                  ))}
+                </StaticBatch>
+              </group>
             </group>
           ))}
 
-          {/* 1 light max */}
-          <pooledLight color="#ff9a3c" intensity={3.2} distance={20} decay={2} position={[0, 0.4, 0.2]} />
+          {/* cauda longa e esvoaçante */}
+          <group ref={tailRef} position={[0, 0.02, -0.34]}>
+            <StaticBatch noNearFade>
+              {[-1, 0, 1].map((k) => {
+                const len = k === 0 ? 0.95 : 0.75
+                return (
+                  <group key={k} rotation={[0.25, k * 0.38, 0]}>
+                    <mesh position={[0, 0, -len / 2]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, 0.45]} material={mats.wing}>
+                      <capsuleGeometry args={[0.07, len, 4, 10]} />
+                    </mesh>
+                    <mesh position={[0, 0, -len - 0.05]} scale={[1, 0.45, 1.5]} material={k === 0 ? mats.pink : mats.wingTip}>
+                      <sphereGeometry args={[0.13, 14, 10]} />
+                    </mesh>
+                    <mesh position={[0, 0.01, -len - 0.08]} scale={[1, 0.45, 1.3]} material={mats.gold}>
+                      <sphereGeometry args={[0.06, 10, 8]} />
+                    </mesh>
+                  </group>
+                )
+              })}
+            </StaticBatch>
           </group>
+
+          {/* 1 luz no máximo */}
+          <pooledLight color="#ffb05a" intensity={3.2} distance={20} decay={2} position={[0, 0.4, 0.2]} />
         </group>
 
         <group ref={riderRef} visible={false} scale={0.78}>
@@ -368,76 +334,94 @@ export default function Phoenix() {
   )
 }
 
-useGLTF.preload(PHOENIX_GLB)
-
-/** Rider low-poly estático — sem mixer, sem sombra, materiais compartilhados. */
+/**
+ * Livia em miniatura montada na fênix (mesma paleta do modelo dela):
+ * estático, sem mixer, materiais compartilhados.
+ */
 function PhoenixRider() {
   const mats = useMemo(
     () => ({
-      skin: makeToonMaterial({ color: '#e8b896',}),
-      skinDark: makeToonMaterial({ color: '#d09474',}),
-      hair: makeToonMaterial({ color: '#3a281c',side: THREE.DoubleSide }),
-      hairDark: makeToonMaterial({ color: '#241610',}),
-      tunic: makeToonMaterial({ color: '#c44a3a',}),
-      tunicDark: makeToonMaterial({ color: '#8a3028',}),
-      skirt: makeToonMaterial({ color: '#5a2a48',side: THREE.DoubleSide }),
-      pants: makeToonMaterial({ color: '#3a3048',}),
-      boot: makeToonMaterial({ color: '#4a2c1e',}),
+      skin: makeToonMaterial({ color: '#ffd9bf' }),
+      cheek: makeToonMaterial({ color: '#ff9eb0' }),
+      hair: makeToonMaterial({ color: '#8a5236' }),
+      dress: makeToonMaterial({ color: '#5fb0ff' }),
+      dressLight: makeToonMaterial({ color: '#8ccaff' }),
+      collar: makeToonMaterial({ color: '#ffffff' }),
+      boot: makeToonMaterial({ color: '#ff6f7d' }),
+      ribbon: makeToonMaterial({ color: '#ff6f9a' }),
+      eye: makeToonMaterial({ color: '#4a3040' }),
     }),
     [],
   )
 
   return (
-    <group position={[0, 0.15, 0]} rotation={[0.35, 0, 0]}>
-      <mesh position={[0, 0.42, 0.02]} material={mats.tunic}>
-        <capsuleGeometry args={[0.14, 0.22, 2, 6]} />
+    <StaticBatch noNearFade position={[0, 0.15, 0]} rotation={[0.35, 0, 0]}>
+      {/* vestidinho */}
+      <mesh position={[0, 0.36, 0.02]} material={mats.dress}>
+        <capsuleGeometry args={[0.15, 0.16, 6, 12]} />
       </mesh>
-      <mesh position={[0, 0.28, -0.02]} scale={[1.05, 0.7, 1.05]} material={mats.tunicDark}>
-        <capsuleGeometry args={[0.13, 0.12, 2, 5]} />
+      <mesh position={[0, 0.2, 0.02]} material={mats.dressLight}>
+        <cylinderGeometry args={[0.15, 0.24, 0.16, 14]} />
       </mesh>
-      <mesh position={[0, 0.18, 0.02]} material={mats.skirt}>
-        <coneGeometry args={[0.22, 0.22, 6, 1, true]} />
+      <mesh position={[0, 0.5, 0.02]} rotation={[Math.PI / 2, 0, 0]} material={mats.collar}>
+        <torusGeometry args={[0.1, 0.035, 6, 14]} />
       </mesh>
 
+      {/* perninhas abertas sobre o dorso */}
       {[-1, 1].map((side) => (
-        <group key={side} position={[side * 0.12, 0.12, 0.05]} rotation={[1.15, 0, side * 0.15]}>
-          <mesh position={[0, -0.12, 0]} material={mats.pants}>
-            <cylinderGeometry args={[0.07, 0.06, 0.28, 5]} />
+        <group key={side} position={[side * 0.13, 0.14, 0.05]} rotation={[1.15, 0, side * 0.35]}>
+          <mesh position={[0, -0.12, 0]} material={mats.collar}>
+            <capsuleGeometry args={[0.06, 0.16, 4, 8]} />
           </mesh>
-          <mesh position={[0, -0.32, 0.04]} rotation={[-0.9, 0, 0]} material={mats.pants}>
-            <cylinderGeometry args={[0.055, 0.048, 0.26, 4]} />
-          </mesh>
-          <mesh position={[0, -0.42, 0.12]} material={mats.boot}>
-            <boxGeometry args={[0.1, 0.08, 0.16]} />
+          <mesh position={[0, -0.28, 0.03]} scale={[1, 0.9, 1.3]} material={mats.boot}>
+            <sphereGeometry args={[0.08, 10, 8]} />
           </mesh>
         </group>
       ))}
 
+      {/* bracinhos para frente, segurando o pescoço */}
       {[-1, 1].map((side) => (
-        <group key={`arm-${side}`} position={[side * 0.18, 0.48, 0.05]} rotation={[0.85, 0, side * 0.55]}>
-          <mesh position={[0, -0.1, 0]} material={mats.tunic}>
-            <cylinderGeometry args={[0.045, 0.04, 0.2, 4]} />
+        <group key={`arm-${side}`} position={[side * 0.17, 0.46, 0.05]} rotation={[0.95, 0, side * 0.45]}>
+          <mesh position={[0, -0.1, 0]} material={mats.dress}>
+            <capsuleGeometry args={[0.05, 0.12, 4, 8]} />
           </mesh>
-          <mesh position={[0, -0.24, 0.02]} material={mats.skin}>
-            <cylinderGeometry args={[0.038, 0.032, 0.16, 4]} />
+          <mesh position={[0, -0.22, 0]} material={mats.skin}>
+            <sphereGeometry args={[0.055, 8, 6]} />
           </mesh>
         </group>
       ))}
 
-      <mesh position={[0, 0.62, 0.02]} material={mats.skinDark}>
-        <cylinderGeometry args={[0.04, 0.05, 0.08, 4]} />
-      </mesh>
-      <group position={[0, 0.72, 0.02]}>
-        <mesh position={[0, 0.1, 0.01]} scale={[0.92, 1.02, 0.95]} material={mats.skin}>
-          <sphereGeometry args={[0.12, 7, 6]} />
+      {/* cabeção chibi */}
+      <group position={[0, 0.74, 0.02]}>
+        <mesh material={mats.skin}>
+          <sphereGeometry args={[0.2, 16, 12]} />
         </mesh>
-        <mesh position={[0, 0.16, -0.04]} scale={[1.05, 0.8, 1.1]} material={mats.hair}>
-          <sphereGeometry args={[0.115, 6, 5, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+        <mesh position={[0, 0.06, -0.04]} scale={[1.07, 0.95, 1.05]} material={mats.hair}>
+          <sphereGeometry args={[0.2, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
         </mesh>
-        <mesh position={[0, 0.05, -0.1]} rotation={[0.3, 0, 0]} material={mats.hairDark}>
-          <capsuleGeometry args={[0.08, 0.28, 2, 4]} />
+        <mesh position={[0, -0.04, -0.12]} scale={[1.05, 1.1, 0.8]} material={mats.hair}>
+          <sphereGeometry args={[0.18, 12, 10]} />
         </mesh>
+        {/* rabo de cavalo + laço */}
+        <mesh position={[0, 0.02, -0.26]} rotation={[0.5, 0, 0]} material={mats.hair}>
+          <capsuleGeometry args={[0.07, 0.18, 4, 8]} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <mesh key={`r${side}`} position={[side * 0.06, 0.12, -0.2]} scale={[1, 0.7, 0.6]} material={mats.ribbon}>
+            <sphereGeometry args={[0.06, 8, 6]} />
+          </mesh>
+        ))}
+        {[-1, 1].map((side) => (
+          <mesh key={`e${side}`} position={[side * 0.07, 0.0, 0.18]} scale={[0.8, 1.1, 0.5]} material={mats.eye}>
+            <sphereGeometry args={[0.03, 8, 6]} />
+          </mesh>
+        ))}
+        {[-1, 1].map((side) => (
+          <mesh key={`k${side}`} position={[side * 0.12, -0.06, 0.15]} scale={[1, 0.6, 0.4]} material={mats.cheek}>
+            <sphereGeometry args={[0.035, 8, 6]} />
+          </mesh>
+        ))}
       </group>
-    </group>
+    </StaticBatch>
   )
 }

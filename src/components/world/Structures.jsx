@@ -5,6 +5,7 @@ import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { Sparkles, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { makeToonMaterial } from '../../materials/toonMaterial'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import {
   RIVER,
   STAIRS,
@@ -22,6 +23,7 @@ import {
   GATES,
 } from '../../config/world'
 import { PAL } from '../../config/palette'
+import { SIGN_TEXTS } from '../../config/story'
 import StaticBatch from './StaticBatch'
 import { heartGeometry, starGeometry, tint, mix } from './cuteShapes'
 import { useProgressStore } from '../../store/progressStore'
@@ -176,6 +178,9 @@ export function WoodenBridge() {
   const halfZ = Math.abs(RIVER.zTo - RIVER.zFrom) / 2 + 4
   const halfX = 5.4
   const planks = Math.round(halfZ * 2 / 1.6)
+  const nPosts = 13
+  const postZ = (i) => zMid - halfZ + 1.5 + i * ((halfZ * 2 - 3) / (nPosts - 1))
+  const capCols = ['#ff8fb8', '#ffffff', '#6ec8ff', '#ffffff']
 
   return (
     <group position={[px, 0, 0]}>
@@ -187,51 +192,95 @@ export function WoodenBridge() {
         <CuboidCollider position={[halfX + 0.2, 0.7, zMid]} args={[0.25, 0.7, halfZ]} />
       </RigidBody>
 
-      {/* pranchas */}
-      {Array.from({ length: planks }, (_, i) => (
-        <mesh
-          key={i}
-          position={[0, 0.0, zMid - halfZ + 0.8 + i * 1.6]}
-          receiveShadow
-          castShadow
-        >
-          <boxGeometry args={[halfX * 2, 0.16, 1.45]} />
-          <ToonMat color={i % 2 ? '#8a5a32' : '#6b4a2c'}/>
-        </mesh>
-      ))}
+      <StaticBatch>
+        {/* pranchas roliças, em dois tons de madeira clara */}
+        {Array.from({ length: planks }, (_, i) => (
+          <RoundedBox
+            key={i}
+            args={[halfX * 2 - 0.1, 0.28, 1.42]}
+            radius={0.12}
+            smoothness={2}
+            bevelSegments={1}
+            position={[0, -0.1, zMid - halfZ + 0.8 + i * 1.6]}
+          >
+            <ToonMat color={i % 2 ? '#e8b77f' : PAL.wood} />
+          </RoundedBox>
+        ))}
 
-      {/* vigas longitudinais */}
-      {[-halfX + 0.6, halfX - 0.6].map((x) => (
-        <mesh key={x} position={[x, -0.22, zMid]} castShadow>
-          <boxGeometry args={[0.5, 0.4, halfZ * 2]} />
-          <ToonMat color="#54381f"/>
-        </mesh>
-      ))}
+        {/* vigas longitudinais */}
+        {[-halfX + 0.5, halfX - 0.5].map((x) => (
+          <RoundedBox key={x} args={[0.7, 0.55, halfZ * 2]} radius={0.22} smoothness={2} bevelSegments={1} position={[x, -0.45, zMid]}>
+            <ToonMat color={PAL.woodDark} />
+          </RoundedBox>
+        ))}
 
-      {/* postes + corrimão */}
-      {Array.from({ length: 15 }, (_, i) => {
-        const z = zMid - halfZ + 1.5 + i * ((halfZ * 2 - 3) / 14)
-        return [-1, 1].map((side) => (
-          <mesh key={`${i}-${side}`} position={[side * (halfX + 0.2), 0.75, z]} castShadow>
-            <boxGeometry args={[0.28, 1.5, 0.28]} />
-            <ToonMat color="#54381f"/>
-          </mesh>
-        ))
-      })}
-      {[-1, 1].map((side) => (
-        <mesh key={side} position={[side * (halfX + 0.2), 1.45, zMid]} castShadow>
-          <boxGeometry args={[0.34, 0.22, halfZ * 2 - 1]} />
-          <ToonMat color="#6b4a2c"/>
-        </mesh>
-      ))}
+        {/* postes roliços com bolinhas coloridas */}
+        {Array.from({ length: nPosts }, (_, i) =>
+          [-1, 1].map((side) => (
+            <group key={`${i}-${side}`} position={[side * (halfX + 0.2), 0, postZ(i)]}>
+              <mesh position={[0, 0.72, 0]}>
+                <cylinderGeometry args={[0.24, 0.28, 1.45, 10]} />
+                <ToonMat color={PAL.wood} />
+              </mesh>
+              <mesh position={[0, 1.55, 0]}>
+                <sphereGeometry args={[0.3, 10, 8]} />
+                <ToonMat color={capCols[i % capCols.length]} />
+              </mesh>
+            </group>
+          )),
+        )}
 
-      {/* pilares no desfiladeiro */}
-      {[-0.45, 0.45].map((f) => (
-        <mesh key={f} position={[0, -1.8, zMid + f * halfZ * 0.9]} castShadow>
-          <boxGeometry args={[halfX * 1.6, 3.2, 1.4]} />
-          <ToonMat color="#5c4028"/>
-        </mesh>
-      ))}
+        {/* corda grossa, caindo um pouquinho entre os postes */}
+        {Array.from({ length: nPosts - 1 }, (_, i) =>
+          [-1, 1].map((side) =>
+            [-1, 1].map((half) => {
+              const z0 = postZ(i)
+              const z1 = postZ(i + 1)
+              const seg = (z1 - z0) / 2
+              const sag = 0.28
+              const zc = z0 + seg * (half < 0 ? 0.5 : 1.5)
+              const ang = Math.atan2(sag, seg) * half
+              return (
+                <mesh
+                  key={`r${i}${side}${half}`}
+                  position={[side * (halfX + 0.2), 1.3 - sag / 2, zc]}
+                  rotation={[Math.PI / 2 + ang, 0, 0]}
+                >
+                  <cylinderGeometry args={[0.1, 0.1, Math.hypot(seg, sag) + 0.12, 6]} />
+                  <ToonMat color="#f6dfb0" />
+                </mesh>
+              )
+            }),
+          ),
+        )}
+
+        {/* lanterninhas nas cabeceiras */}
+        {[-1, 1].map((end) =>
+          [-1, 1].map((side) => (
+            <group key={`l${end}${side}`} position={[side * (halfX + 0.2), 0, zMid + end * (halfZ - 0.6)]}>
+              <mesh position={[0, 1.2, 0]}>
+                <cylinderGeometry args={[0.3, 0.36, 2.4, 10]} />
+                <ToonMat color={PAL.woodDark} />
+              </mesh>
+              <mesh position={[0, 2.75, 0]}>
+                <sphereGeometry args={[0.45, 12, 10]} />
+                <ToonMat color="#fff0b0" emissive="#ffc040" emissiveIntensity={0.9} />
+              </mesh>
+              <mesh position={[0, 3.25, 0]}>
+                <coneGeometry args={[0.55, 0.5, 12]} />
+                <ToonMat color="#ff8fb8" />
+              </mesh>
+            </group>
+          )),
+        )}
+
+        {/* pilares roliços de pedra clara no desfiladeiro */}
+        {[-0.45, 0.45].map((f) => (
+          <RoundedBox key={f} args={[halfX * 1.6, 3.2, 1.6]} radius={0.5} smoothness={2} bevelSegments={2} position={[0, -1.9, zMid + f * halfZ * 0.9]}>
+            <ToonMat color="#dfe5ee" />
+          </RoundedBox>
+        ))}
+      </StaticBatch>
     </group>
   )
 }
@@ -254,28 +303,41 @@ export function RiverWater() {
 
   return (
     <group position={[px, 0, 0]}>
-      <mesh position={[0, RIVER.waterY, zMid]} receiveShadow>
+      <mesh position={[0, RIVER.waterY, zMid]}>
         <boxGeometry args={[RIVER.gapHalfX * 2, 1.2, len]} />
-        <ToonMat
-          color="#4a8ea8"transparent
-          opacity={0.88}/>
+        <ToonMat color={PAL.water} transparent opacity={0.92} />
       </mesh>
-      {/* espuma correndo */}
+      {/* espuma correndo (bolotas brancas achatadas) */}
       <group ref={ref} position={[0, RIVER.waterY, zMid]}>
         {Array.from({ length: 8 }, (_, i) => (
-          <mesh key={i} position={[(i % 3 - 1) * 3.5, 0.65, 0]}>
-            <boxGeometry args={[2.4, 0.14, 3.5]} />
-            <ToonMat color="#e8f6ff"transparent opacity={0.55} depthWrite={false} />
+          <mesh key={i} position={[(i % 3 - 1) * 3.5, 0.62, 0]} scale={[1.3, 0.12, 1.9]}>
+            <sphereGeometry args={[1, 12, 6]} />
+            <ToonMat color={PAL.foam} transparent opacity={0.8} depthWrite={false} />
           </mesh>
         ))}
       </group>
-      {/* paredes do desfiladeiro */}
-      {[-1, 1].map((side) => (
-        <mesh key={side} position={[side * (RIVER.gapHalfX + 0.6), -1.6, zMid]} receiveShadow>
-          <boxGeometry args={[1.6, 4, len - 20]} />
-          <ToonMat color="#6a7078"/>
-        </mesh>
-      ))}
+      <StaticBatch>
+        {/* espuma fixa nas margens */}
+        {[-1, 1].map((side) => (
+          <mesh key={`f${side}`} position={[side * (RIVER.gapHalfX - 0.4), RIVER.waterY + 0.6, zMid]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, 0.35]}>
+            <capsuleGeometry args={[0.7, len - 22, 4, 10]} />
+            <ToonMat color={PAL.foam} />
+          </mesh>
+        ))}
+        {/* paredes do desfiladeiro, roliças e claras */}
+        {[-1, 1].map((side) => (
+          <RoundedBox
+            key={side}
+            args={[1.8, 4.2, len - 20]}
+            radius={0.6}
+            smoothness={2}
+            bevelSegments={2}
+            position={[side * (RIVER.gapHalfX + 0.6), -1.6, zMid]}
+          >
+            <ToonMat color={PAL.cliffSide} />
+          </RoundedBox>
+        ))}
+      </StaticBatch>
     </group>
   )
 }
@@ -319,23 +381,23 @@ export function SummitStairs() {
 
   const geos = useMemo(
     () => ({
-      step: new THREE.BoxGeometry(STAIRS.halfWidth * 2, STAIRS.stepRise * 0.92, STAIRS.stepDepth * 0.92),
-      landing: new THREE.BoxGeometry(STAIRS.halfWidth * 2.15, 0.28, STAIRS.stepDepth * 2.4),
-      snow: new THREE.BoxGeometry(1, 0.08, 1),
-      pillar: new THREE.CylinderGeometry(0.5, 0.65, 1, 6),
-      cap: new THREE.BoxGeometry(1.3, 0.35, 1.3),
-      lantern: new THREE.SphereGeometry(0.28, 5, 4),
-      rock: new THREE.DodecahedronGeometry(0.9, 0),
-      tuft: new THREE.ConeGeometry(0.35, 0.9, 5),
-      flagPole: new THREE.CylinderGeometry(0.07, 0.09, 2.8, 5),
-      flag: new THREE.BoxGeometry(1.1, 0.7, 0.05),
-      bench: new THREE.BoxGeometry(2.4, 0.28, 0.7),
-      crate: new THREE.BoxGeometry(0.9, 0.9, 0.9),
-      cairn: new THREE.DodecahedronGeometry(0.45, 0),
-      rope: new THREE.CylinderGeometry(0.04, 0.04, 1, 4),
-      post: new THREE.CylinderGeometry(0.12, 0.14, 1.4, 5),
-      shrine: new THREE.BoxGeometry(1.4, 2.2, 1.1),
-      shrineCap: new THREE.ConeGeometry(1.0, 1.1, 4),
+      step: new RoundedBoxGeometry(STAIRS.halfWidth * 2, STAIRS.stepRise * 0.92, STAIRS.stepDepth * 0.92, 2, 0.2),
+      landing: new RoundedBoxGeometry(STAIRS.halfWidth * 2.15, 0.28, STAIRS.stepDepth * 2.4, 2, 0.12),
+      snow: new THREE.SphereGeometry(0.62, 12, 6),
+      pillar: new THREE.CylinderGeometry(0.55, 0.65, 1, 12),
+      cap: new THREE.SphereGeometry(0.75, 12, 8),
+      lantern: new THREE.SphereGeometry(0.34, 12, 8),
+      rock: new THREE.SphereGeometry(0.9, 9, 7),
+      tuft: new THREE.SphereGeometry(0.42, 8, 6),
+      flagPole: new THREE.CylinderGeometry(0.08, 0.09, 2.8, 8),
+      flag: new RoundedBoxGeometry(1.1, 0.7, 0.1, 2, 0.04),
+      bench: new RoundedBoxGeometry(2.4, 0.3, 0.75, 2, 0.12),
+      crate: new RoundedBoxGeometry(0.9, 0.9, 0.9, 2, 0.16),
+      cairn: new THREE.SphereGeometry(0.45, 9, 7),
+      rope: new THREE.CylinderGeometry(0.09, 0.09, 1, 6),
+      post: new THREE.CylinderGeometry(0.16, 0.18, 1.4, 10),
+      shrine: new THREE.CylinderGeometry(0.75, 0.55, 1.1, 14),
+      shrineCap: new THREE.SphereGeometry(0.85, 12, 8),
     }),
     [],
   )
@@ -355,15 +417,16 @@ export function SummitStairs() {
       pillar: makeToonMaterial({ color: '#ffffff',}),
       cap: makeToonMaterial({ color: '#ffffff',}),
       lantern: makeToonMaterial({
-        color: '#ffcc88',
-        emissive: '#ffaa44',
-        emissiveIntensity: 1.35,}),
+        color: '#fff0b0',
+        emissive: '#ffc040',
+        emissiveIntensity: 1.1,
+      }),
       rock: makeToonMaterial({ color: '#ffffff',}),
       tuft: makeToonMaterial({ color: '#ffffff',}),
-      flagPole: makeToonMaterial({ color: '#6a5a3a',}),
+      flagPole: makeToonMaterial({ color: PAL.wood }),
       flag: makeToonMaterial({ color: '#ffffff',}),
       wood: makeToonMaterial({ color: '#ffffff',}),
-      rope: makeToonMaterial({ color: '#c4a574',}),
+      rope: makeToonMaterial({ color: '#f6dfb0' }),
       shrine: makeToonMaterial({ color: '#ffffff',}),
     }),
     [],
@@ -389,10 +452,11 @@ export function SummitStairs() {
     const shrines = []
     const shrineCaps = []
 
-    const stoneA = ['#8a8e94', '#7e8288', '#92969c', '#767a80', '#848990']
-    const stoneB = ['#6e7278', '#64686e', '#787c82', '#5e6268']
-    // neve mais “suja”/azulada — evita placas brancas que parecem bug
-    const snowC = ['#d4dee8', '#c8d6e2', '#dce6ee', '#b9c9d6']
+    // pedras claras e quentinhas (pastel), nada de cinza-escuro
+    const stoneA = ['#efe6da', '#e8eef5', '#f3ead0', '#e6e0f0', '#eef2e4']
+    const stoneB = ['#d5dde6', '#cfd8e3', '#dde3ea', '#c9d3df']
+    const snowC = [PAL.snow, '#eef6ff', PAL.snowShade, '#f8fbff']
+    const flagC = ['#ff8fb8', '#6ec8ff', '#ffd45a', '#b48cff', '#7ad99a']
 
     for (let i = 0; i < STAIRS.steps; i++) {
       const z = STAIRS.zStart - i * STAIRS.stepDepth
@@ -411,31 +475,32 @@ export function SummitStairs() {
             x: side * 9.5,
             y: top + 0.28,
             z: z + STAIRS.stepDepth * 0.15,
-            color: '#7a5a32',
+            color: PAL.wood,
             ry: side > 0 ? -0.12 : 0.12,
           })
           crates.push({
             x: side * (7 + rng() * 2),
             y: top + 0.55,
             z: z - 0.3 + rng() * 0.5,
-            color: rng() > 0.5 ? '#8a6238' : '#6e4e2c',
+            color: rng() > 0.5 ? '#e8b77f' : PAL.wood,
             ry: rng() * 0.8,
             s: 0.85 + rng() * 0.3,
           })
           // postes de lanterna DENTRO do corredor (visíveis de baixo)
-          posts.push({ x: side * 6.5, y: top + 1.1, z: z + 0.8, color: '#4a3a28', sy: 2.2 })
+          posts.push({ x: side * 6.5, y: top + 1.1, z: z + 0.8, color: PAL.woodDark, sy: 2.2 })
           lanterns.push({ x: side * 6.5, y: top + 2.4, z: z + 0.8 })
           flagPoles.push({ x: side * 8.5, y: top + 2.4, z: z + 1.2 })
           flags.push({
             x: side * 8.5 + side * 0.55,
             y: top + 3.3,
             z: z + 1.2,
-            color: side < 0 ? '#c43a3a' : '#3a6a9a',
+            color: side < 0 ? '#ff8fb8' : '#6ec8ff',
           })
         }
         const shrineSide = i % 12 === 0 ? -1 : 1
-        shrines.push({ x: shrineSide * 5.5, y: top + 1.2, z: z + 0.6, color: '#5c6066' })
-        shrineCaps.push({ x: shrineSide * 5.5, y: top + 2.7, z: z + 0.6, color: '#3e4248' })
+        // vasão de flores (terracota pastel + moita florida)
+        shrines.push({ x: shrineSide * 5.5, y: top + 0.55, z: z + 0.6, color: '#f6a98f' })
+        shrineCaps.push({ x: shrineSide * 5.5, y: top + 1.35, z: z + 0.6, color: flagC[(i / 6) % flagC.length], sy: 0.8 })
       } else {
         // alguns degraus com tom nevado embutido (sem placa flutuante)
         const snowy = rng() > 0.72
@@ -443,7 +508,7 @@ export function SummitStairs() {
           x: (rng() - 0.5) * 0.12,
           y: top - STAIRS.stepRise / 2 + 0.02,
           z,
-          color: snowy ? '#aeb8c2' : stoneA[(i + Math.floor(rng() * 3)) % stoneA.length],
+          color: snowy ? '#f4f8fd' : stoneA[(i + Math.floor(rng() * 3)) % stoneA.length],
           ry: (rng() - 0.5) * 0.02,
         })
       }
@@ -451,7 +516,7 @@ export function SummitStairs() {
       // marcadores verticais no corredor (visíveis olhando para cima)
       if (i % 3 === 1) {
         const side = i % 6 < 3 ? -1 : 1
-        posts.push({ x: side * 5.2, y: top + 1.0, z, color: '#5a4630', sy: 1.9 })
+        posts.push({ x: side * 5.2, y: top + 1.0, z, color: PAL.wood, sy: 1.9 })
         lanterns.push({ x: side * 5.2, y: top + 2.15, z })
       }
 
@@ -471,7 +536,7 @@ export function SummitStairs() {
           x: side * (8 + rng() * 5),
           y: top + 0.42,
           z: z + (rng() - 0.5),
-          color: rng() > 0.5 ? '#6a8a58' : '#8a9a6a',
+          color: rng() > 0.5 ? PAL.leaf : PAL.leafLight,
           s: 0.55 + rng() * 0.55,
         })
       }
@@ -495,20 +560,20 @@ export function SummitStairs() {
             sy: pillarH,
             color: stoneB[(i + (side > 0 ? 1 : 0)) % stoneB.length],
           })
-          caps.push({ x, y: top + 2.9, z, color: '#5a5e64' })
+          caps.push({ x, y: top + 2.95, z, color: '#ffffff', sy: 0.6 })
           snow.push({
             x,
-            y: top + 3.12,
+            y: top + 3.2,
             z,
-            sx: 1.35,
-            sz: 1.35,
-            sy: 0.55,
-            color: '#d4dee8',
+            sx: 1.1,
+            sz: 1.1,
+            sy: 0.5,
+            color: PAL.snow,
             ry: 0,
           })
           lanterns.push({ x, y: top + 3.4, z })
           if (i > 0 && i < STAIRS.steps - 3) {
-            posts.push({ x: side * (STAIRS.halfWidth - 0.8), y: top + 0.7, z, color: '#5a4630' })
+            posts.push({ x: side * (STAIRS.halfWidth - 0.8), y: top + 0.7, z, color: PAL.wood })
             ropes.push({
               x: side * (STAIRS.halfWidth - 0.8),
               y: top + 1.15 - STAIRS.stepRise * 1.5,
@@ -528,7 +593,7 @@ export function SummitStairs() {
             x: x + side * 0.55,
             y: top + 3.5,
             z,
-            color: i % 12 === 0 ? '#c43a3a' : i % 12 === 6 ? '#f0e6d0' : '#3a6a9a',
+            color: flagC[(i / 6 + (side > 0 ? 2 : 0)) % flagC.length],
           })
         }
       }
@@ -555,7 +620,7 @@ export function SummitStairs() {
           x: side * (STAIRS.halfWidth + 3.6 + (i % 3) * 0.8),
           y: y + 0.35,
           z: z + (rng() - 0.5) * 2,
-          color: i % 4 === 0 ? '#5a8a4a' : i % 4 === 1 ? '#8a9a68' : '#6a9a58',
+          color: i % 4 === 0 ? PAL.leaf : i % 4 === 1 ? PAL.leafLight : PAL.flowers[i % PAL.flowers.length],
           s: 0.7 + rng() * 0.7,
         })
       }
@@ -566,7 +631,7 @@ export function SummitStairs() {
           z: z + (rng() - 0.5) * 2,
           sx: 1.4 + rng() * 1.6,
           sz: 1.1 + rng() * 1.4,
-          sy: 0.7,
+          sy: 0.45,
           color: snowC[i % snowC.length],
           ry: rng() * Math.PI,
         })
@@ -668,71 +733,97 @@ export function SummitStairs() {
 
       <ClimbStream stairsLen={stairsLen} />
 
-      {[-1, 1].map((side) => (
-        <mesh
-          key={side}
-          position={[side * (STAIRS.halfWidth + 0.7), SUMMIT_Y / 2 + 0.8, midZ]}
-          receiveShadow
-        >
-          <boxGeometry args={[1.4, SUMMIT_Y + 1.6, stairsLen + 4]} />
-          <ToonMat color="#75787d"/>
-        </mesh>
-      ))}
+      <StaticBatch>
+        {/* muretas laterais roliças, pedra clarinha */}
+        {[-1, 1].map((side) => (
+          <RoundedBox
+            key={side}
+            args={[1.4, SUMMIT_Y + 1.6, stairsLen + 4]}
+            radius={0.6}
+            smoothness={2}
+            bevelSegments={2}
+            position={[side * (STAIRS.halfWidth + 0.7), SUMMIT_Y / 2 + 0.8, midZ]}
+          >
+            <ToonMat color="#e9e2f2" />
+          </RoundedBox>
+        ))}
 
-      {[-1, 1].map((side) => (
-        <mesh
-          key={`handrail-${side}`}
-          position={[side * (STAIRS.halfWidth - 0.35), SUMMIT_Y / 2 + 1.1, midZ]}
-          rotation={[RAMP.angle, 0, 0]}
-        >
-          <boxGeometry args={[0.22, 0.2, stairsLen + 2]} />
-          <ToonMat color="#8a6a3a"/>
-        </mesh>
-      ))}
+        {[-1, 1].map((side) => (
+          <mesh
+            key={`handrail-${side}`}
+            position={[side * (STAIRS.halfWidth - 0.35), SUMMIT_Y / 2 + 1.1, midZ]}
+            rotation={[RAMP.angle + Math.PI / 2, 0, 0]}
+          >
+            <capsuleGeometry args={[0.16, stairsLen + 2, 3, 8]} />
+            <ToonMat color={PAL.wood} />
+          </mesh>
+        ))}
 
-      {[0, STAIRS.steps - 1].map((i) => {
-        const z = STAIRS.zStart - i * STAIRS.stepDepth
-        const y = (i + 1) * STAIRS.stepRise
-        const isTop = i === STAIRS.steps - 1
-        return (
-          <group key={`arch-${i}`} position={[0, y, z]}>
-            {[-1, 1].map((side) => (
-              <group key={side}>
-                <mesh castShadow={isTop} position={[side * (STAIRS.halfWidth - 1.2), 4.2, 0]}>
-                  <boxGeometry args={[1.6, 8.4, 2.0]} />
-                  <ToonMat color="#5c6066"/>
+        {[0, STAIRS.steps - 1].map((i) => {
+          const z = STAIRS.zStart - i * STAIRS.stepDepth
+          const y = (i + 1) * STAIRS.stepRise
+          const isTop = i === STAIRS.steps - 1
+          const px = STAIRS.halfWidth - 1.2
+          return (
+            <group key={`arch-${i}`} position={[0, y, z]}>
+              {[-1, 1].map((side) => (
+                <group key={side}>
+                  <RoundedBox args={[1.8, 8.4, 2.0]} radius={0.5} smoothness={2} bevelSegments={2} position={[side * px, 4.2, 0]}>
+                    <ToonMat color="#f4ede4" />
+                  </RoundedBox>
+                  <mesh position={[side * px, 8.75, 0]}>
+                    <sphereGeometry args={[1.25, 14, 10]} />
+                    <ToonMat color={isTop ? '#ff8fb8' : '#6ec8ff'} />
+                  </mesh>
+                </group>
+              ))}
+              {/* viga roliça com guirlanda de flores */}
+              <RoundedBox args={[STAIRS.halfWidth * 2 - 0.4, 1.3, 2.0]} radius={0.55} smoothness={2} bevelSegments={2} position={[0, 8.6, 0]}>
+                <ToonMat color="#f4ede4" />
+              </RoundedBox>
+              {Array.from({ length: 14 }, (_, k) => {
+                const x = (k / 13 - 0.5) * (STAIRS.halfWidth * 2 - 6)
+                return (
+                  <group key={`g${k}`} position={[x, 7.85 - Math.sin((k / 13) * Math.PI) * 0.6, 1.05]}>
+                    <mesh>
+                      <sphereGeometry args={[0.42, 10, 8]} />
+                      <ToonMat color={PAL.flowers[k % PAL.flowers.length] === '#ffffff' ? '#fff3f8' : PAL.flowers[k % PAL.flowers.length]} />
+                    </mesh>
+                    <mesh position={[0, 0, 0.32]}>
+                      <sphereGeometry args={[0.15, 8, 6]} />
+                      <ToonMat color={PAL.flowerCenter} />
+                    </mesh>
+                    <mesh position={[0.45, 0.2, -0.1]} scale={[1.3, 0.7, 0.8]}>
+                      <sphereGeometry args={[0.28, 8, 6]} />
+                      <ToonMat color={PAL.leafLight} />
+                    </mesh>
+                  </group>
+                )
+              })}
+              {isTop && (
+                <mesh geometry={heartGeometry()} position={[0, 10.3, 0.2]} scale={2.2}>
+                  <ToonMat color="#ff8fb8" emissive="#ff6fa0" emissiveIntensity={0.25} />
                 </mesh>
-                <mesh position={[side * (STAIRS.halfWidth - 1.2), 8.6, 0]}>
-                  <boxGeometry args={[2.2, 0.7, 2.4]} />
-                  <ToonMat color="#4a4e54"/>
-                </mesh>
-              </group>
-            ))}
-            <mesh position={[0, 8.8, 0]}>
-              <boxGeometry args={[STAIRS.halfWidth * 2 - 0.4, 1.4, 2.2]} />
-              <ToonMat color="#4a4e54"/>
-            </mesh>
-            {isTop && (
-              <mesh position={[0, 10.2, 0]}>
-                <boxGeometry args={[STAIRS.halfWidth * 0.5, 0.55, 1.8]} />
-                <ToonMat color="#3e4248"/>
-              </mesh>
-            )}
-            {[-1, 1].map((side) => (
-              <group key={`flag-${side}`} position={[side * (STAIRS.halfWidth - 1.2), 9.2, 0.3]}>
-                <mesh>
-                  <cylinderGeometry args={[0.08, 0.1, 3.2, 5]} />
-                  <ToonMat color="#6a5a3a"/>
-                </mesh>
-                <mesh position={[side * 0.7, 0.9, 0]}>
-                  <boxGeometry args={[1.4, 0.9, 0.06]} />
-                  <ToonMat color={isTop ? '#c43a3a' : '#3a6a9a'}/>
-                </mesh>
-              </group>
-            ))}
-          </group>
-        )
-      })}
+              )}
+              {[-1, 1].map((side) => (
+                <group key={`flag-${side}`} position={[side * px, 10.6, 0.3]}>
+                  <mesh>
+                    <cylinderGeometry args={[0.09, 0.1, 3.2, 8]} />
+                    <ToonMat color={PAL.wood} />
+                  </mesh>
+                  <mesh position={[0, 1.7, 0]}>
+                    <sphereGeometry args={[0.2, 10, 8]} />
+                    <ToonMat color="#ffd45a" />
+                  </mesh>
+                  <RoundedBox args={[1.4, 0.9, 0.12]} radius={0.05} smoothness={2} bevelSegments={1} position={[side * 0.75, 1.0, 0]}>
+                    <ToonMat color={isTop ? '#ff8fb8' : '#6ec8ff'} />
+                  </RoundedBox>
+                </group>
+              ))}
+            </group>
+          )
+        })}
+      </StaticBatch>
 
       <pooledLight
         position={[STAIRS.halfWidth + 1.6, midLightY, midLightZ]}
@@ -787,7 +878,7 @@ function ClimbStream({ stairsLen }) {
         x: CLIMB_STREAM.x,
         y,
         z,
-        color: i % 2 ? CLIMB_STREAM.color : '#5a9ab0',
+        color: i % 2 ? PAL.water : PAL.waterDeep,
         sy: 0.16,
         sx: CLIMB_STREAM.halfWidth * 2,
         sz: stairsLen / n + 0.4,
@@ -801,7 +892,7 @@ function ClimbStream({ stairsLen }) {
       segs.map((s) => ({
         ...s,
         y: s.y - 0.12,
-        color: '#5a6058',
+        color: '#dfe5ee',
         sy: 0.22,
         sx: CLIMB_STREAM.halfWidth * 2 + 1.1,
       })),
@@ -817,8 +908,10 @@ function ClimbStream({ stairsLen }) {
   const mats = useMemo(
     () => ({
       water: makeToonMaterial({
-        color: '#ffffff',transparent: true,
-        opacity: 0.82,depthWrite: false,
+        color: '#ffffff',
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
       }),
       bed: makeToonMaterial({ color: '#ffffff',}),
     }),
@@ -830,7 +923,7 @@ function ClimbStream({ stairsLen }) {
     const t = state.clock.elapsedTime
     foamRef.current.children.forEach((c, i) => {
       c.position.y = segs[i]?.y + 0.1 + Math.sin(t * 3 + i) * 0.03
-      c.material.opacity = 0.35 + Math.sin(t * 4 + i * 0.7) * 0.15
+      c.material.opacity = 0.55 + Math.sin(t * 4 + i * 0.7) * 0.2
     })
   })
 
@@ -841,13 +934,9 @@ function ClimbStream({ stairsLen }) {
       <group ref={foamRef}>
         {segs.map((s, i) =>
           i % 2 === 0 ? (
-            <mesh key={i} position={[s.x, s.y + 0.1, s.z]}>
-              <boxGeometry args={[CLIMB_STREAM.halfWidth * 1.2, 0.06, 1.2]} />
-              <ToonMat
-                color="#e4f6fc"transparent
-                opacity={0.45}
-                depthWrite={false}
-              />
+            <mesh key={i} position={[s.x, s.y + 0.1, s.z]} scale={[1, 0.2, 1.4]}>
+              <sphereGeometry args={[CLIMB_STREAM.halfWidth * 0.6, 10, 5]} />
+              <ToonMat color={PAL.foam} transparent opacity={0.6} depthWrite={false} />
             </mesh>
           ) : null,
         )}
@@ -1166,39 +1255,65 @@ function SummitBalustrade() {
   )
 }
 
-/** Poço central do vilarejo */
+/** Poço central do vilarejo — pedrinhas claras e telhadinho */
 export function VillageWell({ position = [0, 0, -30] }) {
   return (
     <group position={position}>
       <RigidBody type="fixed" colliders={false}>
         <CuboidCollider position={[0, 1, 0]} args={[1.8, 1, 1.8]} />
       </RigidBody>
-      <mesh position={[0, 1, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[1.8, 2, 2, 10]} />
-        <ToonMat color="#8a8a7a"/>
-      </mesh>
-      <mesh position={[0, 1.95, 0]}>
-        <cylinderGeometry args={[1.5, 1.5, 0.2, 10]} />
-        <ToonMat color="#2f4d5a"/>
-      </mesh>
-      {[-1.5, 1.5].map((x) => (
-        <mesh key={x} position={[x, 3.2, 0]} castShadow>
-          <boxGeometry args={[0.3, 3.2, 0.3]} />
-          <ToonMat color="#5c3a1e"/>
+      <StaticBatch>
+        <mesh position={[0, 1, 0]}>
+          <cylinderGeometry args={[1.8, 1.95, 2, 16]} />
+          <ToonMat color="#e6ebf2" />
         </mesh>
-      ))}
-      <mesh position={[0, 5, 0]} castShadow>
-        <coneGeometry args={[2.6, 1.6, 4]} />
-        <ToonMat color="#4a2814"/>
-      </mesh>
-      <mesh position={[0, 3.1, 0]} castShadow>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <ToonMat color="#6b4a2c"/>
-      </mesh>
-      <mesh position={[0, 2.6, 0]} castShadow>
-        <cylinderGeometry args={[0.4, 0.45, 0.6, 8]} />
-        <ToonMat color="#54381f"/>
-      </mesh>
+        {/* pedrinhas arredondadas em volta */}
+        {Array.from({ length: 10 }, (_, i) => {
+          const a = (i / 10) * Math.PI * 2
+          return (
+            <mesh key={i} position={[Math.cos(a) * 1.85, 0.55 + (i % 2) * 0.75, Math.sin(a) * 1.85]} scale={[1, 0.7, 1]}>
+              <sphereGeometry args={[0.42, 8, 6]} />
+              <ToonMat color={i % 3 ? '#cfd8e3' : '#dbe2ec'} />
+            </mesh>
+          )
+        })}
+        <mesh position={[0, 2.02, 0]}>
+          <torusGeometry args={[1.62, 0.26, 8, 20]} />
+          <ToonMat color="#f4f6fa" />
+        </mesh>
+        <mesh position={[0, 1.95, 0]}>
+          <cylinderGeometry args={[1.5, 1.5, 0.14, 16]} />
+          <ToonMat color={PAL.water} />
+        </mesh>
+        {[-1.5, 1.5].map((x) => (
+          <mesh key={x} position={[x, 3.3, 0]}>
+            <cylinderGeometry args={[0.2, 0.24, 3.0, 10]} />
+            <ToonMat color={PAL.wood} />
+          </mesh>
+        ))}
+        {/* telhadinho redondo */}
+        <mesh position={[0, 5.15, 0]}>
+          <coneGeometry args={[2.6, 1.7, 14]} />
+          <ToonMat color={PAL.roofs[0]} />
+        </mesh>
+        <mesh position={[0, 6.1, 0]}>
+          <sphereGeometry args={[0.3, 10, 8]} />
+          <ToonMat color="#ffd45a" />
+        </mesh>
+        {/* sarilho e baldinho */}
+        <mesh position={[0, 3.4, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.22, 0.22, 3.0, 10]} />
+          <ToonMat color={PAL.woodDark} />
+        </mesh>
+        <mesh position={[0, 2.75, 0]}>
+          <cylinderGeometry args={[0.42, 0.34, 0.6, 12]} />
+          <ToonMat color="#ff8fb8" />
+        </mesh>
+        <mesh position={[0, 3.1, 0]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.6, 4]} />
+          <ToonMat color="#f6dfb0" />
+        </mesh>
+      </StaticBatch>
     </group>
   )
 }
@@ -1239,53 +1354,84 @@ export function Streams() {
 
   return (
     <group>
-      {STREAMS.map((s, i) => {
-        const cx = pathXAt(s.z)
-        return (
-          <group key={i}>
-            <mesh position={[cx, -0.06, s.z]} receiveShadow>
-              <boxGeometry args={[width, 0.2, s.halfZ * 2 + 1.6]} />
-              <ToonMat color="#6a6f66"/>
-            </mesh>
-            <mesh position={[cx, 0.04, s.z]}>
-              <boxGeometry args={[width, 0.14, s.halfZ * 2]} />
-              <ToonMat
-                color="#2aa0e0"transparent
-                opacity={0.82}/>
-            </mesh>
-            <mesh position={[cx, 0.16, s.z]} castShadow receiveShadow>
-              <boxGeometry args={[5.2, 0.18, s.halfZ * 2 + 2.4]} />
-              <ToonMat color="#7a5230"/>
-            </mesh>
-            {[-2.4, 2.4].map((x) => (
-              <mesh key={x} position={[cx + x, 0.5, s.z]} castShadow>
-                <boxGeometry args={[0.2, 0.8, s.halfZ * 2 + 2.4]} />
-                <ToonMat color="#54381f"/>
+      <StaticBatch noNearFade>
+        {STREAMS.map((s, i) => {
+          const cx = pathXAt(s.z)
+          return (
+            <group key={i}>
+              {/* leito de areia clarinha */}
+              <mesh position={[cx, -0.06, s.z]}>
+                <boxGeometry args={[width, 0.2, s.halfZ * 2 + 1.6]} />
+                <ToonMat color={PAL.sand} />
               </mesh>
-            ))}
-          </group>
-        )
-      })}
+              {/* espuma nas margens */}
+              {[-1, 1].map((f) => (
+                <mesh key={f} position={[cx, 0.1, s.z + f * s.halfZ]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.5]}>
+                  <capsuleGeometry args={[0.35, width - 1, 4, 8]} />
+                  <ToonMat color={PAL.foam} />
+                </mesh>
+              ))}
+              {/* pontezinha de pranchas */}
+              {Array.from({ length: Math.round((s.halfZ * 2 + 2.4) / 0.9) }, (_, k, arr) => (
+                <RoundedBox
+                  key={`pk${k}`}
+                  args={[5.2, 0.24, 0.8]}
+                  radius={0.1}
+                  smoothness={2}
+                  bevelSegments={1}
+                  position={[cx, 0.18, s.z - (arr.length - 1) * 0.45 + k * 0.9]}
+                >
+                  <ToonMat color={k % 2 ? '#e8b77f' : PAL.wood} />
+                </RoundedBox>
+              ))}
+              {[-2.4, 2.4].map((x) => (
+                <group key={x}>
+                  <mesh position={[cx + x, 0.75, s.z]} rotation={[Math.PI / 2, 0, 0]}>
+                    <capsuleGeometry args={[0.12, s.halfZ * 2 + 2.2, 3, 8]} />
+                    <ToonMat color="#f6dfb0" />
+                  </mesh>
+                  {[-1, 1].map((f) => (
+                    <group key={f} position={[cx + x, 0, s.z + f * (s.halfZ + 1.1)]}>
+                      <mesh position={[0, 0.45, 0]}>
+                        <cylinderGeometry args={[0.16, 0.2, 0.9, 10]} />
+                        <ToonMat color={PAL.wood} />
+                      </mesh>
+                      <mesh position={[0, 0.95, 0]}>
+                        <sphereGeometry args={[0.22, 10, 8]} />
+                        <ToonMat color={f > 0 ? '#ff8fb8' : '#6ec8ff'} />
+                      </mesh>
+                    </group>
+                  ))}
+                </group>
+              ))}
+            </group>
+          )
+        })}
+        {/* seixos roliços */}
+        {decor.map((d, i) => (
+          <mesh key={d.key} position={[d.x, d.y, d.z]} rotation={[0, d.rot, 0]} scale={[1, 0.6, 0.85]}>
+            <sphereGeometry args={[d.r, 8, 6]} />
+            <ToonMat color={i % 3 === 0 ? '#dbe2ec' : PAL.rock} />
+          </mesh>
+        ))}
+      </StaticBatch>
+
+      {/* lâmina d'água (transparente, fora do batch) */}
+      {STREAMS.map((s, i) => (
+        <mesh key={`w${i}`} position={[pathXAt(s.z), 0.04, s.z]}>
+          <boxGeometry args={[width, 0.14, s.halfZ * 2]} />
+          <ToonMat color={PAL.water} transparent opacity={0.88} />
+        </mesh>
+      ))}
 
       <group ref={ref}>
         {STREAMS.map((s, i) => (
-          <mesh key={i} position={[pathXAt(s.z), 0.1, s.z]}>
-            <boxGeometry args={[3.2, 0.06, s.halfZ * 1.1]} />
-            <ToonMat
-              color="#e8f6ff"transparent
-              opacity={0.55}
-              depthWrite={false}
-            />
+          <mesh key={i} position={[pathXAt(s.z), 0.12, s.z]} scale={[1.8, 0.05, s.halfZ * 0.6]}>
+            <sphereGeometry args={[1, 12, 6]} />
+            <ToonMat color={PAL.foam} transparent opacity={0.8} depthWrite={false} />
           </mesh>
         ))}
       </group>
-
-      {decor.map((d) => (
-        <mesh key={d.key} position={[d.x, d.y, d.z]} rotation={[d.rot, d.rot, 0]} castShadow={false}>
-          <dodecahedronGeometry args={[d.r, 0]} />
-          <ToonMat color="#77807a"/>
-        </mesh>
-      ))}
     </group>
   )
 }
@@ -1293,74 +1439,99 @@ export function Streams() {
 /** Lagos e poças (um deles congelado, na fase da neve) */
 export function Ponds() {
   return (
-    <group>
+    <StaticBatch noNearFade>
       {PONDS.map((p, i) => {
         const { x, z } = resolveOnPath(p)
+        const fr = p.frozen
         return (
-        <group key={i} position={[x, 0, z]}>
-          <mesh position={[0, -0.08, 0]} receiveShadow>
-            <cylinderGeometry args={[p.r + 1.2, p.r + 1.6, 0.3, 14]} />
-            <ToonMat color={p.frozen ? '#c4d6de' : '#6a6f66'}/>
-          </mesh>
-          <mesh position={[0, 0.05, 0]}>
-            <cylinderGeometry args={[p.r, p.r, 0.16, 14]} />
-            <ToonMat
-              color={p.frozen ? '#d6ecf4' : '#2a9ad4'}transparent
-              opacity={p.frozen ? 0.95 : 0.84}/>
-          </mesh>
-          {/* pedras na margem */}
-          {Array.from({ length: 9 }, (_, k) => {
-            const a = (k / 9) * Math.PI * 2
-            return (
-              <mesh
-                key={k}
-                position={[Math.cos(a) * (p.r + 1), 0.25, Math.sin(a) * (p.r + 1)]}
-                rotation={[k, k * 0.7, 0]}
-                castShadow
-              >
-                <dodecahedronGeometry args={[0.5 + (k % 3) * 0.35, 0]} />
-                <ToonMat
-                  color={p.frozen ? '#a9bcc6' : '#68746c'}/>
-              </mesh>
-            )
-          })}
-        </group>
+          <group key={i} position={[x, 0, z]}>
+            {/* margem de areia */}
+            <mesh position={[0, -0.08, 0]}>
+              <cylinderGeometry args={[p.r + 1.3, p.r + 1.7, 0.3, 28]} />
+              <ToonMat color={fr ? PAL.snowShade : PAL.sand} />
+            </mesh>
+            <mesh position={[0, 0.05, 0]}>
+              <cylinderGeometry args={[p.r, p.r, 0.16, 28]} />
+              <ToonMat color={fr ? PAL.ice : PAL.water} />
+            </mesh>
+            {/* anel de espuma */}
+            <mesh position={[0, 0.12, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, 0.4]}>
+              <torusGeometry args={[p.r - 0.05, 0.32, 6, 32]} />
+              <ToonMat color={fr ? '#ffffff' : PAL.foam} />
+            </mesh>
+            {/* pedras roliças na margem */}
+            {Array.from({ length: 9 }, (_, k) => {
+              const a = (k / 9) * Math.PI * 2 + 0.3
+              const r = 0.5 + (k % 3) * 0.3
+              return (
+                <mesh key={k} position={[Math.cos(a) * (p.r + 1.1), 0.2, Math.sin(a) * (p.r + 1.1)]} scale={[1, 0.65, 0.9]}>
+                  <sphereGeometry args={[r, 9, 7]} />
+                  <ToonMat color={fr ? '#e8f2fb' : k % 2 ? PAL.rock : '#dbe2ec'} />
+                </mesh>
+              )
+            })}
+            {/* vitórias-régias com florzinha (só no lago que não congela) */}
+            {!fr &&
+              [0.9, 2.6, 4.4].map((a, k) => {
+                const rr = p.r * (0.45 + (k % 2) * 0.2)
+                return (
+                  <group key={`lp${k}`} position={[Math.cos(a) * rr, 0.16, Math.sin(a) * rr]}>
+                    <mesh>
+                      <cylinderGeometry args={[0.9, 0.9, 0.06, 14, 1, false, 0.4, Math.PI * 2 - 0.8]} />
+                      <ToonMat color={PAL.leafLight} />
+                    </mesh>
+                    {k !== 1 && (
+                      <mesh position={[0.2, 0.18, 0]}>
+                        <sphereGeometry args={[0.26, 10, 8]} />
+                        <ToonMat color={PAL.flowers[0]} />
+                      </mesh>
+                    )}
+                  </group>
+                )
+              })}
+          </group>
         )
       })}
-    </group>
+    </StaticBatch>
   )
 }
 
-import { SIGN_TEXTS } from '../../config/story'
-
-/** Placa de madeira indicando a direção */
+/** Placa de madeira fofinha indicando a direção */
 export function Signpost({ position = [0, 0, 0], rotation = 0, label = 0 }) {
   const text = SIGN_TEXTS[label] ?? ''
+  const plate = ['#ffe3e8', '#e3f3ff', '#fff6c8', '#e8ffe0'][label % 4]
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 1.4, 0]} castShadow>
-        <cylinderGeometry args={[0.16, 0.2, 2.8, 6]} />
-        <ToonMat color="#5c3a1e"/>
-      </mesh>
-      {Array.from({ length: 2 }, (_, i) => (
-        <mesh
-          key={i}
-          position={[0.9 * (i ? -1 : 1), 2.3 - i * 0.55, 0]}
-          rotation={[0, 0, i ? 0.05 : -0.05]}
-          castShadow
-        >
-          <boxGeometry args={[1.9, 0.42, 0.12]} />
-          <ToonMat color={i ? '#7a5230' : '#8a6238'}/>
+      <StaticBatch>
+        <mesh position={[0, 1.4, 0]}>
+          <cylinderGeometry args={[0.18, 0.22, 2.8, 10]} />
+          <ToonMat color={PAL.wood} />
         </mesh>
-      ))}
-      <mesh position={[0, 2.75, 0]} castShadow>
-        <coneGeometry args={[0.26, 0.4, 5]} />
-        <ToonMat color={label % 2 ? '#4a2814' : '#3d2914'}/>
-      </mesh>
+        {Array.from({ length: 2 }, (_, i) => (
+          <group key={i} position={[0.85 * (i ? -1 : 1), 2.3 - i * 0.62, 0]} rotation={[0, 0, i ? 0.05 : -0.05]}>
+            <RoundedBox args={[1.95, 0.52, 0.2]} radius={0.09} smoothness={2} bevelSegments={1}>
+              <ToonMat color={i ? PAL.woodDark : PAL.wood} />
+            </RoundedBox>
+            {/* ponta de seta arredondada */}
+            <mesh position={[(i ? -1 : 1) * 0.98, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.26, 0.26, 0.2, 12]} />
+              <ToonMat color={i ? PAL.woodDark : PAL.wood} />
+            </mesh>
+            {/* plaquinha pastel */}
+            <RoundedBox args={[1.5, 0.32, 0.24]} radius={0.08} smoothness={2} bevelSegments={1}>
+              <ToonMat color={plate} />
+            </RoundedBox>
+          </group>
+        ))}
+        <mesh position={[0, 2.88, 0]}>
+          <sphereGeometry args={[0.3, 12, 10]} />
+          <ToonMat color={label % 2 ? '#ff8fb8' : '#ffd45a'} />
+        </mesh>
+      </StaticBatch>
       {text && (
-        <mesh position={[0, 2.05, 0.08]}>
-          <planeGeometry args={[1.6, 0.28]} />
-          <meshBasicMaterial color="#f4efe4" transparent opacity={0.92} />
+        <mesh position={[0.85, 2.3, 0.13]} rotation={[0, 0, -0.05]}>
+          <planeGeometry args={[1.4, 0.24]} />
+          <meshBasicMaterial color="#fffaf0" transparent opacity={0.95} />
         </mesh>
       )}
     </group>

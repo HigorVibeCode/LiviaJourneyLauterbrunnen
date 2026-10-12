@@ -12,6 +12,8 @@ import {
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 import { playerPosition } from '../store/playerStore'
 import StaticBatch from './world/StaticBatch'
+import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 const ANIMAL_VIEW = 75
 
@@ -623,14 +625,44 @@ function BirdFlock({ def, paused }) {
     }
   })
 
+  const [main, belly] = BIRD_COLORS[(parseInt(def.key.split('-')[1], 10) || 0) % BIRD_COLORS.length]
+  const spots = Array.from({ length: def.birds }, (_, i) => [
+    (i % 3 - 1) * 2.2,
+    (i % 2) * 1.1,
+    Math.floor(i / 3) * 2,
+  ])
+
   return (
     <group ref={ref} position={def.center}>
-      {Array.from({ length: def.birds }, (_, i) => (
-        <group key={i} position={[(i % 3 - 1) * 2.2, (i % 2) * 1.1, Math.floor(i / 3) * 2]}>
-          <mesh>
-            <capsuleGeometry args={[0.13, 0.34, 3, 5]} />
-            <ToonMat color="#3a3a42"/>
-          </mesh>
+      {/* corpinhos redondos (estáticos dentro do bando) */}
+      <StaticBatch noNearFade>
+        {spots.map((p, i) => (
+          <group key={i} position={p}>
+            <mesh scale={[1, 0.9, 1.25]}>
+              <sphereGeometry args={[0.22, 10, 8]} />
+              <ToonMat color={main} />
+            </mesh>
+            <mesh position={[0, -0.05, 0.08]} scale={[0.8, 0.7, 0.9]}>
+              <sphereGeometry args={[0.2, 8, 6]} />
+              <ToonMat color={belly} />
+            </mesh>
+            <mesh position={[0, 0.14, 0.24]}>
+              <sphereGeometry args={[0.15, 10, 8]} />
+              <ToonMat color={main} />
+            </mesh>
+            <mesh position={[0, 0.12, 0.42]} rotation={[Math.PI / 2, 0, 0]}>
+              <coneGeometry args={[0.05, 0.12, 8]} />
+              <ToonMat color="#ffa63d" />
+            </mesh>
+            <mesh position={[0, 0.06, -0.3]} rotation={[-1.2, 0, 0]} scale={[1.3, 1, 0.4]}>
+              <coneGeometry args={[0.1, 0.22, 8]} />
+              <ToonMat color={main} />
+            </mesh>
+          </group>
+        ))}
+      </StaticBatch>
+      {spots.map((p, i) => (
+        <group key={i} position={p}>
           {[0, 1].map((w) => (
             <group
               key={w}
@@ -638,9 +670,9 @@ function BirdFlock({ def, paused }) {
                 wings.current[i * 2 + w] = el
               }}
             >
-              <mesh position={[(w ? 1 : -1) * 0.42, 0.06, 0]}>
-                <boxGeometry args={[0.8, 0.05, 0.28]} />
-                <ToonMat color="#4a4a54"/>
+              <mesh position={[(w ? 1 : -1) * 0.34, 0.06, 0]} scale={[1.5, 0.18, 0.75]}>
+                <sphereGeometry args={[0.22, 10, 6]} />
+                <ToonMat color={main} />
               </mesh>
             </group>
           ))}
@@ -649,6 +681,16 @@ function BirdFlock({ def, paused }) {
     </group>
   )
 }
+
+/** cores dos bandos (corpo, barriga) */
+const BIRD_COLORS = [
+  ['#5fb3ff', '#ffffff'],
+  ['#ff8fb8', '#fff0f6'],
+  ['#ffd45a', '#fff8de'],
+  ['#7be0a0', '#f2fff6'],
+  ['#b48cff', '#f6f0ff'],
+  ['#ff8a5c', '#fff3ea'],
+]
 
 function Butterflies({ density, paused }) {
   const groups = useMemo(() => {
@@ -667,12 +709,33 @@ function Butterflies({ density, paused }) {
         key: i,
         center: [(rng() * 2 - 1) * 44, 1.6 + (zA < -300 ? 8 : 0), zA + rng() * (zB - zA)],
         count: 7,
-        colors: ['#f0d24a', '#e8845a', '#9a7ae0', '#f4f0e0', '#7ec8f0'],
+        colors: ['#ffd45a', '#ff8fb8', '#b48cff', '#ffffff', '#6ec8ff'],
       }
     })
   }, [density])
 
   const refs = useRef([])
+  // asinhas em V (4 lóbulos) — uma geometria para todas
+  const wingGeo = useMemo(() => makeButterflyGeometry(), [])
+  const wingMats = useMemo(() => {
+    const map = new Map()
+    groups.forEach((g) =>
+      g.colors.forEach((c) => {
+        if (!map.has(c)) {
+          map.set(
+            c,
+            new THREE.MeshLambertMaterial({
+              color: c,
+              emissive: c,
+              emissiveIntensity: 0.25,
+              side: THREE.DoubleSide,
+            }),
+          )
+        }
+      }),
+    )
+    return map
+  }, [groups])
 
   useFrame((state) => {
     if (paused) return
@@ -698,13 +761,9 @@ function Butterflies({ density, paused }) {
               ref={(el) => {
                 refs.current[g.key * g.count + i] = el
               }}
-            >
-              <boxGeometry args={[0.3, 0.02, 0.18]} />
-              <ToonMat
-                color={g.colors[i % g.colors.length]}emissive={g.colors[i % g.colors.length]}
-                emissiveIntensity={0.25}
-              />
-            </mesh>
+              geometry={wingGeo}
+              material={wingMats.get(g.colors[i % g.colors.length])}
+            />
           ))}
         </group>
       ))}
@@ -752,6 +811,8 @@ function Bees({ density, paused }) {
   }, [density])
 
   const refs = useRef([])
+  const beeGeo = useMemo(() => makeBeeGeometry(), [])
+  const beeMat = useMemo(() => new THREE.MeshLambertMaterial({ vertexColors: true }), [])
 
   useFrame((state) => {
     if (paused) return
@@ -777,13 +838,9 @@ function Bees({ density, paused }) {
               ref={(el) => {
                 refs.current[si * s.count + i] = el
               }}
-            >
-              <capsuleGeometry args={[0.055, 0.09, 2, 5]} />
-              <ToonMat
-                color="#e8b830"emissive="#c89020"
-                emissiveIntensity={0.4}
-              />
-            </mesh>
+              geometry={beeGeo}
+              material={beeMat}
+            />
           ))}
         </group>
       ))}
@@ -843,12 +900,75 @@ function Fireflies({ paused }) {
                 refs.current[si * s.count + i] = el
               }}
             >
-              <sphereGeometry args={[0.045, 4, 4]} />
-              <ToonMat color="#c8ff80" emissive="#90ff40" emissiveIntensity={0.8}/>
+              <sphereGeometry args={[0.055, 8, 6]} />
+              <ToonMat color="#fff6a0" emissive="#ffe14a" emissiveIntensity={0.8} />
             </mesh>
           ))}
         </group>
       ))}
     </group>
   )
+}
+
+/** pinta uma geometria inteira com uma cor (vertex colors) */
+function tint(geo, hex) {
+  const g = geo.index ? geo.toNonIndexed() : geo
+  const c = new THREE.Color(hex)
+  const n = g.attributes.position.count
+  const arr = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    arr[i * 3] = c.r
+    arr[i * 3 + 1] = c.g
+    arr[i * 3 + 2] = c.b
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(arr, 3))
+  g.deleteAttribute('uv')
+  return g
+}
+
+/** borboleta: 4 asinhas arredondadas levemente em V */
+function makeButterflyGeometry() {
+  const parts = []
+  for (const side of [-1, 1]) {
+    for (const [x, z, sx, sz] of [
+      [0.1, 0.04, 1.05, 1.2],
+      [0.075, -0.07, 0.75, 0.8],
+    ]) {
+      const g = new THREE.CircleGeometry(0.1, 12)
+      g.rotateX(-Math.PI / 2)
+      g.scale(sx, 1, sz)
+      g.translate(side * x, 0, z)
+      g.rotateZ(side * 0.3)
+      parts.push(g)
+    }
+  }
+  const body = new THREE.CapsuleGeometry(0.018, 0.14, 2, 6)
+  body.rotateX(Math.PI / 2)
+  parts.push(body)
+  const merged = mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)).map((g) => {
+    g.deleteAttribute('uv')
+    return g
+  }))
+  parts.forEach((g) => g.dispose())
+  return merged
+}
+
+/** abelhinha gordinha: listras e asinhas brancas */
+function makeBeeGeometry() {
+  const body = new THREE.SphereGeometry(0.075, 10, 8)
+  body.scale(1, 0.9, 1.25)
+  const stripes = [0.025, -0.035].map((z) => {
+    const g = new THREE.TorusGeometry(0.07, 0.014, 6, 14)
+    g.scale(1, 0.92, 1)
+    g.translate(0, 0, z)
+    return tint(g, '#8a5a48')
+  })
+  const wings = [-1, 1].map((side) => {
+    const g = new THREE.SphereGeometry(0.05, 8, 6)
+    g.scale(1, 0.25, 0.7)
+    g.translate(side * 0.05, 0.07, -0.01)
+    return tint(g, '#ffffff')
+  })
+  const merged = mergeGeometries([tint(body, '#ffd23f'), ...stripes, ...wings])
+  return merged
 }
