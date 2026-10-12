@@ -4,6 +4,9 @@ import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
 import { useWaterfallStore } from '../store/waterfallStore'
+import { playerPosition } from '../store/playerStore'
+import { makeToonMaterial } from '../materials/toonMaterial'
+import StaticBatch from './world/StaticBatch'
 
 /**
  * Cachoeira de Lauterbrunnen.
@@ -13,6 +16,26 @@ import { useWaterfallStore } from '../store/waterfallStore'
  * A água que cai são faixas verticais que descem e reciclam — dá a
  * sensação de fluxo sem textura nem partícula pesada.
  */
+const tmpM = new THREE.Matrix4()
+const tmpP = new THREE.Vector3()
+const tmpS = new THREE.Vector3()
+const ID_Q = new THREE.Quaternion()
+const STREAK_GEO = new THREE.BoxGeometry(1, 1, 0.16)
+const MIST_GEO = new THREE.SphereGeometry(1, 6, 5)
+const STREAK_COLORS = ['#f2fbff', '#d6f0fb', '#b9e3f4'].map((c) => new THREE.Color(c))
+const streakMat = makeToonMaterial({
+  color: '#ffffff',
+  emissive: '#dff2fb',
+  emissiveIntensity: 0.35,
+  transparent: true,
+  opacity: 0.82,
+})
+streakMat.depthWrite = false
+const mistMat = makeToonMaterial({ color: '#eef8fc', transparent: true, opacity: 0.26 })
+mistMat.depthWrite = false
+const mistMatFrozen = makeToonMaterial({ color: '#eef8fc', transparent: true, opacity: 0.16 })
+mistMatFrozen.depthWrite = false
+
 export default function Waterfall({
   position = [0, 0, 0],
   height = 60,
@@ -91,29 +114,37 @@ export default function Waterfall({
 
   useFrame((state) => {
     const t = state.clock.elapsedTime
+    // longe da Livia não anima (o culling já nem desenha)
+    if (Math.abs(playerPosition.z - wz) > 160) return
 
-    if (streaksRef.current) {
-      const children = streaksRef.current.children
-      for (let i = 0; i < children.length; i++) {
+    // faixas e névoa: UM InstancedMesh cada (antes ~70 meshes por cachoeira)
+    const sm = streaksRef.current
+    if (sm) {
+      for (let i = 0; i < streaks.length; i++) {
         const s = streaks[i]
-        if (!s) continue
         const travel = (s.offset + t * s.speed) % (height + s.len)
-        children[i].position.y = height - travel
+        tmpP.set(s.x, height - travel, 0.55 + s.z)
+        tmpS.set(s.w, s.len, 1)
+        tmpM.compose(tmpP, ID_Q, tmpS)
+        sm.setMatrixAt(i, tmpM)
       }
+      sm.instanceMatrix.needsUpdate = true
     }
 
-    if (mistRef.current) {
-      const children = mistRef.current.children
-      for (let i = 0; i < children.length; i++) {
+    const mm = mistRef.current
+    if (mm) {
+      for (let i = 0; i < mist.length; i++) {
         const p = mist[i]
-        if (!p) continue
         const cycle = (t * p.speed + p.phase) % p.rise
-        children[i].position.y = p.base + cycle
-        children[i].position.x = p.x + Math.sin(t * 0.7 + p.phase) * 1.2
         const k = cycle / p.rise
-        children[i].scale.setScalar(p.s * (1 + k * 1.1))
-        children[i].material.opacity = Math.max(0, (frozen ? 0.2 : 0.34) * (1 - k))
+        // some encolhendo no topo (opacidade por instância não existe)
+        const sc = p.s * (1 + k * 1.1) * (1 - k * k)
+        tmpP.set(p.x + Math.sin(t * 0.7 + p.phase) * 1.2, p.base + cycle, p.z)
+        tmpS.setScalar(Math.max(0.001, sc))
+        tmpM.compose(tmpP, ID_Q, tmpS)
+        mm.setMatrixAt(i, tmpM)
       }
+      mm.instanceMatrix.needsUpdate = true
     }
 
     for (let i = 0; i < veilRefs.current.length; i++) {
@@ -195,21 +226,18 @@ export default function Waterfall({
             </mesh>
           ))}
 
-          {/* faixas de água descendo */}
-          <group ref={streaksRef}>
-            {streaks.map((s, i) => (
-              <mesh key={i} position={[s.x, height, 0.55 + s.z]}>
-                <boxGeometry args={[s.w, s.len, 0.16]} />
-                <ToonMat
-                  color={['#f2fbff', '#d6f0fb', '#b9e3f4'][s.shade]}
-                  emissive="#dff2fb"
-                  emissiveIntensity={0.35}
-                  transparent
-                  opacity={0.82}
-                  depthWrite={false}/>
-              </mesh>
-            ))}
-          </group>
+          {/* faixas de água descendo (instanciadas) */}
+          <instancedMesh
+            ref={(el) => {
+              streaksRef.current = el
+              if (el && streaks.length) {
+                streaks.forEach((s, i) => el.setColorAt(i, STREAK_COLORS[s.shade]))
+                if (el.instanceColor) el.instanceColor.needsUpdate = true
+              }
+            }}
+            args={[STREAK_GEO, streakMat, streaks.length]}
+            frustumCulled={false}
+          />
         </>
       )}
 
@@ -258,20 +286,16 @@ export default function Waterfall({
       )}
 
       {/* névoa */}
-      <group ref={mistRef} position={[0, 0.4, 1.4]}>
-        {mist.map((p, i) => (
-          <mesh key={i} position={[p.x, p.base, p.z]}>
-            <sphereGeometry args={[1, 5, 4]} />
-            <ToonMat
-              color="#eef8fc"
-              transparent
-              opacity={0.3}
-              depthWrite={false}/>
-          </mesh>
-        ))}
+      <group position={[0, 0.4, 1.4]}>
+        <instancedMesh
+          ref={mistRef}
+          args={[MIST_GEO, frozen ? mistMatFrozen : mistMat, mist.length]}
+          frustumCulled={false}
+        />
       </group>
 
       {/* pedras molhadas na base */}
+      <StaticBatch>
       {Array.from({ length: 6 }, (_, i) => (
         <mesh
           key={i}
@@ -283,6 +307,7 @@ export default function Waterfall({
           <ToonMat color={frozen ? '#b8ccd8' : '#5e6a66'}/>
         </mesh>
       ))}
+      </StaticBatch>
     </group>
   )
 }

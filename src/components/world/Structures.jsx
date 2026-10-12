@@ -856,7 +856,7 @@ export function SummitTreasure() {
       playerPosition.x - position[0],
       playerPosition.z - position[2],
     )
-    if (d < 4) startFinale()
+    if (d < 5.5) startFinale()
   })
 
   return (

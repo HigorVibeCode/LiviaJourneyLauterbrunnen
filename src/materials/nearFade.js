@@ -18,7 +18,7 @@ export function installNearFade() {
   if (installed) return
   installed = true
   const inject = /* glsl */ `
-#if !defined( DEPTH_PACKING ) && !defined( DISTANCE )
+#if !defined( DEPTH_PACKING ) && !defined( DISTANCE ) && !defined( NO_NEAR_FADE )
   {
     float camDepth = 1.0 / max( gl_FragCoord.w, 1e-5 );
     if ( camDepth < ${FADE_END.toFixed(2)} ) {
@@ -32,4 +32,16 @@ export function installNearFade() {
 #endif
 `
   THREE.ShaderChunk.clipping_planes_fragment = inject + THREE.ShaderChunk.clipping_planes_fragment
+}
+
+/** A personagem nunca some (marca os materiais da sub-árvore) */
+export function excludeFromNearFade(root) {
+  root?.traverse((o) => {
+    const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : []
+    for (const m of mats) {
+      if (m.defines?.NO_NEAR_FADE !== undefined) continue
+      m.defines = { ...(m.defines ?? {}), NO_NEAR_FADE: '' }
+      m.needsUpdate = true
+    }
+  })
 }
