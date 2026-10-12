@@ -10,6 +10,10 @@ import {
   pathXAt,
 } from '../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
+import { playerPosition } from '../store/playerStore'
+import StaticBatch from './world/StaticBatch'
+
+const ANIMAL_VIEW = 75
 
 /**
  * Fauna alpina. Todos os bichos são atualizados por UM único useFrame
@@ -125,6 +129,13 @@ export default function Animals() {
       const e = entries.current[i]
       if (!e?.root) continue
 
+      // bichos longe: escondidos e sem animar (eram ~700 draw calls)
+      const far =
+        Math.abs(e.home[2] - playerPosition.z) > ANIMAL_VIEW ||
+        Math.abs(e.home[0] - playerPosition.x) > ANIMAL_VIEW
+      e.root.visible = !far
+      if (far) continue
+
       const angle = e.phase + t * e.rate
       // pausas naturais: o bicho para de vez em quando
       const activity = Math.max(0, Math.sin(angle * 3.1) * 0.5 + 0.6)
@@ -202,6 +213,7 @@ function Creature({ def, entries }) {
       scale={def.scale}
     >
       {/* corpo */}
+      <StaticBatch>
       <mesh castShadow={false} position={[0, legY + s * 0.42, 0]}>
         <capsuleGeometry args={[s * 0.4, s * 0.72, 4, 7]} />
         <ToonMat color={spec.body}/>
@@ -230,6 +242,7 @@ function Creature({ def, entries }) {
           </mesh>
         </>
       )}
+      </StaticBatch>
 
       {/* cabeça */}
       <group
@@ -238,6 +251,7 @@ function Creature({ def, entries }) {
         }}
         position={[0, legY + s * 0.78, s * 0.62]}
       >
+        <StaticBatch>
         <mesh castShadow={false}>
           <boxGeometry args={[s * 0.44, s * 0.44, s * 0.55]} />
           <ToonMat color={spec.body}/>
@@ -292,6 +306,7 @@ function Creature({ def, entries }) {
             <ToonMat color="#c9a227"/>
           </mesh>
         )}
+        </StaticBatch>
       </group>
 
       {/* patas */}

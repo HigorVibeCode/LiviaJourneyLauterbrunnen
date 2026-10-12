@@ -173,8 +173,8 @@ export default function GuideBeacon() {
   return (
     <>
       <group ref={rootRef} visible={false}>
-        <pointLight ref={lightRef} color="#ffe8a0" intensity={0} distance={7} decay={2} />
-        <pointLight ref={tipLightRef} color="#fff6d0" intensity={0} distance={4} decay={2} />
+        <pooledLight ref={lightRef} color="#ffe8a0" intensity={0} distance={7} decay={2} />
+        <pooledLight ref={tipLightRef} color="#fff6d0" intensity={0} distance={4} decay={2} />
 
         <mesh ref={auraRef} renderOrder={0}>
           <cylinderGeometry args={[0.32, 0.7, 1, 12, 1, true]} />

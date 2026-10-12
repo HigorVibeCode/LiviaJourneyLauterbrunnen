@@ -344,7 +344,7 @@ export default function Phoenix() {
           ))}
 
           {/* 1 light max */}
-          <pointLight color="#ff9a3c" intensity={3.2} distance={20} decay={2} position={[0, 0.4, 0.2]} />
+          <pooledLight color="#ff9a3c" intensity={3.2} distance={20} decay={2} position={[0, 0.4, 0.2]} />
           </group>
         </group>
 

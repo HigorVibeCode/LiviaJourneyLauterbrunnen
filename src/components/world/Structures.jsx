@@ -636,35 +636,35 @@ export function SummitStairs() {
         )
       })}
 
-      <pointLight
+      <pooledLight
         position={[STAIRS.halfWidth + 1.6, midLightY, midLightZ]}
         color="#ffcc88"
         intensity={6}
         distance={32}
         decay={1.6}
       />
-      <pointLight
+      <pooledLight
         position={[-STAIRS.halfWidth - 1.6, midLightY, midLightZ - 18]}
         color="#ffcc88"
         intensity={5}
         distance={28}
         decay={1.6}
       />
-      <pointLight
+      <pooledLight
         position={[0, SUMMIT_Y * 0.25 + 2, STAIRS.zStart - stairsLen * 0.22]}
         color="#ffd898"
         intensity={5}
         distance={26}
         decay={1.6}
       />
-      <pointLight
+      <pooledLight
         position={[0, SUMMIT_Y * 0.62 + 2, STAIRS.zStart - stairsLen * 0.68]}
         color="#ffd898"
         intensity={5}
         distance={26}
         decay={1.6}
       />
-      <pointLight
+      <pooledLight
         position={[0, topArchY + 6.5, topArchZ + 1.5]}
         color="#ffcc88"
         intensity={7}
@@ -893,7 +893,7 @@ export function SummitTreasure() {
           emissive="#ffc84a"
           emissiveIntensity={1.8}/>
       </mesh>
-      <pointLight position={[0, 2.2, 0]} color="#ffcc66" intensity={7} distance={12} decay={2} />
+      <pooledLight position={[0, 2.2, 0]} color="#ffcc66" intensity={7} distance={12} decay={2} />
 
       {/* feixe dourado que sobe ao abrir o baú */}
       <mesh ref={beamRef} visible={false} position={[0, 1.4, 0]} geometry={beamGeo}>
@@ -976,8 +976,8 @@ export function SummitTreasure() {
           </mesh>
         </group>
       ))}
-      <pointLight position={[-18, 5.55, -10]} color="#ffcc88" intensity={5} distance={20} decay={2} />
-      <pointLight position={[18, 5.55, -10]} color="#ffcc88" intensity={5} distance={20} decay={2} />
+      <pooledLight position={[-18, 5.55, -10]} color="#ffcc88" intensity={5} distance={20} decay={2} />
+      <pooledLight position={[18, 5.55, -10]} color="#ffcc88" intensity={5} distance={20} decay={2} />
 
       {/* portal do mirante (arco atrás do baú) */}
       <group position={[0, 0, -22]}>

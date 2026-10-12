@@ -1,6 +1,5 @@
-import { useMemo, useRef, useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import ToonMat from '../../materials/ToonMat'
-import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { ChunkedInstanced, useWindMaterial } from './Instanced'
@@ -8,8 +7,6 @@ import { generateZoneProps } from '../../config/scatter'
 import { SCATTER_ZONES } from '../../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
-import { playerPosition } from '../../store/playerStore'
-import { filterVegetationZone } from '../../utils/lodBands'
 import { makeToonMaterial } from '../../materials/toonMaterial'
 
 /** Geometrias compartilhadas por todas as zonas (criadas uma vez) */
@@ -157,6 +154,9 @@ function useSharedMaterials() {
   }, [])
 }
 
+/** Detalhe pequeno (grama, flores…) some antes — ninguém nota a 60 m */
+const SMALL_CULL = 60
+
 export default function Vegetation() {
   const quality = useGameStore((s) => s.quality)
   const density = (QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium).density
@@ -227,35 +227,6 @@ export default function Vegetation() {
     return list
   }, [zones])
 
-  const bushColliders = useMemo(() => {
-    const list = []
-    zones.forEach((z) =>
-      z.bushes.forEach((b) =>
-        list.push({ x: b.x, y: b.y + 0.35 * (b.s ?? 1), z: b.z, r: 0.42 * (b.s ?? 1), h: 0.35 * (b.s ?? 1) }),
-      ),
-    )
-    return list
-  }, [zones])
-
-  const propColliders = useMemo(() => {
-    const list = []
-    zones.forEach((z) => {
-      z.logs.forEach((l) =>
-        list.push({ x: l.x, y: l.y + 0.25 * (l.s ?? 1), z: l.z, r: 0.48 * (l.s ?? 1), h: 0.28 * (l.s ?? 1) }),
-      )
-      z.hay.forEach((h) =>
-        list.push({ x: h.x, y: h.y, z: h.z, r: 0.52 * (h.s ?? 1), h: 0.32 * (h.s ?? 1) }),
-      )
-      z.crateBoxes.forEach((c) =>
-        list.push({ x: c.x, y: c.y, z: c.z, r: 0.4 * (c.s ?? 1), h: 0.42 * (c.s ?? 1) }),
-      )
-      z.barrels.forEach((c) =>
-        list.push({ x: c.x, y: c.y, z: c.z, r: 0.36 * (c.s ?? 1), h: 0.42 * (c.s ?? 1) }),
-      )
-    })
-    return list
-  }, [zones])
-
   const canopyOccluders = useMemo(() => {
     const list = []
     zones.forEach((z) => {
@@ -285,20 +256,8 @@ export default function Vegetation() {
     return list
   }, [zones])
 
-  const lodTick = useRef(0)
-  const [lodZones, setLodZones] = useState(zones)
-
-  useEffect(() => {
-    setLodZones(zones)
-  }, [zones])
-
-  useFrame((state) => {
-    if (state.clock.elapsedTime - lodTick.current < 0.35) return
-    lodTick.current = state.clock.elapsedTime
-    const px = playerPosition.x
-    const pz = playerPosition.z
-    setLodZones(zones.map((z) => filterVegetationZone(z, px, pz)))
-  })
+  // LOD por distância agora é feito pelo DistanceCuller (sem setState a cada 0.35 s)
+  const lodZones = zones
 
   const snowmen = useMemo(
     () => lodZones.flatMap((z) => z.snowmen.map((s) => ({ ...s, zone: z.zoneId }))),
@@ -311,12 +270,6 @@ export default function Vegetation() {
       <RigidBody type="fixed" colliders={false} friction={0.35}>
         {solids.map((s, i) => (
           <CuboidCollider key={`s${i}`} position={[s.x, s.y + s.h, s.z]} args={[s.r, s.h, s.r]} />
-        ))}
-        {bushColliders.map((b, i) => (
-          <CuboidCollider key={`b${i}`} position={[b.x, b.y, b.z]} args={[b.r, b.h, b.r]} />
-        ))}
-        {propColliders.map((p, i) => (
-          <CuboidCollider key={`p${i}`} position={[p.x, p.y, p.z]} args={[p.r, p.h, p.r]} />
         ))}
         {fenceColliders.map((f, i) => (
           <CuboidCollider
@@ -353,34 +306,34 @@ export default function Vegetation() {
 
           <ChunkedInstanced geometry={geo.bush} material={bushMaterial} items={z.bushes} castShadow={false} receiveShadow={false} />
           <ChunkedInstanced geometry={geo.bushCap} material={mat.snow} items={z.bushSnow} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.fruit} material={mat.fruit} items={z.fruits} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.fruit} material={mat.fruit} items={z.fruits} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
 
           <ChunkedInstanced
             geometry={geo.blade}
             material={grassMaterial}
-            items={z.grass}
+            items={z.grass} cullDist={SMALL_CULL}
             castShadow={false}
             receiveShadow={false}
           />
-          <ChunkedInstanced geometry={geo.stem} material={mat.stem} items={z.flowerBases} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.leaves} material={mat.leaf} items={z.flowerBases} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.petals} material={mat.bloom} items={z.flowers} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.bloom} material={mat.bloomCenter} items={z.flowerBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.stem} material={mat.stem} items={z.flowerBases} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.leaves} material={mat.leaf} items={z.flowerBases} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.petals} material={mat.bloom} items={z.flowers} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.bloom} material={mat.bloomCenter} items={z.flowerBases} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
 
-          <ChunkedInstanced geometry={geo.fern} material={bushMaterial} items={z.ferns} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.fern} material={bushMaterial} items={z.ferns} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
           <ChunkedInstanced
             geometry={geo.reed}
             material={reedMaterial}
-            items={z.reeds}
+            items={z.reeds} cullDist={SMALL_CULL}
             castShadow={false}
             receiveShadow={false}
           />
 
           <ChunkedInstanced geometry={geo.rock} material={mat.rock} items={z.rocks} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.rock} material={mat.rock} items={z.pebbles} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.rock} material={mat.rock} items={z.pebbles} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
 
-          <ChunkedInstanced geometry={geo.stemMush} material={mat.mushStem} items={z.mushroomBases} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.capMush} material={mat.mushCap} items={z.mushrooms} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.stemMush} material={mat.mushStem} items={z.mushroomBases} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.capMush} material={mat.mushCap} items={z.mushrooms} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
 
           <ChunkedInstanced geometry={geo.log} material={mat.wood} items={z.logs} castShadow={false} receiveShadow={false} />
           <ChunkedInstanced geometry={geo.hay} material={mat.hay} items={z.hay} castShadow={false} receiveShadow={false} />
@@ -406,7 +359,7 @@ export default function Vegetation() {
             items={z.snowPatches}
             castShadow={false}
           />
-          <ChunkedInstanced geometry={geo.icicle} material={mat.ice} items={z.icicles} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={geo.icicle} material={mat.ice} items={z.icicles} cullDist={SMALL_CULL} castShadow={false} receiveShadow={false} />
         </group>
       ))}
 

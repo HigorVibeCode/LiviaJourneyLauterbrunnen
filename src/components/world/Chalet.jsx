@@ -3,6 +3,7 @@ import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
+import StaticBatch from './StaticBatch'
 
 const HALF_W = 6.5
 const HALF_D = 5
@@ -30,7 +31,7 @@ export default function Chalet({
   const snowy = kind === 'cabin'
 
   return (
-    <group position={position} rotation={[0, rotation, 0]} scale={scale}>
+    <StaticBatch position={position} rotation={[0, rotation, 0]} scale={scale}>
       <RigidBody type="fixed" colliders={false} friction={1.2}>
         {/* fundo */}
         <CuboidCollider position={[0, WALL_H / 2, -HALF_D]} args={[HALF_W, WALL_H / 2, WALL_T]} />
@@ -159,7 +160,7 @@ export default function Chalet({
 
       {/* ── Interior ── */}
       <Interior home={home} />
-    </group>
+    </StaticBatch>
   )
 }
 
@@ -429,7 +430,7 @@ function Interior({ home }) {
         <boxGeometry args={[0.3, 0.9, 1.3]} />
         <ToonMat color="#ff8830" emissive="#ff7020" emissiveIntensity={1.6} />
       </mesh>
-      {home && <pointLight position={[3.4, 2.4, -1]} intensity={9} distance={16} decay={2} color="#ffb060" />}
+      {home && <pooledLight position={[3.4, 2.4, -1]} intensity={9} distance={16} decay={2} color="#ffb060" />}
     </group>
   )
 }
@@ -455,7 +456,7 @@ function Smoke({ position }) {
   })
 
   return (
-    <group ref={ref} position={position}>
+    <group ref={ref} position={position} userData={{ noBatch: true }}>
       {puffs.map((p, i) => (
         <mesh key={i}>
           <sphereGeometry args={[0.5, 5, 5]} />

@@ -12,6 +12,8 @@ export const QUALITY_PRESETS = {
     shadowMapSize: 512,
     dpr: [1, 1],
     density: 0.55,
+    drawDistance: 130,
+    lights: 2,
   },
   medium: {
     id: 'medium',
@@ -22,6 +24,8 @@ export const QUALITY_PRESETS = {
     shadowMapSize: 1024,
     dpr: [1, 1],
     density: 0.75,
+    drawDistance: 170,
+    lights: 4,
   },
   high: {
     id: 'high',
@@ -32,6 +36,8 @@ export const QUALITY_PRESETS = {
     shadowMapSize: 1536,
     dpr: [1, 1.5],
     density: 1.2,
+    drawDistance: 230,
+    lights: 6,
   },
 }
 

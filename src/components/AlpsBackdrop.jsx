@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { makeRng } from '../config/world'
 import { playerPosition } from '../store/playerStore'
 import Instanced from './world/Instanced'
+import StaticBatch from './world/StaticBatch'
 
 /**
  * Alpes distantes — só visual, sem física.
@@ -61,7 +62,7 @@ export default function AlpsBackdrop() {
   })
 
   return (
-    <group>
+    <group userData={{ noCull: true }}>
       {rows.map((row, li) => (
         <group
           key={row.key}
@@ -69,6 +70,7 @@ export default function AlpsBackdrop() {
           position={[0, -10, row.z]}
           scale={row.scale}
         >
+          <StaticBatch>
           {row.peaks.map((p, i) => (
             <group key={i} position={[p.x, 0, p.z]} rotation={[0, p.ry, 0]}>
               <mesh>
@@ -85,6 +87,7 @@ export default function AlpsBackdrop() {
               </mesh>
             </group>
           ))}
+          </StaticBatch>
         </group>
       ))}
 

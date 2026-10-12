@@ -6,6 +6,7 @@ import { useProgressStore, QUESTS, ITEMS, missingItems } from '../store/progress
 import { playerPosition } from '../store/playerStore'
 import { guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
+import StaticBatch from './world/StaticBatch'
 
 const INTERACT_DIST = 8
 const OPEN_ANGLE = 1.85
@@ -224,7 +225,7 @@ export default function Gate({
       </group>
 
       {/* clarão do destranque */}
-      <pointLight
+      <pooledLight
         ref={flashRef}
         position={[0, height * 0.6, 1.2]}
         color="#ffd98a"
@@ -250,7 +251,7 @@ export default function Gate({
 function DoorLeaf({ width, height, color, hingeSide }) {
   const cx = hingeSide * width * 0.5
   return (
-    <group>
+    <StaticBatch>
       <mesh position={[cx, height / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[width - 0.06, height * 0.94, 0.32]} />
         <ToonMat color={color}/>
@@ -290,7 +291,7 @@ function DoorLeaf({ width, height, color, hingeSide }) {
           <ToonMat color="#4a4a48"/>
         </mesh>
       ))}
-    </group>
+    </StaticBatch>
   )
 }
 
@@ -306,7 +307,7 @@ function GateLandmark({ width, height, color }) {
   })
 
   return (
-    <group>
+    <StaticBatch>
       {/* arco alto acima do vão */}
       <mesh position={[0, height + 1.55, 0]} castShadow>
         <boxGeometry args={[width + 2.2, 0.35, 0.55]} />
@@ -341,7 +342,7 @@ function GateLandmark({ width, height, color }) {
           color="#f0d060"emissive="#e8b030"
           emissiveIntensity={0.85}/>
       </mesh>
-      <pointLight
+      <pooledLight
         ref={glowRef}
         position={[0, height + 1.4, 1.6]}
         color="#ffd060"
@@ -363,7 +364,7 @@ function GateLandmark({ width, height, color }) {
               emissiveIntensity={1.4}
             />
           </mesh>
-          <pointLight position={[0, 0.4, 0.2]} color="#ffb060" intensity={1.1} distance={14} decay={2} />
+          <pooledLight position={[0, 0.4, 0.2]} color="#ffb060" intensity={1.1} distance={14} decay={2} />
         </group>
       ))}
       {/* anel no chão — marca o vão */}
@@ -375,7 +376,7 @@ function GateLandmark({ width, height, color }) {
         <boxGeometry args={[0.01, 0.01, 0.01]} />
         <meshBasicMaterial color={color} />
       </mesh>
-    </group>
+    </StaticBatch>
   )
 }
 

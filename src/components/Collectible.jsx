@@ -144,7 +144,7 @@ export default function Collectible({ itemId }) {
       </mesh>
       {/* fica sempre montada e visível (intensidade 0 depois da coleta):
           o hash de luzes da cena não muda e nada recompila */}
-      <pointLight
+      <pooledLight
         ref={lightRef}
         position={[0, 1.2, 0]}
         color={beacon}

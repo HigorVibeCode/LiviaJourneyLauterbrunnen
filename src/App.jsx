@@ -20,6 +20,8 @@ import { LoaderReporter } from './components/ui/LoaderReporter'
 import ErrorBoundary from './components/ErrorBoundary'
 import Effects from './components/Effects'
 import PhysicsTicker from './components/PhysicsTicker'
+import DistanceCuller from './components/DistanceCuller'
+import LightPool from './components/LightPool'
 import RemotePlayers from './components/RemotePlayers'
 import MultiplayerBridge from './multiplayer/MultiplayerBridge'
 import { QUALITY_PRESETS, useGameStore } from './store/gameStore'
@@ -83,6 +85,8 @@ function GameCanvas() {
         <Lighting />
         <LoaderReporter />
         <BootWarmup />
+        <DistanceCuller />
+        <LightPool />
 
         <ErrorBoundary name="GameScene">
           <Suspense fallback={null}>

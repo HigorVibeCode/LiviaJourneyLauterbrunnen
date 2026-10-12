@@ -21,6 +21,7 @@ export default function Instanced({
   items,
   castShadow = true,
   receiveShadow = true,
+  cullDist,
 }) {
   const ref = useRef(null)
 
@@ -71,6 +72,7 @@ export default function Instanced({
       args={[geometry, material, items.length]}
       castShadow={castShadow}
       receiveShadow={receiveShadow}
+      {...(cullDist ? { userData: { cullDist } } : null)}
     />
   )
 }
@@ -123,8 +125,8 @@ export function useWindMaterial({ color, strength = 0.16, speed = 1.4 }) {
 }
 
 /** InstancedMesh partido em chunks Z — bounding spheres menores, culling eficaz. */
-export function ChunkedInstanced({ geometry, material, items, castShadow = true, receiveShadow = true }) {
-  const chunks = useMemo(() => chunkItemsByZ(items), [items])
+export function ChunkedInstanced({ geometry, material, items, castShadow = true, receiveShadow = true, cullDist, chunkSize }) {
+  const chunks = useMemo(() => chunkItemsByZ(items, chunkSize), [items, chunkSize])
   if (!items.length) return null
   return chunks.map(({ key, items: chunkItems }) => (
     <Instanced
@@ -134,6 +136,7 @@ export function ChunkedInstanced({ geometry, material, items, castShadow = true,
       items={chunkItems}
       castShadow={castShadow}
       receiveShadow={receiveShadow}
+      cullDist={cullDist}
     />
   ))
 }

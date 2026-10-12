@@ -62,7 +62,7 @@ export default function LanternPickup() {
         <coneGeometry args={[0.2, 0.45, 5]} />
         <ToonMat color="#e8c040" emissive="#c89820" emissiveIntensity={1.1}/>
       </mesh>
-      <pointLight position={[0, 1.2, 0]} color="#ffd898" intensity={4.5} distance={14} decay={1.6} />
+      <pooledLight position={[0, 1.2, 0]} color="#ffd898" intensity={4.5} distance={14} decay={1.6} />
       <RigidBody type="fixed" colliders={false} sensor>
         <CuboidCollider
           args={[0.8, 1.2, 0.8]}
@@ -92,7 +92,7 @@ export function LiviaLanternLight() {
   })
 
   return (
-    <pointLight
+    <pooledLight
       ref={lightRef}
       position={[0, 1.1, 0.3]}
       color="#ffd898"

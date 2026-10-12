@@ -1,5 +1,4 @@
-import { forwardRef, useMemo, useRef, useState, useEffect } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { forwardRef, useMemo } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
@@ -11,8 +10,6 @@ import {
 import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import { ChunkedInstanced } from './Instanced'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
-import { playerPosition } from '../../store/playerStore'
-import { filterAdventurePlacements } from '../../utils/lodBands'
 import { makeToonMaterial } from '../../materials/toonMaterial'
 
 const MODEL_URL = '/models/adventure_pack.glb'
@@ -250,27 +247,10 @@ export default function AdventureProps() {
   const library = useMemo(() => buildLibrary(scene), [scene])
   const placements = useMemo(() => buildAdventurePlacements(density), [density])
 
-  const { colliders, canopyOccluders } = useMemo(
+  // LOD por distância fica a cargo do DistanceCuller (sem setState periódico)
+  const { colliders, canopyOccluders, instanced, clones } = useMemo(
     () => buildPropBatch(library, placements),
     [library, placements],
-  )
-
-  const [lodPlacements, setLodPlacements] = useState(placements)
-  const lodTick = useRef(0)
-
-  useEffect(() => {
-    setLodPlacements(placements)
-  }, [placements])
-
-  useFrame((state) => {
-    if (state.clock.elapsedTime - lodTick.current < 0.35) return
-    lodTick.current = state.clock.elapsedTime
-    setLodPlacements(filterAdventurePlacements(placements, playerPosition.x, playerPosition.z))
-  })
-
-  const { instanced, clones } = useMemo(
-    () => buildPropBatch(library, lodPlacements),
-    [library, lodPlacements],
   )
 
   return (
@@ -300,6 +280,7 @@ export default function AdventureProps() {
       {instanced.map((group) => (
         <ChunkedInstanced
           key={group.prop}
+          chunkSize={120}
           geometry={group.geometry}
           material={group.material}
           items={group.items}

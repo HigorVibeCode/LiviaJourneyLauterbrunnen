@@ -95,7 +95,7 @@ function SecretFireflyJar() {
           <ToonMat color="#c8ff80" emissive="#90ff40" emissiveIntensity={1.4}/>
         </mesh>
       ))}
-      <pointLight position={[0, 0.45, 0]} color="#a0ff60" intensity={0.8} distance={4} decay={2} />
+      <pooledLight position={[0, 0.45, 0]} color="#a0ff60" intensity={0.8} distance={4} decay={2} />
     </group>
   )
 }
