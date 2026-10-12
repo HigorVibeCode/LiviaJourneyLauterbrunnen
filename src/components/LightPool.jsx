@@ -34,6 +34,7 @@ export class VirtualPointLight extends THREE.Object3D {
 extend({ PooledLight: VirtualPointLight })
 
 const MAX_LIGHTS = 8
+const byScore = (a, b) => b.score - a.score
 const tmp = new THREE.Vector3()
 
 function effectivelyVisible(obj) {
@@ -52,9 +53,12 @@ export default function LightPool() {
   const refs = useRef([])
   const slots = useMemo(() => Array.from({ length: MAX_LIGHTS }, (_, i) => i), [])
   const picked = useMemo(() => [], [])
+  // candidatos pré-alocados: nada de objeto novo por luz por frame
+  const pool = useMemo(() => Array.from({ length: 96 }, () => ({ v: null, x: 0, y: 0, z: 0, score: 0 })), [])
 
   useFrame(() => {
     picked.length = 0
+    let n = 0
     for (const v of registry) {
       if (v.intensity <= 0.02 || !v.parent) continue
       if (!effectivelyVisible(v)) continue
@@ -65,9 +69,16 @@ export default function LightPool() {
       const d2 = dx * dx + dy * dy + dz * dz
       const reach = v.distance + 30
       if (d2 > reach * reach) continue
-      picked.push({ v, x: tmp.x, y: tmp.y, z: tmp.z, score: v.intensity / (1 + d2 * 0.01) })
+      if (n >= pool.length) break
+      const c = pool[n++]
+      c.v = v
+      c.x = tmp.x
+      c.y = tmp.y
+      c.z = tmp.z
+      c.score = v.intensity / (1 + d2 * 0.01)
+      picked.push(c)
     }
-    picked.sort((a, b) => b.score - a.score)
+    picked.sort(byScore)
 
     for (let i = 0; i < slots.length; i++) {
       const light = refs.current[i]

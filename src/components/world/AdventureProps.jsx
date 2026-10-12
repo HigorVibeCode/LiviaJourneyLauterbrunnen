@@ -78,6 +78,7 @@ function tintMeshMaterial(mesh, propName) {
     else if (i > 0 && /tree|maple|pine|willow|bush/i.test(propName)) color = PACK_COLORS.pine
 
     const c = makeToonMaterial({
+      nearFade: true,
       color,
       emissive: /flame|fire/i.test(propName) ? '#ff8020' : '#000000',
       emissiveIntensity: /flame|fire/i.test(propName) ? 1.2 : 0,

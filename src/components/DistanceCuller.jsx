@@ -18,6 +18,8 @@ import { QUALITY_PRESETS, useGameStore } from '../store/gameStore'
 const HIDDEN_MASK = 1 << 30
 const UPDATE_EVERY = 4
 const sphere = new THREE.Sphere()
+/** máscara original de cada objeto escondido (fora do userData, que o R3F troca a cada render) */
+const savedMask = new WeakMap()
 
 export default function DistanceCuller() {
   const frame = useRef(0)
@@ -62,14 +64,15 @@ function cull(obj, cam, maxDist) {
   const limit = obj.userData.cullDist ? Math.min(obj.userData.cullDist, maxDist) : maxDist
   const far = sphere.center.distanceTo(cam) - sphere.radius > limit
 
-  const ud = obj.userData
   if (far) {
-    if (ud.__cullMask === undefined) {
-      ud.__cullMask = obj.layers.mask
+    if (!savedMask.has(obj)) {
+      savedMask.set(obj, obj.layers.mask === HIDDEN_MASK ? 1 : obj.layers.mask)
       obj.layers.mask = HIDDEN_MASK
     }
-  } else if (ud.__cullMask !== undefined) {
-    obj.layers.mask = ud.__cullMask
-    ud.__cullMask = undefined
+  } else if (savedMask.has(obj)) {
+    obj.layers.mask = savedMask.get(obj)
+    savedMask.delete(obj)
+  } else if (obj.layers.mask === HIDDEN_MASK) {
+    obj.layers.mask = 1
   }
 }

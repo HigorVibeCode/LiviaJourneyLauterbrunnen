@@ -128,7 +128,7 @@ function useSharedGeometries() {
 
 function useSharedMaterials() {
   return useMemo(() => {
-    const mk = (opts) => makeToonMaterial(opts)
+    const mk = (opts) => makeToonMaterial({ ...opts, nearFade: true })
     return {
       bark: mk({ color: '#5b3a22' }),
       canopy: mk({ color: '#ffffff' }),

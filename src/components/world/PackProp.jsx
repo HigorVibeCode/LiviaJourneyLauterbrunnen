@@ -57,7 +57,7 @@ function extractProp(scene, name, targetHeight) {
     obj.castShadow = false
     obj.receiveShadow = true
     if (obj.geometry) obj.geometry.computeVertexNormals()
-    obj.material = makeToonMaterial({ color: colorForProp(name) })
+    obj.material = makeToonMaterial({ color: colorForProp(name), nearFade: true })
   })
 
   cache.set(key, pivot)

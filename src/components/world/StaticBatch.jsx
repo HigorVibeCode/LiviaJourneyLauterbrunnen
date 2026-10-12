@@ -13,7 +13,7 @@ const nrm = new THREE.Matrix3()
  * Um chalé tinha ~90 meshes = 90 draw calls; depois do batch são 2–4.
  * Partes animadas ficam de fora marcando `userData.noBatch` no grupo.
  */
-export default function StaticBatch({ children, ...props }) {
+export default function StaticBatch({ children, noNearFade = false, ...props }) {
   const ref = useRef(null)
 
   useLayoutEffect(() => {
@@ -45,7 +45,8 @@ export default function StaticBatch({ children, ...props }) {
     for (const c of root.children) visit(c)
 
     const merged = []
-    for (const b of buckets.values()) {
+    const mergedMats = new Set()
+    for (const [key, b] of buckets) {
       if (b.geos.length < 2) {
         b.geos.forEach((g) => g.dispose())
         // só um mesh nesse bucket: não vale a pena, deixa o original
@@ -58,16 +59,17 @@ export default function StaticBatch({ children, ...props }) {
       const mat = b.mat.clone()
       mat.color?.set('#ffffff')
       mat.vertexColors = true
+      // casas/portões/bichos: somem em pontilhado se a câmera encostar
+      if (!noNearFade) mat.defines = { ...(mat.defines ?? {}), NEAR_FADE: '' }
       const mesh = new THREE.Mesh(geo, mat)
       mesh.castShadow = b.cast
       mesh.receiveShadow = b.receive
       mesh.matrixAutoUpdate = false
       merged.push(mesh)
+      mergedMats.add(key)
     }
 
-    // esconde só o que entrou em algum batch
-    const mergedMats = new Set()
-    for (const [key, b] of buckets) if (b.geos.length >= 2) mergedMats.add(key)
+    // esconde só o que entrou de fato num mesh mesclado
     for (const obj of hidden) {
       const key =
         materialKey(obj.material) + (obj.castShadow ? 'c' : '') + (obj.receiveShadow ? 'r' : '')

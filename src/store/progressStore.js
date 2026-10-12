@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { STARS } from '../config/stars.js'
+import { usePlayerStore } from './playerStore.js'
 
 const STAR_TOTAL = STARS.length
 import {
@@ -130,6 +131,19 @@ export function missingItems(quest, inventory) {
 }
 
 export const PROGRESS_SAVE_KEY = 'livia-progress-v1'
+
+const INITIAL_PROGRESS = {
+  inventory: [],
+  collectedEver: [],
+  unlockedGates: [],
+  npcSpoke: {},
+  hasLantern: false,
+  foundEggs: [],
+  stars: [],
+  toast: null,
+  finished: false,
+  finalePhase: null,
+}
 
 export const useProgressStore = create(
   persist(
@@ -318,6 +332,10 @@ export const useProgressStore = create(
 
 /** Apaga o progresso salvo e recomeça do início */
 export function resetSavedGame() {
+  // o persist regrava a cada set(); por isso zera o estado em memória
+  // (que já persiste limpo) e só então apaga as chaves e recarrega
+  useProgressStore.setState(INITIAL_PROGRESS)
+  usePlayerStore.getState().resetToStart()
   try {
     localStorage.removeItem(PROGRESS_SAVE_KEY)
     localStorage.removeItem('livia-player-v1')

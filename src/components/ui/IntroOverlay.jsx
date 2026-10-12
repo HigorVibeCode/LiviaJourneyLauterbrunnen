@@ -33,6 +33,8 @@ export default function IntroOverlay({ onDone }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.code === 'Enter' || e.code === 'Space') {
+        // botão focado (Sim/Não/Novo jogo) usa o próprio Enter/Espaço
+        if (e.target?.closest?.('button')) return
         e.preventDefault()
         advance()
       }

@@ -11,6 +11,8 @@ const INITIAL_SPAWN = { x: 0, y: 2.5, z: 96 }
  */
 export const playerPosition = { ...INITIAL_SPAWN }
 
+let savesFrozen = false
+
 export function updatePlayerPosition(pos) {
   playerPosition.x = pos.x
   playerPosition.y = pos.y
@@ -29,6 +31,7 @@ export const usePlayerStore = create(
   respawns: 0,
 
   setLastSafe: (pos) => {
+    if (savesFrozen) return
     const { lastSafe } = get()
     if (
       Math.abs(lastSafe.x - pos.x) < 0.4 &&
@@ -49,6 +52,8 @@ export const usePlayerStore = create(
   countRespawn: () => set((s) => ({ respawns: s.respawns + 1 })),
 
   resetToStart: () => {
+    // recomeçando: nada mais grava posição até a página recarregar
+    savesFrozen = true
     updatePlayerPosition(INITIAL_SPAWN)
     set({ spawn: { ...INITIAL_SPAWN }, lastSafe: { ...INITIAL_SPAWN } })
   },

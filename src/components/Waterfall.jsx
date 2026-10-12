@@ -49,6 +49,7 @@ export default function Waterfall({
   const mistRef = useRef(null)
   const splashRef = useRef(null)
   const veilRefs = useRef([])
+  const animInit = useRef(false)
   const registerField = useWaterfallStore((s) => s.registerField)
   const unregisterField = useWaterfallStore((s) => s.unregisterField)
 
@@ -114,8 +115,9 @@ export default function Waterfall({
 
   useFrame((state) => {
     const t = state.clock.elapsedTime
-    // longe da Livia não anima (o culling já nem desenha)
-    if (Math.abs(playerPosition.z - wz) > 160) return
+    // longe da Livia não anima (depois de posicionar as instâncias uma vez)
+    if (animInit.current && Math.abs(playerPosition.z - wz) > 160) return
+    animInit.current = true
 
     // faixas e névoa: UM InstancedMesh cada (antes ~70 meshes por cachoeira)
     const sm = streaksRef.current
@@ -230,13 +232,14 @@ export default function Waterfall({
           <instancedMesh
             ref={(el) => {
               streaksRef.current = el
+              // esfera fixa cobrindo a queda: culling por distância/frustum funciona
+              if (el) el.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, height / 2, 0.6), height * 0.6 + width)
               if (el && streaks.length) {
                 streaks.forEach((s, i) => el.setColorAt(i, STREAK_COLORS[s.shade]))
                 if (el.instanceColor) el.instanceColor.needsUpdate = true
               }
             }}
             args={[STREAK_GEO, streakMat, streaks.length]}
-            frustumCulled={false}
           />
         </>
       )}
@@ -288,9 +291,11 @@ export default function Waterfall({
       {/* névoa */}
       <group position={[0, 0.4, 1.4]}>
         <instancedMesh
-          ref={mistRef}
+          ref={(el) => {
+            mistRef.current = el
+            if (el) el.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 5, 0), width * 3 + 12)
+          }}
           args={[MIST_GEO, frozen ? mistMatFrozen : mistMat, mist.length]}
-          frustumCulled={false}
         />
       </group>
 

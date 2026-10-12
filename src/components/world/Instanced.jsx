@@ -24,6 +24,7 @@ export default function Instanced({
   cullDist,
 }) {
   const ref = useRef(null)
+  const userData = useMemo(() => (cullDist ? { cullDist } : {}), [cullDist])
 
   useLayoutEffect(() => {
     const mesh = ref.current
@@ -72,7 +73,7 @@ export default function Instanced({
       args={[geometry, material, items.length]}
       castShadow={castShadow}
       receiveShadow={receiveShadow}
-      {...(cullDist ? { userData: { cullDist } } : null)}
+      userData={userData}
     />
   )
 }
@@ -89,6 +90,7 @@ export function useWindMaterial({ color, strength = 0.16, speed = 1.4 }) {
       color,
       gradientMap: getToonGradientMap(),
     })
+    mat.defines = { NEAR_FADE: '' }
 
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = uniforms.uTime

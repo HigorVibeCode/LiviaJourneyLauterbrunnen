@@ -33,11 +33,14 @@ export default function BootWarmup() {
     let frames = 0
     const run = async () => {
       setBootPhase('shaders', 0.3)
+      // compileAsync pode nunca terminar (contexto perdido, material descartado):
+      // no máximo 8 s esperando, depois segue de qualquer jeito
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms))
       try {
-        if (gl.compileAsync) await gl.compileAsync(scene, camera)
+        if (gl.compileAsync) await Promise.race([gl.compileAsync(scene, camera).catch(() => {}), wait(8000)])
         else gl.compile(scene, camera)
       } catch {
-        gl.compile(scene, camera)
+        /* sem pré-compilação: os shaders compilam no primeiro frame */
       }
       const tick = () => {
         if (unmounted.current) return

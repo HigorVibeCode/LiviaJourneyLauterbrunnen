@@ -83,7 +83,7 @@ export default function AlpsBackdrop() {
           position={[0, -10, row.z]}
           scale={row.scale}
         >
-          <StaticBatch>
+          <StaticBatch noNearFade>
           {row.peaks.map((p, i) => (
             <group key={i} position={[p.x, 0, p.z]} rotation={[0, p.ry, 0]}>
               <mesh>

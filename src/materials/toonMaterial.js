@@ -34,6 +34,7 @@ export function makeToonMaterial({
   transparent = false,
   opacity = 1,
   side = THREE.FrontSide,
+  nearFade = false,
 } = {}) {
   const mat = new THREE.MeshToonMaterial({
     color: new THREE.Color(color),
@@ -44,6 +45,8 @@ export function makeToonMaterial({
     opacity,
     side,
   })
+  // some perto da câmera (árvores/props) — ver materials/nearFade.js
+  if (nearFade) mat.defines = { ...(mat.defines ?? {}), NEAR_FADE: '' }
   return mat
 }
 

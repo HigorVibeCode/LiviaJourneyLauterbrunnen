@@ -40,7 +40,7 @@ const keyboardMap = [
   { name: 'right', keys: ['ArrowRight', 'KeyD'] },
   { name: 'jump', keys: ['Space'] },
   { name: 'run', keys: ['ShiftLeft', 'ShiftRight'] },
-  { name: 'interact', keys: ['KeyE', 'Enter'] },
+  { name: 'interact', keys: ['KeyE'] },
   { name: 'guide', keys: ['KeyG', 'KeyQ'] },
 ]
 

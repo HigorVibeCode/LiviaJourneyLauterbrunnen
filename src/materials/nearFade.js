@@ -1,10 +1,11 @@
 import * as THREE from 'three'
 
 /**
- * Tudo que fica colado na câmera some com um "pontilhado" suave
- * (árvores, telhados, cercas) — a câmera nunca mais fica tampada por
- * um tronco. Injeta no chunk comum a todos os materiais do three, então
- * vale para toon, standard, basic, instanced e batches.
+ * O que fica colado na câmera some com um "pontilhado" suave
+ * (árvores, casas, cercas, props) — a câmera nunca fica tampada por um
+ * tronco. Só nos materiais marcados com NEAR_FADE (enableNearFade): um
+ * `discard` em TODO shader (chão, penhascos) custaria early-Z em GPUs
+ * de tablet.
  *
  * 1 / gl_FragCoord.w = profundidade na câmera (perspectiva).
  * Mapas de sombra (DEPTH_PACKING / DISTANCE) ficam de fora.
@@ -18,7 +19,7 @@ export function installNearFade() {
   if (installed) return
   installed = true
   const inject = /* glsl */ `
-#if !defined( DEPTH_PACKING ) && !defined( DISTANCE ) && !defined( NO_NEAR_FADE )
+#if defined( NEAR_FADE ) && !defined( DEPTH_PACKING ) && !defined( DISTANCE )
   {
     float camDepth = 1.0 / max( gl_FragCoord.w, 1e-5 );
     if ( camDepth < ${FADE_END.toFixed(2)} ) {
@@ -34,14 +35,10 @@ export function installNearFade() {
   THREE.ShaderChunk.clipping_planes_fragment = inject + THREE.ShaderChunk.clipping_planes_fragment
 }
 
-/** A personagem nunca some (marca os materiais da sub-árvore) */
-export function excludeFromNearFade(root) {
-  root?.traverse((o) => {
-    const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : []
-    for (const m of mats) {
-      if (m.defines?.NO_NEAR_FADE !== undefined) continue
-      m.defines = { ...(m.defines ?? {}), NO_NEAR_FADE: '' }
-      m.needsUpdate = true
-    }
-  })
+/** Marca um material para sumir perto da câmera */
+export function enableNearFade(material) {
+  if (!material) return material
+  material.defines = { ...(material.defines ?? {}), NEAR_FADE: '' }
+  material.needsUpdate = true
+  return material
 }

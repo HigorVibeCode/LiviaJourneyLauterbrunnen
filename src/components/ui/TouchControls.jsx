@@ -17,7 +17,6 @@ const JOY_RADIUS = 56
  */
 export default function TouchControls() {
   const paused = useGameStore((s) => s.paused)
-  const finished = useProgressStore((s) => s.finished)
   const nearGateId = useProgressStore((s) => s.nearGateId)
   const nearNpcId = useProgressStore((s) => s.nearNpcId)
   const [visible, setVisible] = useState(false)
@@ -47,7 +46,8 @@ export default function TouchControls() {
     return () => clearInterval(id)
   }, [])
 
-  const hidden = !visible || paused || finished
+  // a tela de vitória fica por cima (z-index); depois de fechá-la dá para passear
+  const hidden = !visible || paused
   useEffect(() => {
     if (hidden) {
       resetMove()

@@ -41,7 +41,6 @@ import { LiviaLanternLight } from './LanternPickup'
 import { updatePlayerPose } from '../multiplayer/playerPose'
 import { isTyping } from '../lib/keyboard'
 import { cameraState, playerActions } from '../lib/cameraState'
-import { excludeFromNearFade } from '../materials/nearFade'
 import { useLoadingStore } from '../store/loadingStore'
 
 const WALK_SPEED = 7.4
@@ -184,7 +183,6 @@ export default function Livia() {
   const horseSafeTimer = useRef(0)
   const finaleLandedRef = useRef(false)
   const blobRef = useRef(null)
-  const fadeCheck = useRef(0)
 
   const animState = useRef({
     speed: 0,
@@ -411,17 +409,15 @@ export default function Livia() {
     if (!body) return
     // cavalo/fênix/vaca: a sombra redonda só volta no controle normal
     if (blobRef.current) blobRef.current.visible = false
-    // roupas trocam ao pegar itens → remarca de tempos em tempos (barato)
-    fadeCheck.current -= 1
-    if (fadeCheck.current <= 0) {
-      fadeCheck.current = 45
-      excludeFromNearFade(modelRef.current)
-    }
 
     // Mesmo teto do PhysicsTicker — input/câmera não aceleram em hitch
     const dt = Math.min(delta, 1 / 30)
     const finalePhase = useProgressStore.getState().finalePhase
     const inFinale = Boolean(finalePhase && finalePhase !== 'done')
+    // "voltar para a trilha" só vale a pé; a cavalo/no final/arrastada pela vaca é ignorado
+    if (playerActions.unstuck && (inFinale || horseRide.mounted || cowChase.dragging)) {
+      playerActions.unstuck = false
+    }
 
     // cutscene: trava controle e segue a fênix / baú
     if (inFinale) {
