@@ -56,7 +56,7 @@ export default function WorldMap() {
     <group>
       <AlpsBackdrop />
       <Terrain />
-      <PathStones />
+      {/* trilha agora é a fita de terra do Terrain (terrainMesh.buildPath) */}
       <Vegetation />
       {/* GLB do pack NÃO pode suspender Terrain/Livia — Suspense próprio */}
       <ErrorBoundary name="AdventureProps">

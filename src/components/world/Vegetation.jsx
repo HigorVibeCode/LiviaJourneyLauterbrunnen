@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import ToonMat from '../../materials/ToonMat'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { ChunkedInstanced, useWindMaterial } from './Instanced'
 import { generateZoneProps } from '../../config/scatter'
@@ -8,68 +9,103 @@ import { SCATTER_ZONES } from '../../config/world'
 import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
 import { makeToonMaterial } from '../../materials/toonMaterial'
+import { PAL } from '../../config/palette'
+
+/** zonas com pinheiros (o resto ganha árvores redondas) */
+const PINE_ZONES = new Set(['snow', 'night', 'climb', 'summitTop'])
+
+function mergeReed() {
+  const stem = new THREE.CylinderGeometry(0.04, 0.05, 1.2, 6)
+  stem.translate(0, 0.6, 0)
+  const head = new THREE.CapsuleGeometry(0.09, 0.26, 4, 8)
+  head.translate(0, 1.3, 0)
+  const g = mergeGeometries([stem.toNonIndexed(), head.toNonIndexed()])
+  return g
+}
 
 /** Geometrias compartilhadas por todas as zonas (criadas uma vez) */
 function useSharedGeometries() {
   return useMemo(() => {
-    const trunk = new THREE.CylinderGeometry(0.42, 0.78, 6, 8, 1)
-    trunk.translate(0, 3, 0)
+    // ── árvore redonda (estilo Animal Crossing): tronco baixo + copa fofa ──
+    const trunk = new THREE.CylinderGeometry(0.32, 0.5, 2.6, 10, 1)
+    trunk.translate(0, 1.3, 0)
+    const canopyA = new THREE.IcosahedronGeometry(2.3, 2)
+    canopyA.scale(1, 0.92, 1)
+    canopyA.translate(0, 4.3, 0)
+    const canopyB = new THREE.IcosahedronGeometry(1.55, 2)
+    canopyB.translate(1.05, 5.25, 0.35)
+    const canopyC = new THREE.IcosahedronGeometry(1.45, 2)
+    canopyC.translate(-0.95, 5.0, -0.45)
 
-    const canopyA = new THREE.ConeGeometry(3.6, 6.5, 9, 1)
-    canopyA.translate(0, 6.75, 0)
-    const canopyB = new THREE.ConeGeometry(2.7, 5.5, 9, 1)
-    canopyB.translate(0, 11.25, 0)
-    const canopyC = new THREE.ConeGeometry(1.7, 4.5, 8, 1)
-    canopyC.translate(0, 14.75, 0)
+    // ── pinheiro fofo (neve/noite/mirante): três saias arredondadas ──
+    const pineTrunk = new THREE.CylinderGeometry(0.28, 0.42, 2.2, 10, 1)
+    pineTrunk.translate(0, 1.1, 0)
+    const tier = (r, h, y) => {
+      const g = new THREE.ConeGeometry(r, h, 14, 2)
+      // barriga arredondada: empurra os vértices do meio para fora
+      const pos = g.attributes.position
+      for (let i = 0; i < pos.count; i++) {
+        const yy = pos.getY(i) / h + 0.5
+        const bulge = 1 + Math.sin(yy * Math.PI) * 0.18
+        pos.setX(i, pos.getX(i) * bulge)
+        pos.setZ(i, pos.getZ(i) * bulge)
+      }
+      g.translate(0, y, 0)
+      return g
+    }
+    const pineA = tier(2.2, 2.6, 2.9)
+    const pineB = tier(1.7, 2.2, 4.3)
+    const pineC = tier(1.15, 1.9, 5.6)
 
-    // Capas de neve: cada cone repete o topo da copa correspondente
-    // (um pouco mais largo), então a neve fica "sobre" os galhos.
-    const snowA = new THREE.ConeGeometry(1.85, 3.1, 9, 1)
-    snowA.translate(0, 8.55, 0)
-    const snowB = new THREE.ConeGeometry(1.4, 2.6, 9, 1)
-    snowB.translate(0, 12.8, 0)
-    const snowC = new THREE.ConeGeometry(0.9, 2.15, 8, 1)
-    snowC.translate(0, 16.05, 0)
+    // capas de neve sobre cada saia do pinheiro
+    const snowA = tier(1.25, 1.1, 3.75)
+    const snowB = tier(0.95, 0.95, 5.05)
+    const snowC = tier(0.62, 0.8, 6.25)
 
-    const bush = new THREE.SphereGeometry(1, 8, 6)
+    const bush = new THREE.IcosahedronGeometry(1, 2)
     // touca de neve nos arbustos: meia esfera achatada
-    const bushCap = new THREE.SphereGeometry(1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2)
-    const fruit = new THREE.SphereGeometry(0.11, 8, 6)
+    const bushCap = new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2)
+    const fruit = new THREE.SphereGeometry(0.16, 10, 8)
 
     // Tufo de grama: baixo e fino. Livia tem 1.7 — a moita precisa bater
     // no tornozelo, não na cintura.
-    const blade = new THREE.ConeGeometry(0.13, 0.5, 6, 1)
-    blade.translate(0, 0.25, 0)
+    // tufinho de trevo (meia bolinha achatada) — nada de espinhos
+    const blade = new THREE.SphereGeometry(0.2, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)
+    blade.scale(1, 0.6, 1)
 
     const stem = new THREE.CylinderGeometry(0.026, 0.034, 0.62, 6)
     stem.translate(0, 0.31, 0)
     // folhinhas na base: é o que faz a flor parecer flor e não pedra colorida
     const leaves = new THREE.ConeGeometry(0.22, 0.16, 8, 1)
     leaves.translate(0, 0.09, 0)
-    const bloom = new THREE.SphereGeometry(0.06, 8, 6)
-    bloom.translate(0, 0.66, 0)
-    const petals = new THREE.CylinderGeometry(0.13, 0.04, 0.05, 8)
+    const bloom = new THREE.SphereGeometry(0.075, 10, 8)
+    bloom.translate(0, 0.67, 0)
+    // flor de cinco pétalas: pentágono gordinho
+    const petals = new THREE.CylinderGeometry(0.22, 0.1, 0.07, 5)
     petals.translate(0, 0.63, 0)
 
     // samambaia: leque baixo e largo
-    const fern = new THREE.ConeGeometry(0.95, 0.55, 8, 1)
-    fern.translate(0, 0.27, 0)
+    // arbustinho baixo e redondo
+    const fern = new THREE.IcosahedronGeometry(0.55, 1)
+    fern.scale(1, 0.7, 1)
+    fern.translate(0, 0.3, 0)
 
     // junco: haste fina e alta
-    const reed = new THREE.ConeGeometry(0.075, 1.7, 6, 1)
-    reed.translate(0, 0.85, 0)
+    // taboa: hastezinha com "salsicha" na ponta
+    const reed = mergeReed()
 
-    const rock = new THREE.DodecahedronGeometry(1, 0)
+    const rock = new THREE.IcosahedronGeometry(1, 1)
+    rock.scale(1, 0.72, 1)
 
-    const capMush = new THREE.SphereGeometry(0.3, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2)
+    const capMush = new THREE.SphereGeometry(0.34, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2)
     capMush.translate(0, 0.3, 0)
     const stemMush = new THREE.CylinderGeometry(0.07, 0.09, 0.3, 8)
     stemMush.translate(0, 0.15, 0)
 
-    const log = new THREE.CylinderGeometry(0.5, 0.5, 3.2, 8)
-    const hay = new THREE.CylinderGeometry(0.95, 0.95, 2.6, 10)
+    const log = new THREE.CylinderGeometry(0.5, 0.5, 3.2, 14)
+    const hay = new THREE.CylinderGeometry(0.95, 0.95, 2.6, 16)
     const crate = new THREE.BoxGeometry(1.3, 1.3, 1.3)
-    const barrel = new THREE.CylinderGeometry(0.6, 0.7, 1.3, 10)
+    const barrel = new THREE.CylinderGeometry(0.62, 0.62, 1.3, 14)
 
     const post = new THREE.BoxGeometry(0.24, 1.6, 0.24)
     post.translate(0, 0.8, 0)
@@ -77,8 +113,8 @@ function useSharedGeometries() {
 
     const lampPost = new THREE.CylinderGeometry(0.1, 0.14, 3, 8)
     lampPost.translate(0, 1.5, 0)
-    const lampGlass = new THREE.BoxGeometry(0.26, 0.32, 0.26)
-    lampGlass.translate(0, 3.15, 0)
+    const lampGlass = new THREE.SphereGeometry(0.26, 12, 10)
+    lampGlass.translate(0, 3.2, 0)
 
     // mancha de neve no chão
     const snowPatch = new THREE.CylinderGeometry(1, 1.15, 0.14, 9)
@@ -94,6 +130,10 @@ function useSharedGeometries() {
       canopyA,
       canopyB,
       canopyC,
+      pineTrunk,
+      pineA,
+      pineB,
+      pineC,
       snowA,
       snowB,
       snowC,
@@ -130,22 +170,22 @@ function useSharedMaterials() {
   return useMemo(() => {
     const mk = (opts) => makeToonMaterial({ ...opts, nearFade: true })
     return {
-      bark: mk({ color: '#5b3a22' }),
+      bark: mk({ color: PAL.trunk }),
       canopy: mk({ color: '#ffffff' }),
-      snow: mk({ color: '#f4f8fc' }),
-      ice: mk({ color: '#cfe8f4', transparent: true, opacity: 0.85 }),
+      snow: mk({ color: PAL.snow }),
+      ice: mk({ color: PAL.ice, transparent: true, opacity: 0.9 }),
       fruit: mk({ color: '#ffffff' }),
       bloom: mk({ color: '#ffffff' }),
-      bloomCenter: mk({ color: '#e8b830' }),
-      stem: mk({ color: '#3f7a3f' }),
-      leaf: mk({ color: '#347a3c' }),
+      bloomCenter: mk({ color: PAL.flowerCenter }),
+      stem: mk({ color: '#5cbf52' }),
+      leaf: mk({ color: '#4fb04a' }),
       rock: mk({ color: '#ffffff' }),
       mushCap: mk({ color: '#ffffff' }),
-      mushStem: mk({ color: '#efe6d2' }),
-      wood: mk({ color: '#6b4a2c' }),
-      woodDark: mk({ color: '#54381f' }),
-      hay: mk({ color: '#d0a94e' }),
-      metal: mk({ color: '#4a4a48' }),
+      mushStem: mk({ color: '#fff4e0' }),
+      wood: mk({ color: PAL.wood }),
+      woodDark: mk({ color: PAL.woodDark }),
+      hay: mk({ color: '#f4d06a' }),
+      metal: mk({ color: '#7f93ad' }),
       grass: mk({ color: '#ffffff' }),
       bush: mk({ color: '#ffffff' }),
       reed: mk({ color: '#ffffff' }),
@@ -234,10 +274,10 @@ export default function Vegetation() {
         const s = p.s
         list.push({
           x: p.x,
-          y: p.y + 9.2 * s,
+          y: p.y + 4.4 * s,
           z: p.z,
-          r: 3.05 * s,
-          h: 6.8 * s,
+          r: 2.1 * s,
+          h: 1.9 * s,
         })
       })
     })
@@ -295,10 +335,10 @@ export default function Vegetation() {
 
       {lodZones.map((z) => (
         <group key={z.zoneId}>
-          <ChunkedInstanced geometry={geo.trunk} material={mat.bark} items={z.pineBases} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.canopyA} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.canopyB} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
-          <ChunkedInstanced geometry={geo.canopyC} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={PINE_ZONES.has(z.zoneId) ? geo.pineTrunk : geo.trunk} material={mat.bark} items={z.pineBases} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={PINE_ZONES.has(z.zoneId) ? geo.pineA : geo.canopyA} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={PINE_ZONES.has(z.zoneId) ? geo.pineB : geo.canopyB} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
+          <ChunkedInstanced geometry={PINE_ZONES.has(z.zoneId) ? geo.pineC : geo.canopyC} material={mat.canopy} items={z.pines} castShadow={false} receiveShadow={false} />
 
           <ChunkedInstanced geometry={geo.snowA} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />
           <ChunkedInstanced geometry={geo.snowB} material={mat.snow} items={z.pineSnowBases} castShadow={false} receiveShadow={false} />

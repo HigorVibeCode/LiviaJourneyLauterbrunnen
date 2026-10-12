@@ -7,6 +7,10 @@ import { playerPosition } from '../store/playerStore'
 import { guideInput } from '../lib/guideInput'
 import { horseRide } from '../lib/horseRide'
 import StaticBatch from './world/StaticBatch'
+import { RoundedBox } from '@react-three/drei'
+import { GATES } from '../config/world'
+import { PAL } from '../config/palette'
+import { heartGeometry, starGeometry, tint, pastelOf } from './world/cuteShapes'
 
 const INTERACT_DIST = 8
 const OPEN_ANGLE = 1.85
@@ -178,19 +182,21 @@ export default function Gate({
   })
 
   const leafW = width / 2
+  const look = gateLook(gateId, color)
 
   return (
     <group position={position}>
-      <Post x={-width / 2 - 0.1} height={height} />
-      <Post x={width / 2 + 0.1} height={height} />
+      <Post x={-width / 2 - 0.1} height={height} look={look} />
+      <Post x={width / 2 + 0.1} height={height} look={look} />
 
-      {/* travessa superior fixa */}
-      <mesh position={[0, height + 0.1, 0]} castShadow>
-        <boxGeometry args={[width + 0.6, 0.25, 0.5]} />
-        <ToonMat color="#3d2914"/>
-      </mesh>
+      {/* travessa superior fixa (viga roliça) */}
+      <StaticBatch>
+        <RoundedBox args={[width + 0.9, 0.45, 0.6]} radius={0.2} smoothness={2} bevelSegments={2} position={[0, height + 0.15, 0]}>
+          <ToonMat color={look.post} />
+        </RoundedBox>
+      </StaticBatch>
 
-      {landmark && <GateLandmark width={width} height={height} color={color} />}
+      {landmark && <GateLandmark width={width} height={height} color={color} look={look} />}
 
       {/* bloqueio físico: sai de cena quando as folhas abrem o bastante */}
       {!passable && (
@@ -202,26 +208,37 @@ export default function Gate({
       <group ref={shakeRef}>
         {/* folha esquerda (dobradiça no poste esquerdo) */}
         <group ref={leftRef} position={[-width / 2, 0, 0]}>
-          <DoorLeaf width={leafW} height={height} color={color} hingeSide={1} />
+          <DoorLeaf width={leafW} height={height} look={look} hingeSide={1} />
         </group>
         {/* folha direita */}
         <group ref={rightRef} position={[width / 2, 0, 0]}>
-          <DoorLeaf width={leafW} height={height} color={color} hingeSide={-1} />
+          <DoorLeaf width={leafW} height={height} look={look} hingeSide={-1} />
         </group>
       </group>
 
-      {/* fechadura dourada — despenca quando o portão destranca */}
+      {/* fechadura: coração dourado gordinho — despenca quando destranca */}
       <group ref={lockRef} position={[0, height * 0.45, 0.28]}>
-        <mesh castShadow>
-          <boxGeometry args={[0.35, 0.35, 0.14]} />
-          <ToonMat
-            color="#e8c84a"emissive="#a08020"
-            emissiveIntensity={0.4}
-          />
+        <mesh geometry={heartGeometry()} scale={1.25} position={[0, 0, 0.12]}>
+          <ToonMat color="#ffd45a" emissive="#ffb030" emissiveIntensity={0.35} />
         </mesh>
-        <mesh position={[0, 0.24, 0]}>
-          <torusGeometry args={[0.12, 0.035, 5, 8]} />
-          <ToonMat color="#c8a83a"/>
+        {/* argola */}
+        <mesh position={[0, 0.72, 0]}>
+          <torusGeometry args={[0.3, 0.1, 8, 14, Math.PI]} />
+          <ToonMat color="#f2c23e" />
+        </mesh>
+        {/* buraco da fechadura */}
+        <mesh position={[0, 0.06, 0.36]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.06, 10]} />
+          <ToonMat color="#c98a2a" />
+        </mesh>
+        <mesh position={[0, -0.1, 0.36]}>
+          <boxGeometry args={[0.08, 0.2, 0.06]} />
+          <ToonMat color="#c98a2a" />
+        </mesh>
+        {/* brilhinho */}
+        <mesh position={[-0.28, 0.25, 0.36]} scale={[1, 1.6, 0.4]}>
+          <sphereGeometry args={[0.07, 8, 6]} />
+          <meshBasicMaterial color="#fff8dc" />
         </mesh>
       </group>
 
@@ -235,12 +252,12 @@ export default function Gate({
         decay={2}
       />
 
-      {/* poeira dos batentes */}
+      {/* poeira dos batentes (nuvenzinhas fofas) */}
       <group ref={dustRef} visible={false}>
         {dust.map((_, i) => (
           <mesh key={i}>
-            <boxGeometry args={[1, 1, 1]} />
-            <meshBasicMaterial color="#d8c8a8" transparent opacity={0} depthWrite={false} />
+            <sphereGeometry args={[0.8, 8, 6]} />
+            <meshBasicMaterial color={i % 3 ? '#fff6e6' : '#ffe0ec'} transparent opacity={0} depthWrite={false} />
           </mesh>
         ))}
       </group>
@@ -248,56 +265,89 @@ export default function Gate({
   )
 }
 
-/** Uma folha do portão, com pranchas, reforço em Z e dobradiças */
-function DoorLeaf({ width, height, color, hingeSide }) {
+/**
+ * Cores de cada portão: o `color` da config vira só uma dica de matiz —
+ * a tinta sempre sai pastel e alegre, e o estilo muda postes/detalhes.
+ */
+function gateLook(gateId, color) {
+  const style = GATES[gateId]?.style ?? 'wood'
+  const paint = pastelOf(color, 0.6, 0.72)
+  if (style === 'stone') {
+    return { style, post: '#dfe5ee', postDark: '#c4cfdc', door: paint, trim: '#ffffff', cap: '#ffd45a' }
+  }
+  if (style === 'ice') {
+    return { style, post: '#d4f1ff', postDark: '#aee0fb', door: '#e6f7ff', trim: '#9fd8f8', cap: '#bfeaff' }
+  }
+  return { style, post: PAL.wood, postDark: PAL.woodDark, door: paint, trim: '#ffffff', cap: '#ffd45a' }
+}
+
+/** Uma folha do portão: tábua pastel, frisos, moldura branca e coraçãozinho */
+function DoorLeaf({ width, height, look, hingeSide }) {
   const cx = hingeSide * width * 0.5
+  const plank = tint(look.door, 0.9)
+  const h = height * 0.94
   return (
     <StaticBatch>
-      <mesh position={[cx, height / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[width - 0.06, height * 0.94, 0.32]} />
-        <ToonMat color={color}/>
-      </mesh>
+      <RoundedBox args={[width - 0.06, h, 0.32]} radius={0.14} smoothness={2} bevelSegments={2} position={[cx, height / 2, 0]}>
+        <ToonMat color={look.door} />
+      </RoundedBox>
 
       {/* tala central na folha direita: cobre a fresta entre as folhas
           (sem ela, a luz do outro lado vaza como uma linha brilhante) */}
       {hingeSide < 0 && (
-        <mesh position={[hingeSide * (width - 0.04), height / 2, 0]} castShadow>
-          <boxGeometry args={[0.26, height * 0.94, 0.42]} />
-          <ToonMat color="#4a2c14"/>
-        </mesh>
+        <RoundedBox args={[0.3, h, 0.44]} radius={0.12} smoothness={2} bevelSegments={2} position={[hingeSide * (width - 0.04), height / 2, 0]}>
+          <ToonMat color={look.trim} />
+        </RoundedBox>
       )}
 
-      {/* pranchas verticais */}
-      {Array.from({ length: 3 }, (_, i) => (
+      {/* frisos verticais das tábuas (dos dois lados) */}
+      {Array.from({ length: 3 }, (_, i) =>
+        [-1, 1].map((f) => (
+          <RoundedBox
+            key={`${i}${f}`}
+            args={[0.16, h * 0.62, 0.08]}
+            radius={0.03}
+            smoothness={2}
+            bevelSegments={1}
+            position={[hingeSide * (0.62 + i * ((width - 1.2) / 2.6)), height * 0.4, f * 0.17]}
+          >
+            <ToonMat color={plank} />
+          </RoundedBox>
+        )),
+      )}
+
+      {/* moldura branca (topo + base) */}
+      {[height * 0.9, height * 0.1].map((y) => (
+        <RoundedBox key={y} args={[width - 0.3, 0.32, 0.42]} radius={0.12} smoothness={2} bevelSegments={2} position={[cx, y, 0]}>
+          <ToonMat color={look.trim} />
+        </RoundedBox>
+      ))}
+
+      {/* coraçãozinho / floco no alto da folha (dos dois lados) */}
+      {[-1, 1].map((f) => (
         <mesh
-          key={i}
-          position={[hingeSide * (0.5 + i * (width / 3.2)), height * 0.49, 0.19]}
-          castShadow
+          key={`h${f}`}
+          geometry={look.style === 'ice' ? starGeometry() : heartGeometry()}
+          position={[cx, height * 0.74, f * 0.2]}
+          rotation={[0, f < 0 ? Math.PI : 0, 0]}
+          scale={0.7}
         >
-          <boxGeometry args={[0.14, height * 0.88, 0.08]} />
-          <ToonMat color="#3a2210"/>
+          <ToonMat color={look.style === 'ice' ? '#9fd8f8' : '#ff8fb8'} />
         </mesh>
       ))}
 
-      {/* reforço diagonal */}
-      <mesh position={[cx, height / 2, 0.2]} rotation={[0, 0, hingeSide * 0.62]} castShadow>
-        <boxGeometry args={[0.16, height * 0.9, 0.06]} />
-        <ToonMat color="#4a2c14"/>
-      </mesh>
-
-      {/* dobradiças de ferro */}
-      {[height * 0.22, height * 0.78].map((y) => (
-        <mesh key={y} position={[hingeSide * 0.22, y, 0.2]} castShadow>
-          <boxGeometry args={[0.44, 0.16, 0.08]} />
-          <ToonMat color="#4a4a48"/>
-        </mesh>
+      {/* dobradiças douradas roliças */}
+      {[height * 0.22, height * 0.62].map((y) => (
+        <RoundedBox key={y} args={[0.7, 0.22, 0.44]} radius={0.1} smoothness={2} bevelSegments={1} position={[hingeSide * 0.38, y, 0]}>
+          <ToonMat color="#ffd45a" />
+        </RoundedBox>
       ))}
     </StaticBatch>
   )
 }
 
-/** Arco, bandeiras e luzes — o portão precisa “gritar” na paisagem */
-function GateLandmark({ width, height, color }) {
+/** Arco com guirlanda de flores, estrela no topo e lanterninhas */
+function GateLandmark({ width, height, color, look }) {
   const t = useRef(0)
   const glowRef = useRef(null)
   useFrame((_, dt) => {
@@ -307,42 +357,62 @@ function GateLandmark({ width, height, color }) {
     }
   })
 
+  const archR = width / 2 + 0.25
+  const archSY = 0.5
+  // flores da guirlanda ao longo do arco
+  const garland = useMemo(() => {
+    const list = []
+    const n = 15
+    for (let i = 0; i < n; i++) {
+      const a = 0.12 + (i / (n - 1)) * (Math.PI - 0.24)
+      list.push({
+        x: Math.cos(a) * archR,
+        y: Math.sin(a) * archR * archSY,
+        c: PAL.flowers[i % PAL.flowers.length],
+        leaf: i % 2 === 0,
+      })
+    }
+    return list
+  }, [archR])
+
   return (
     <StaticBatch>
-      {/* arco alto acima do vão */}
-      <mesh position={[0, height + 1.55, 0]} castShadow>
-        <boxGeometry args={[width + 2.2, 0.35, 0.55]} />
-        <ToonMat color="#2a1a0c"/>
-      </mesh>
-      {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * (width / 2 + 0.55), height + 0.85, 0]} castShadow>
-          <boxGeometry args={[0.35, 1.5, 0.35]} />
-          <ToonMat color="#3a2210"/>
+      {/* arco oval acima do vão */}
+      <group position={[0, height + 0.35, 0]}>
+        <mesh scale={[1, archSY, 1]}>
+          <torusGeometry args={[archR, 0.32, 10, 28, Math.PI]} />
+          <ToonMat color={look.post} />
         </mesh>
-      ))}
-      {/* bandeiras laterais */}
-      {[-1, 1].map((s) => (
-        <group key={`f${s}`} position={[s * (width / 2 + 1.1), height + 0.2, 0.15]}>
-          <mesh castShadow position={[0, 1.1, 0]}>
-            <cylinderGeometry args={[0.05, 0.06, 2.4, 5]} />
-            <ToonMat color="#2a1a0c"/>
-          </mesh>
-          <mesh position={[s * 0.35, 1.7, 0.05]} castShadow>
-            <boxGeometry args={[0.7, 0.45, 0.04]} />
-            <ToonMat
-              color="#e8c04a"emissive="#c09020"
-              emissiveIntensity={0.55}
-            />
-          </mesh>
-        </group>
-      ))}
-      {/* brasão dourado no centro */}
-      <mesh position={[0, height + 1.55, 0.35]} castShadow>
-        <octahedronGeometry args={[0.38, 0]} />
-        <ToonMat
-          color="#f0d060"emissive="#e8b030"
-          emissiveIntensity={0.85}/>
-      </mesh>
+        {garland.map((g, i) => (
+          <group key={i} position={[g.x, g.y, 0.32]}>
+            <mesh>
+              <sphereGeometry args={[0.36, 10, 8]} />
+              <ToonMat color={g.c === '#ffffff' ? '#fff3f8' : g.c} />
+            </mesh>
+            <mesh position={[0, 0, 0.28]}>
+              <sphereGeometry args={[0.13, 8, 6]} />
+              <ToonMat color={PAL.flowerCenter} />
+            </mesh>
+            {g.leaf && (
+              <mesh position={[0.35, -0.25, -0.05]} scale={[1.3, 0.7, 0.8]}>
+                <sphereGeometry args={[0.24, 8, 6]} />
+                <ToonMat color={PAL.leafLight} />
+              </mesh>
+            )}
+          </group>
+        ))}
+      </group>
+
+      {/* placa redonda com a estrela dourada no topo */}
+      <group position={[0, height + 0.35 + archR * archSY + 0.15, 0.1]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.95, 0.95, 0.35, 20]} />
+          <ToonMat color="#ffffff" />
+        </mesh>
+        <mesh geometry={starGeometry()} position={[0, 0, 0.3]} scale={1.35}>
+          <ToonMat color="#ffd45a" emissive="#ffb830" emissiveIntensity={0.55} />
+        </mesh>
+      </group>
       <pooledLight
         ref={glowRef}
         position={[0, height + 1.4, 1.6]}
@@ -351,27 +421,35 @@ function GateLandmark({ width, height, color }) {
         distance={28}
         decay={2}
       />
-      {/* tochas altas nos postes */}
-      {[-1, 1].map((s) => (
-        <group key={`torch${s}`} position={[s * (width / 2 + 0.15), height + 0.55, 0.4]}>
-          <mesh castShadow>
-            <cylinderGeometry args={[0.08, 0.1, 0.5, 5]} />
-            <ToonMat color="#3a2210"/>
+
+      {/* bandeirolas (varal de bandeirinhas) sob o arco */}
+      {Array.from({ length: 9 }, (_, i) => {
+        const k = (i + 0.5) / 9
+        const x = (k - 0.5) * (width - 0.6)
+        const sag = Math.sin(k * Math.PI) * 0.55
+        return (
+          <mesh key={`b${i}`} position={[x, height - 0.05 - sag, 0.38]} rotation={[0, 0, Math.PI / 4]} scale={[1, 1, 0.25]}>
+            <boxGeometry args={[0.42, 0.42, 0.42]} />
+            <ToonMat color={PAL.flowers[(i * 2 + 1) % PAL.flowers.length] === '#ffffff' ? '#ff9fbf' : PAL.flowers[(i * 2 + 1) % PAL.flowers.length]} />
           </mesh>
+        )
+      })}
+
+      {/* lanterninhas no alto dos postes */}
+      {[-1, 1].map((s) => (
+        <group key={`torch${s}`} position={[s * (width / 2 + 0.15), height + 0.55, 0.55]}>
           <mesh position={[0, 0.35, 0]}>
-            <sphereGeometry args={[0.16, 6, 5]} />
-            <ToonMat
-              color="#ffb040"emissive="#ff9020"
-              emissiveIntensity={1.4}
-            />
+            <sphereGeometry args={[0.24, 12, 10]} />
+            <ToonMat color="#fff0b0" emissive="#ffc040" emissiveIntensity={1.2} />
           </mesh>
           <pooledLight position={[0, 0.4, 0.2]} color="#ffb060" intensity={1.1} distance={14} decay={2} />
         </group>
       ))}
+
       {/* anel no chão — marca o vão */}
       <mesh position={[0, 0.05, 1.2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[width * 0.35, width * 0.55, 16]} />
-        <meshBasicMaterial color="#e8c04a" transparent opacity={0.35} depthWrite={false} />
+        <ringGeometry args={[width * 0.35, width * 0.55, 24]} />
+        <meshBasicMaterial color="#ffe07a" transparent opacity={0.35} depthWrite={false} />
       </mesh>
       <mesh position={[0, 0.04, -0.2]} visible={false}>
         <boxGeometry args={[0.01, 0.01, 0.01]} />
@@ -381,26 +459,29 @@ function GateLandmark({ width, height, color }) {
   )
 }
 
-function Post({ x, height }) {
+function Post({ x, height, look }) {
   return (
     <RigidBody type="fixed" position={[x, height / 2, 0]} colliders={false}>
       <CuboidCollider args={[0.2, height / 2 + 0.15, 0.2]} />
-      <mesh castShadow>
-        <boxGeometry args={[0.35, height + 0.3, 0.35]} />
-        <ToonMat color="#3a2210"/>
-      </mesh>
-      {/* lampião no topo do poste: marca o portão de longe */}
-      <mesh position={[0, height / 2 + 0.35, 0]} castShadow>
-        <boxGeometry args={[0.28, 0.34, 0.28]} />
-        <ToonMat
-          color="#ffd98a"emissive="#ffb84a"
-          emissiveIntensity={0.9}
-        />
-      </mesh>
-      <mesh position={[0, height / 2 + 0.56, 0]} castShadow>
-        <coneGeometry args={[0.26, 0.22, 4]} />
-        <ToonMat color="#3a2210"/>
-      </mesh>
+      <StaticBatch>
+        {/* poste roliço */}
+        <mesh>
+          <cylinderGeometry args={[0.42, 0.48, height + 0.3, 14]} />
+          <ToonMat color={look.post} />
+        </mesh>
+        {/* anéis decorativos */}
+        {[-height / 2 + 0.3, height / 2 - 0.2].map((y) => (
+          <mesh key={y} position={[0, y, 0]}>
+            <cylinderGeometry args={[0.56, 0.56, 0.3, 14]} />
+            <ToonMat color={look.postDark} />
+          </mesh>
+        ))}
+        {/* bolinha no topo */}
+        <mesh position={[0, height / 2 + 0.55, 0]}>
+          <sphereGeometry args={[0.5, 14, 10]} />
+          <ToonMat color={look.cap} emissive={look.cap} emissiveIntensity={0.25} />
+        </mesh>
+      </StaticBatch>
     </RigidBody>
   )
 }

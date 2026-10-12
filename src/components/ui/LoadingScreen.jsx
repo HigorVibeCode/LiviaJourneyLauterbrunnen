@@ -12,12 +12,20 @@ export default function LoadingScreen() {
 
   return (
     <div className={`loading-screen ${bootReady ? 'loading-screen--done' : ''}`} aria-live="polite">
+      <div className="loading-clouds" aria-hidden>
+        <span />
+        <span />
+        <span />
+      </div>
       <div className="loading-mountains" aria-hidden>
         <span />
         <span />
         <span />
       </div>
       <div className="loading-card">
+        <span className="loading-leaf" aria-hidden>
+          🌱
+        </span>
         <p className="loading-kicker">A Jornada de Livia</p>
         <h1 className="loading-title">{loadingPhaseLabel(phase)}</h1>
         <div className="loading-track" aria-hidden>

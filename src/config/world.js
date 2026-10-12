@@ -421,46 +421,46 @@ export const GROUND_SEGMENTS = [
 export const HOUSES = [
   // lat = offset da trilha (não X absoluto). Alterna lados, longe do caminho.
   // ── Pradaria ──
-  { lat: -28, z: 64, rot: 0.18, scale: 1.15, kind: 'chalet', body: '#5c3a24', roof: '#8a4028', home: true },
-  { lat: 26, z: 86, rot: -0.3, scale: 0.95, kind: 'barn', body: '#4a3220', roof: '#7a3820' },
-  { lat: 30, z: 52, rot: -0.5, scale: 0.9, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
-  { lat: -32, z: 34, rot: 0.4, scale: 1, kind: 'chalet', body: '#4a3220', roof: '#7a3820' },
-  { lat: 22, z: 30, rot: 0.1, scale: 0.85, kind: 'chalet', body: '#5c3a24', roof: '#8a4028' },
+  { lat: -28, z: 64, rot: 0.18, scale: 1.15, kind: 'chalet', body: '#ffe6c0', roof: '#ff8fb8', home: true },
+  { lat: 26, z: 86, rot: -0.3, scale: 0.95, kind: 'barn', body: '#ffd3df', roof: '#ff6b6b' },
+  { lat: 30, z: 52, rot: -0.5, scale: 0.9, kind: 'chalet', body: '#d2e9ff', roof: '#4aa3ff' },
+  { lat: -32, z: 34, rot: 0.4, scale: 1, kind: 'chalet', body: '#fff0a8', roof: '#46c37b' },
+  { lat: 22, z: 30, rot: 0.1, scale: 0.85, kind: 'chalet', body: '#d6f5c8', roof: '#ffb43a' },
 
   // ── Pasto ──
-  { lat: -30, z: -20, rot: 0.25, scale: 1.05, kind: 'barn', body: '#4a3220', roof: '#7a3820' },
-  { lat: 28, z: -80, rot: -0.35, scale: 0.95, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
-  { lat: -32, z: -150, rot: 0.4, scale: 0.9, kind: 'barn', body: '#4a3220', roof: '#7a3820' },
-  { lat: 26, z: -220, rot: -0.2, scale: 0.85, kind: 'chalet', body: '#5c3a24', roof: '#8a4028' },
+  { lat: -30, z: -20, rot: 0.25, scale: 1.05, kind: 'barn', body: '#ffe6c0', roof: '#ff6b6b' },
+  { lat: 28, z: -80, rot: -0.35, scale: 0.95, kind: 'chalet', body: '#ffd3df', roof: '#b07cff' },
+  { lat: -32, z: -150, rot: 0.4, scale: 0.9, kind: 'barn', body: '#fff0a8', roof: '#ff6b6b' },
+  { lat: 26, z: -220, rot: -0.2, scale: 0.85, kind: 'chalet', body: '#d2e9ff', roof: '#ff8fb8' },
 
   // ── Vale noturno ──
-  { lat: -28, z: -330, rot: 0.3, scale: 0.9, kind: 'cabin', body: '#3a3228', roof: '#1a1820' },
-  { lat: 30, z: -380, rot: -0.4, scale: 0.85, kind: 'cabin', body: '#2e2830', roof: '#141218' },
-  { lat: -26, z: -450, rot: 0.2, scale: 0.8, kind: 'barn', body: '#3a342c', roof: '#1c1822' },
-  { lat: 28, z: -490, rot: -0.25, scale: 0.85, kind: 'cabin', body: '#2a2430', roof: '#121018' },
+  { lat: -28, z: -330, rot: 0.3, scale: 0.9, kind: 'cabin', body: '#e3ad74', roof: '#4aa3ff' },
+  { lat: 30, z: -380, rot: -0.4, scale: 0.85, kind: 'cabin', body: '#d9a26a', roof: '#46c37b' },
+  { lat: -26, z: -450, rot: 0.2, scale: 0.8, kind: 'barn', body: '#ffd3df', roof: '#ff6b6b' },
+  { lat: 28, z: -490, rot: -0.25, scale: 0.85, kind: 'cabin', body: '#e3ad74', roof: '#ff8fb8' },
 
   // ── Vale das águas (igreja um pouco à esquerda da trilha) ──
-  { lat: -14, z: -550, rot: 0.05, scale: 1.1, kind: 'church', body: '#e8e2d4', roof: '#4a5560' },
-  { lat: 18, z: -540, rot: -0.25, scale: 1, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
-  { lat: -18, z: -538, rot: 0.3, scale: 1.05, kind: 'chalet', body: '#4a3220', roof: '#7a3820' },
-  { lat: 20, z: -580, rot: -0.4, scale: 0.95, kind: 'barn', body: '#4a3220', roof: '#7a3820' },
-  { lat: -16, z: -610, rot: 0.35, scale: 0.9, kind: 'chalet', body: '#5c3a24', roof: '#8a4028' },
-  { lat: 16, z: -630, rot: -0.2, scale: 1, kind: 'chalet', body: '#5a3822', roof: '#8a4028' },
+  { lat: -14, z: -550, rot: 0.05, scale: 1.1, kind: 'church', body: '#fffaf2', roof: '#b07cff' },
+  { lat: 18, z: -540, rot: -0.25, scale: 1, kind: 'chalet', body: '#ffe6c0', roof: '#ff6b6b' },
+  { lat: -18, z: -538, rot: 0.3, scale: 1.05, kind: 'chalet', body: '#d2e9ff', roof: '#ffb43a' },
+  { lat: 20, z: -580, rot: -0.4, scale: 0.95, kind: 'barn', body: '#fff0a8', roof: '#ff6b6b' },
+  { lat: -16, z: -610, rot: 0.35, scale: 0.9, kind: 'chalet', body: '#ffd3df', roof: '#46c37b' },
+  { lat: 16, z: -630, rot: -0.2, scale: 1, kind: 'chalet', body: '#d6f5c8', roof: '#4aa3ff' },
 
   // ── Passo nevado ──
-  { lat: -30, z: -676, rot: 0.25, scale: 0.95, kind: 'cabin', body: '#6b4a32', roof: '#e8eef4' },
-  { lat: 28, z: -708, rot: -0.3, scale: 0.9, kind: 'cabin', body: '#5c4028', roof: '#f0f4f8' },
-  { lat: -28, z: -746, rot: 0.4, scale: 0.85, kind: 'cabin', body: '#6b4a32', roof: '#e8eef4' },
+  { lat: -30, z: -676, rot: 0.25, scale: 0.95, kind: 'cabin', body: '#e3ad74', roof: '#ff6b6b' },
+  { lat: 28, z: -708, rot: -0.3, scale: 0.9, kind: 'cabin', body: '#d9a26a', roof: '#4aa3ff' },
+  { lat: -28, z: -746, rot: 0.4, scale: 0.85, kind: 'cabin', body: '#e3ad74', roof: '#46c37b' },
 
   // ── Prado florido ──
-  { lat: -28, z: -820, rot: 0.2, scale: 0.95, kind: 'chalet', body: '#6a4428', roof: '#9a4830' },
-  { lat: 28, z: -860, rot: -0.3, scale: 0.9, kind: 'chalet', body: '#6a4428', roof: '#9a4830' },
-  { lat: -24, z: -890, rot: 0.15, scale: 0.85, kind: 'barn', body: '#5c3a24', roof: '#8a4028' },
+  { lat: -28, z: -820, rot: 0.2, scale: 0.95, kind: 'chalet', body: '#fff0a8', roof: '#ff8fb8' },
+  { lat: 28, z: -860, rot: -0.3, scale: 0.9, kind: 'chalet', body: '#d2e9ff', roof: '#b07cff' },
+  { lat: -24, z: -890, rot: 0.15, scale: 0.85, kind: 'barn', body: '#ffd3df', roof: '#ff6b6b' },
 
   // ── Mirante ──
-  { lat: -24, z: -1038, rot: 0.2, scale: 1.15, kind: 'cabin', body: '#5c4028', roof: '#eef4f8' },
-  { lat: 24, z: -1048, rot: -0.35, scale: 1.05, kind: 'cabin', body: '#6b4a32', roof: '#f0f4f8' },
-  { lat: -28, z: -1062, rot: 0.4, scale: 0.95, kind: 'cabin', body: '#5c4028', roof: '#eef4f8' },
+  { lat: -24, z: -1038, rot: 0.2, scale: 1.15, kind: 'cabin', body: '#e3ad74', roof: '#ffb43a' },
+  { lat: 24, z: -1048, rot: -0.35, scale: 1.05, kind: 'cabin', body: '#d9a26a', roof: '#ff6b6b' },
+  { lat: -28, z: -1062, rot: 0.4, scale: 0.95, kind: 'cabin', body: '#e3ad74', roof: '#b07cff' },
 ]
 
 export const WATERFALLS = [

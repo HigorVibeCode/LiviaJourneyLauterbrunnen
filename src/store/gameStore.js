@@ -30,7 +30,8 @@ export const QUALITY_PRESETS = {
   high: {
     id: 'high',
     label: 'Alta',
-    shadows: true,
+    // estilo fofo: sombras redondas sob personagens (sem shadow map)
+    shadows: false,
     softShadows: false,
     postFx: true,
     shadowMapSize: 1536,

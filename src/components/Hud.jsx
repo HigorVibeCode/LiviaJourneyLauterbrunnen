@@ -22,6 +22,20 @@ import { getPartyHost } from '../multiplayer/config'
 import { ENDING_TEXT } from '../config/story'
 import { STARS } from '../config/stars'
 
+/** Emoji + cor do selo de cada fase (cartão de objetivo) */
+const PHASE_BADGES = {
+  meadow: { icon: '🌼', color: '#ffd45a' },
+  pasture: { icon: '🐴', color: '#ffb36b' },
+  night: { icon: '🌙', color: '#b3a6ff' },
+  water: { icon: '💧', color: '#7cc8ff' },
+  snow: { icon: '❄️', color: '#a8e4ff' },
+  flower: { icon: '🌸', color: '#ff9ec4' },
+  summit: { icon: '⛰️', color: '#7ed9a8' },
+}
+
+/** Cores das plaquinhas de nome dos NPCs (estilo balão de diálogo) */
+const NPC_TAG_COLORS = ['#b3a6ff', '#7cc8ff', '#ff9ec4']
+
 /** Re-render leve para o que vive fora do React (cavalo, posição) */
 function useTicker(ms = 250) {
   const [, setN] = useState(0)
@@ -121,7 +135,9 @@ function Compass() {
     <div className="hud-compass" ref={rootRef} aria-hidden>
       <div className="hud-compass-dial">
         <svg ref={arrowRef} viewBox="0 0 40 40" className="hud-compass-arrow">
-          <path d="M20 3 L31 30 L20 24 L9 30 Z" />
+          <path className="hud-compass-arrow-l" d="M20 4 L20 24 L9 30 Z" />
+          <path className="hud-compass-arrow-r" d="M20 4 L31 30 L20 24 Z" />
+          <circle className="hud-compass-pin" cx="20" cy="20" r="2.6" />
         </svg>
       </div>
       <span ref={labelRef} className="hud-compass-label" />
@@ -202,11 +218,14 @@ export default function Hud() {
       !unlockedGates.includes('gate_night'))
 
   let prompt = null
+  let promptNpc = null
   if (horseRide.nearMount) prompt = 'Montar no cavalo'
   else if (canOpenGate) prompt = 'Abrir o portão'
   else if (nearNpc) {
     prompt = npcDialogueLine(nearNpc, Boolean(npcSpoke[nearNpc.id])) ?? `Falar com ${nearNpc.name}`
+    promptNpc = nearNpc
   }
+  const badge = PHASE_BADGES[phase.id] ?? PHASE_BADGES.meadow
 
   const resume = () => {
     setPaused(false)
@@ -216,10 +235,15 @@ export default function Hud() {
   return (
     <div className={`hud ${paused ? 'hud--paused' : ''} ${isMobile ? 'hud--touch' : ''}`}>
       {/* ── objetivo ── */}
-      <section className="hud-card hud-objective">
-        <span className="hud-kicker">
-          Fase {phase.index}/{PHASE_ORDER.length} · {isMobile ? phase.short : phase.label}
-        </span>
+      <section className="hud-card hud-objective" style={{ '--phase-color': badge.color }}>
+        <div className="hud-objective-head">
+          <span className="hud-phase-badge" aria-hidden key={phase.id}>
+            {badge.icon}
+          </span>
+          <span className="hud-kicker">
+            Fase {phase.index}/{PHASE_ORDER.length} · {isMobile ? phase.short : phase.label}
+          </span>
+        </div>
         <p className="hud-objective-main">{hint}</p>
         {currentQuest && (
           <ul className="hud-checklist">
@@ -253,7 +277,7 @@ export default function Hud() {
             aria-label="Pausar"
             title="Pausar (Esc)"
           >
-            ⏸
+            <span className="hud-pause-glyph" aria-hidden />
           </button>
           <button
             type="button"
@@ -315,7 +339,21 @@ export default function Hud() {
         )}
       </div>
 
-      {prompt && !paused && (
+      {prompt && !paused && promptNpc && (
+        <div
+          className="hud-prompt hud-prompt--npc"
+          key={promptNpc.id}
+          style={{ '--tag-color': NPC_TAG_COLORS[NPCS.indexOf(promptNpc) % NPC_TAG_COLORS.length] }}
+        >
+          <span className="hud-prompt-name">{promptNpc.name}</span>
+          <span className="hud-prompt-line">{prompt}</span>
+          <span className="hud-prompt-next" aria-hidden>
+            {isMobile ? '▼' : <kbd>E</kbd>}
+          </span>
+        </div>
+      )}
+
+      {prompt && !paused && !promptNpc && (
         <div className="hud-prompt">
           {!isMobile && <kbd>E</kbd>}
           <span>{prompt}</span>
@@ -323,8 +361,8 @@ export default function Hud() {
       )}
 
       {toast && !paused && !victoryOpen && (
-        <div className="hud-toast" key={toast}>
-          {toast}
+        <div className="hud-toast" key={toast} role="status">
+          <span className="hud-toast-text">{toast}</span>
         </div>
       )}
 
@@ -332,7 +370,7 @@ export default function Hud() {
         <div className="overlay">
           <div className="dialog victory-card">
             <div className="victory-burst" aria-hidden>
-              ✦
+              🌟
             </div>
             <p className="dialog-kicker">Fim da jornada</p>
             <h2>Coração do Vale</h2>

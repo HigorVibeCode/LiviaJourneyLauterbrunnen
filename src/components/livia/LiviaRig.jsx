@@ -5,33 +5,32 @@ import * as THREE from 'three'
 import { guideHand } from '../../lib/guideInput'
 import { horseRide } from '../../lib/horseRide'
 import { createLiviaClips } from './clips'
-import { useOutfit, TorsoOutfit, HeadOutfit, RightHandItem, LeftHandItem } from './Outfit'
+import { useOutfit, TorsoOutfit, HeadOutfit, ChestOutfit, RightHandItem, LeftHandItem } from './Outfit'
 
-const SKIN = '#e8b896'
-const SKIN_DARK = '#d09474'
-const SKIN_LIGHT = '#f0c4a8'
-const CHEEK = '#e89890'
-const LIP = '#c45a68'
-const HAIR = '#3a281c'
-const HAIR_DARK = '#241610'
-const HAIR_LIGHT = '#4a3428'
-const TUNIC = '#4a8ec8'
-const TUNIC_DARK = '#2868a8'
-const SHIRT = '#f2ebe0'
-const SKIRT = '#5a2a48'
-const PANTS = '#6a5a48'
-const BOOT = '#5a3824'
-const BOOT_DARK = '#3a2214'
-const SASH = '#e8c04a'
-const POUCH = '#6a7a3a'
-const STRAP = '#3a2a1c'
-const BLOOM = '#e8a0b8'
-const EYE_WHITE = '#f7f4ee'
-const EYE_IRIS = '#3a2818'
+// paleta da Livia chibi (fofa, sem tons escuros)
+const SKIN = '#ffd9bf'
+const SKIN_SHADE = '#f7c6a6'
+const CHEEK = '#ff9eb0'
+const HAIR = '#8a5236'
+const HAIR_LIGHT = '#a8673f'
+const DRESS = '#5fb0ff'
+const DRESS_LIGHT = '#8ccaff'
+const COLLAR = '#ffffff'
+const BUTTON = '#ffd23f'
+const LEGGING = '#ffffff'
+const BOOT = '#ff6f7d'
+const BOOT_SOLE = '#e85566'
+const BAG = '#ffb45a'
+const BAG_STRAP = '#e8923a'
+const RIBBON = '#ff6f9a'
+const EYE = '#3b2a2a'
+const RIG_SCALE = 0.62
 
 /**
- * Livia low-poly polida: rosto limpo, cabelo sem cobrir olhos,
- * touca sem atravessar o cabelo.
+ * Livia chibi (estilo Animal Crossing): cabeção redondo, olhos grandes,
+ * corpinho de vestido, botinhas. Mesmos ossos de antes (Hips, Spine, Legs,
+ * Knees, Arms, Fores, Head, HairBack) — os clips de clips.js continuam valendo.
+ * O rig é desenhado em "unidades de rig" e escalado por RIG_SCALE.
  */
 export default function LiviaRig({ stateRef, remote = false }) {
   const root = useRef(null)
@@ -42,7 +41,8 @@ export default function LiviaRig({ stateRef, remote = false }) {
   const hairFrontRef = useRef(null)
   const outfit = useOutfit(remote)
   const bonesRef = useRef(null)
-  const hoodOn = outfit.raincoat || outfit.furcoat
+  // chapéus ficam por cima do cabelo (não escondem mais nada)
+  const hoodOn = false
 
   const clips = useMemo(() => createLiviaClips(), [])
 
@@ -126,7 +126,8 @@ export default function LiviaRig({ stateRef, remote = false }) {
         currentRef.current = 'sit'
       }
       // quadril encaixado na sela; pernas abraçam o dorso (não “de pé”)
-      if (hips) hips.position.set(0, 0.55, 0.1)
+      // (rig escalado: 0.89 aqui = mesma altura de sela de antes)
+      if (hips) hips.position.set(0, 0.89, 0.1)
       if (spine) spine.rotation.set(0.38, 0, 0)
       if (legR) legR.rotation.set(1.5, 0.32, 1.15)
       if (legL) legL.rotation.set(1.5, -0.32, -1.15)
@@ -176,359 +177,200 @@ export default function LiviaRig({ stateRef, remote = false }) {
   })
 
   return (
-    <group ref={root}>
+    <group ref={root} scale={RIG_SCALE}>
       <group name="Hips" position={[0, 0.82, 0]}>
         {[1, -1].map((side) => (
-          <group key={side} name={side > 0 ? 'LegR' : 'LegL'} position={[side * 0.11, 0, 0]}>
-            <mesh castShadow position={[0, -0.16, 0]}>
-              <cylinderGeometry args={[0.1, 0.086, 0.34, 8]} />
-              <ToonMat color={PANTS}/>
+          <group key={side} name={side > 0 ? 'LegR' : 'LegL'} position={[side * 0.15, 0, 0]}>
+            <mesh position={[0, -0.17, 0]}>
+              <capsuleGeometry args={[0.12, 0.2, 6, 12]} />
+              <ToonMat color={LEGGING} />
             </mesh>
-            <group name={side > 0 ? 'KneeR' : 'KneeL'} position={[0, -0.34, 0]}>
-              <mesh castShadow>
-                <sphereGeometry args={[0.072, 6, 5]} />
-                <ToonMat color={PANTS}/>
+            <group name={side > 0 ? 'KneeR' : 'KneeL'} position={[0, -0.36, 0]}>
+              <mesh position={[0, -0.12, 0]}>
+                <capsuleGeometry args={[0.11, 0.14, 6, 12]} />
+                <ToonMat color={LEGGING} />
               </mesh>
-              <mesh castShadow position={[0, -0.175, 0]}>
-                <cylinderGeometry args={[0.072, 0.056, 0.34, 7]} />
-                <ToonMat color={PANTS}/>
+              {/* botinha redonda */}
+              <mesh position={[0, -0.37, 0.05]} scale={[1, 0.78, 1.3]}>
+                <sphereGeometry args={[0.16, 16, 12]} />
+                <ToonMat color={BOOT} />
               </mesh>
-              {/* bota mais definida */}
-              <mesh castShadow position={[0, -0.38, 0.06]}>
-                <boxGeometry args={[0.155, 0.155, 0.3]} />
-                <ToonMat color={BOOT}/>
-              </mesh>
-              <mesh castShadow position={[0, -0.3, 0]}>
-                <cylinderGeometry args={[0.088, 0.094, 0.12, 7]} />
-                <ToonMat color={BOOT_DARK}/>
-              </mesh>
-              <mesh castShadow position={[0, -0.44, 0.13]}>
-                <boxGeometry args={[0.135, 0.07, 0.12]} />
-                <ToonMat color={BOOT_DARK}/>
-              </mesh>
-              <mesh castShadow position={[0, -0.475, 0.05]}>
-                <boxGeometry args={[0.16, 0.038, 0.32]} />
-                <ToonMat color="#1a100c"/>
-              </mesh>
-              {/* cadarço vermelho — detalhe da referência */}
-              <mesh position={[0, -0.36, 0.18]}>
-                <boxGeometry args={[0.04, 0.02, 0.08]} />
-                <ToonMat color="#c43838"/>
+              <mesh position={[0, -0.44, 0.05]} scale={[1.05, 0.3, 1.35]}>
+                <sphereGeometry args={[0.16, 14, 8]} />
+                <ToonMat color={BOOT_SOLE} />
               </mesh>
             </group>
           </group>
         ))}
 
-        <mesh castShadow position={[0, 0.02, 0]}>
-          <cylinderGeometry args={[0.175, 0.205, 0.18, 10]} />
-          <ToonMat color={TUNIC_DARK}/>
-        </mesh>
-        {/* saia oculta — visual da referência usa casaco + calças */}
-        {false && !hoodOn && (
-          <group position={[0, -0.02, 0]}>
-            <mesh castShadow position={[0, -0.14, 0]}>
-              <cylinderGeometry args={[0.2, 0.3, 0.36, 12, 1, true]} />
-              <ToonMat color={SKIRT}side={THREE.DoubleSide} />
-            </mesh>
-            <mesh castShadow position={[0, -0.3, 0]}>
-              <cylinderGeometry args={[0.3, 0.34, 0.08, 12, 1, true]} />
-              <ToonMat color="#4a2038"side={THREE.DoubleSide} />
-            </mesh>
-          </group>
-        )}
-
         <group name="Spine" position={[0, 0.02, 0]}>
-          {/* ombros / clavícula */}
-          <mesh castShadow position={[0, 0.46, 0.01]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.055, 0.055, 0.42, 6]} />
-            <ToonMat color={SHIRT}/>
+          {/* vestidinho em sino */}
+          <mesh position={[0, 0.06, 0]}>
+            <cylinderGeometry args={[0.27, 0.42, 0.34, 22]} />
+            <ToonMat color={DRESS} />
           </mesh>
-          <mesh castShadow position={[0, 0.44, 0.02]}>
-            <cylinderGeometry args={[0.095, 0.135, 0.1, 8]} />
-            <ToonMat color={SHIRT}/>
+          <mesh position={[0, -0.11, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.4, 0.035, 8, 26]} />
+            <ToonMat color={DRESS_LIGHT} />
           </mesh>
-          {/* túnica vermelha some sob capa/casaco (evita “casca” amarela + vermelho) */}
-          <mesh castShadow position={[0, 0.27, 0]} visible={!hoodOn}>
-            <capsuleGeometry args={[0.165, 0.28, 4, 10]} />
-            <ToonMat color={TUNIC}/>
+          <mesh position={[0, 0.34, 0]}>
+            <capsuleGeometry args={[0.27, 0.2, 8, 18]} />
+            <ToonMat color={DRESS} />
           </mesh>
-          <mesh castShadow position={[0, 0.29, -0.012]} scale={[1.03, 0.88, 1.05]} visible={!hoodOn}>
-            <capsuleGeometry args={[0.158, 0.2, 3, 9]} />
-            <ToonMat color={TUNIC_DARK}/>
+          {/* gola branca + botões */}
+          <mesh position={[0, 0.56, 0.02]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1.15, 1]}>
+            <torusGeometry args={[0.16, 0.06, 8, 18]} />
+            <ToonMat color={COLLAR} />
           </mesh>
-          {!hoodOn &&
-            [0.36, 0.28, 0.2].map((y) => (
-              <mesh key={y} position={[0, y, 0.17]}>
-                <sphereGeometry args={[0.017, 5, 4]} />
-                <ToonMat color={SASH}/>
-              </mesh>
-            ))}
-          <mesh castShadow position={[0, 0.1, 0]} visible={!hoodOn}>
-            <cylinderGeometry args={[0.185, 0.185, 0.052, 10]} />
-            <ToonMat color={STRAP}/>
+          {[0.42, 0.3].map((y) => (
+            <mesh key={y} position={[0, y, 0.27]}>
+              <sphereGeometry args={[0.035, 10, 8]} />
+              <ToonMat color={BUTTON} />
+            </mesh>
+          ))}
+          {/* mochilinha */}
+          <mesh position={[0, 0.36, -0.3]} scale={[1, 1.05, 0.7]}>
+            <sphereGeometry args={[0.22, 16, 12]} />
+            <ToonMat color={BAG} />
           </mesh>
-          <mesh castShadow position={[0, 0.1, 0.18]} visible={!hoodOn}>
-            <boxGeometry args={[0.065, 0.05, 0.03]} />
-            <ToonMat color={SASH}/>
-          </mesh>
-          {!hoodOn &&
-            [-1, 1].map((side) => (
-              <mesh key={side} castShadow position={[side * 0.165, 0.07, 0.085]} rotation={[0.1, side * 0.3, 0]}>
-                <boxGeometry args={[0.085, 0.095, 0.055]} />
-                <ToonMat color={POUCH}/>
-              </mesh>
-            ))}
-          <mesh castShadow position={[0, 0.3, -0.22]}>
-            <boxGeometry args={[0.25, 0.32, 0.14]} />
-            <ToonMat color="#5c3a1e"/>
+          <mesh position={[0, 0.3, -0.42]} scale={[1, 0.8, 0.5]}>
+            <sphereGeometry args={[0.13, 14, 10]} />
+            <ToonMat color={BAG_STRAP} />
           </mesh>
           {[-1, 1].map((side) => (
-            <mesh key={side} castShadow position={[side * 0.105, 0.42, -0.085]} rotation={[0.5, 0, side * 0.15]}>
-              <boxGeometry args={[0.04, 0.24, 0.03]} />
-              <ToonMat color={STRAP}/>
+            <mesh key={side} position={[side * 0.17, 0.4, 0.1]} rotation={[0.2, 0, side * 0.1]}>
+              <capsuleGeometry args={[0.025, 0.36, 4, 8]} />
+              <ToonMat color={BAG_STRAP} />
             </mesh>
           ))}
 
           <TorsoOutfit outfit={outfit} />
+          <ChestOutfit outfit={outfit} />
 
           {[1, -1].map((side) => (
             <group
               key={side}
               name={side > 0 ? 'ArmR' : 'ArmL'}
-              position={[side * 0.225, 0.45, 0]}
-              rotation={[0.05, 0, side * 0.28]}
+              position={[side * 0.31, 0.5, 0]}
+              rotation={[0.05, 0, side * 0.32]}
             >
-              {/* ombro/manga acompanham capa/casaco — evita “colete solto” amarelo */}
-              <mesh castShadow position={[0, 0.02, 0]}>
-                <sphereGeometry args={[0.075, 6, 5]} />
-                <ToonMat
-                  color={outfit.furcoat ? '#8b5530' : outfit.raincoat ? '#e0c83e' : TUNIC}/>
+              <mesh position={[0, -0.09, 0]}>
+                <capsuleGeometry args={[0.085, 0.12, 6, 12]} />
+                <ToonMat color={outfit.furcoat ? '#ff9ec4' : outfit.raincoat ? '#ffd23f' : DRESS} />
               </mesh>
-              <mesh castShadow position={[0, -0.115, 0]}>
-                <cylinderGeometry args={[0.058, 0.05, 0.23, 7]} />
-                <ToonMat
-                  color={outfit.furcoat ? '#8b5530' : outfit.raincoat ? '#e0c83e' : TUNIC}/>
-              </mesh>
-              <group name={side > 0 ? 'ForeR' : 'ForeL'} position={[0, -0.25, 0]}>
-                <mesh castShadow position={[0, -0.105, 0]}>
-                  <cylinderGeometry args={[0.048, 0.04, 0.21, 6]} />
-                  <ToonMat color={SKIN}/>
+              <group name={side > 0 ? 'ForeR' : 'ForeL'} position={[0, -0.2, 0]}>
+                <mesh position={[0, -0.06, 0]}>
+                  <capsuleGeometry args={[0.075, 0.08, 6, 12]} />
+                  <ToonMat color={SKIN} />
                 </mesh>
-                <mesh castShadow position={[0, 0.02, 0]}>
-                  <cylinderGeometry args={[0.05, 0.048, 0.048, 6]} />
-                  <ToonMat color={SHIRT}/>
-                </mesh>
-                {/* mão */}
-                <mesh castShadow position={[0, -0.225, 0.01]}>
-                  <sphereGeometry args={[0.052, 6, 5]} />
-                  <ToonMat color={SKIN_DARK}/>
-                </mesh>
-                <mesh castShadow position={[0, -0.255, 0.035]} scale={[0.85, 0.55, 1.1]}>
-                  <boxGeometry args={[0.07, 0.04, 0.055]} />
-                  <ToonMat color={SKIN}/>
+                {/* mãozinha redonda */}
+                <mesh position={[0, -0.19, 0.01]}>
+                  <sphereGeometry args={[0.1, 14, 10]} />
+                  <ToonMat color={SKIN} />
                 </mesh>
                 {side > 0 ? <RightHandItem outfit={outfit} /> : <LeftHandItem outfit={outfit} />}
               </group>
             </group>
           ))}
 
-          {/* pescoço mais longo / limpo */}
-          <mesh castShadow position={[0, 0.535, 0.01]}>
-            <cylinderGeometry args={[0.048, 0.058, 0.11, 7]} />
-            <ToonMat color={SKIN_DARK}/>
-          </mesh>
-          <mesh castShadow position={[0, 0.58, 0.01]}>
-            <sphereGeometry args={[0.055, 6, 5]} />
-            <ToonMat color={SKIN}/>
-          </mesh>
-
-          <group name="Head" position={[0, 0.6, 0]}>
-            {/* crânio / rosto — limpo na frente */}
-            <mesh castShadow position={[0, 0.155, 0.015]} scale={[0.92, 1.02, 0.95]}>
-              <sphereGeometry args={[0.152, 14, 12]} />
-              <ToonMat color={SKIN}/>
+          <group name="Head" position={[0, 0.62, 0]}>
+            {/* cabeção */}
+            <mesh position={[0, 0.46, 0]} scale={[1.05, 0.96, 1]}>
+              <sphereGeometry args={[0.5, 28, 22]} />
+              <ToonMat color={SKIN} />
             </mesh>
-            {/* testa um pouco mais clara */}
-            <mesh position={[0, 0.22, 0.08]} scale={[0.85, 0.45, 0.5]}>
-              <sphereGeometry args={[0.08, 6, 5]} />
-              <ToonMat color={SKIN_LIGHT}/>
-            </mesh>
-            {/* orelhas */}
+            {/* orelhinhas */}
             {[-1, 1].map((side) => (
-              <mesh key={side} castShadow position={[side * 0.145, 0.15, -0.01]} scale={[0.28, 0.48, 0.35]}>
-                <sphereGeometry args={[0.055, 5, 4]} />
-                <ToonMat color={SKIN}/>
+              <mesh key={side} position={[side * 0.51, 0.42, 0]} scale={[0.5, 0.8, 0.6]}>
+                <sphereGeometry args={[0.1, 10, 8]} />
+                <ToonMat color={SKIN_SHADE} />
               </mesh>
             ))}
-
-            {/* olhos bem na frente — sem mesh de cabelo à frente */}
-            {[0.046, -0.046].map((x) => (
-              <group key={x} position={[x, 0.168, 0.138]}>
-                <mesh scale={[1.2, 1.0, 0.5]}>
-                  <sphereGeometry args={[0.027, 8, 6]} />
-                  <ToonMat color={EYE_WHITE}/>
+            {/* olhos grandes e brilhantes */}
+            {[-1, 1].map((side) => (
+              <group key={`e${side}`} position={[side * 0.17, 0.45, 0.44]} rotation={[0, side * 0.32, 0]}>
+                <mesh scale={[0.78, 1, 0.42]}>
+                  <sphereGeometry args={[0.095, 16, 12]} />
+                  <ToonMat color={EYE} />
                 </mesh>
-                <mesh position={[0, -0.002, 0.016]}>
-                  <sphereGeometry args={[0.0135, 7, 5]} />
-                  <ToonMat color={EYE_IRIS}/>
+                <mesh position={[0.025 * side, 0.035, 0.035]}>
+                  <sphereGeometry args={[0.03, 10, 8]} />
+                  <ToonMat color="#ffffff" emissive="#ffffff" emissiveIntensity={0.4} />
                 </mesh>
-                <mesh position={[0, -0.002, 0.024]}>
-                  <sphereGeometry args={[0.006, 4, 3]} />
-                  <ToonMat color="#0a0806"/>
-                </mesh>
-                <mesh position={[0.005, 0.006, 0.027]}>
-                  <sphereGeometry args={[0.0045, 4, 3]} />
-                  <ToonMat color="#ffffff"/>
+                <mesh position={[-0.02 * side, -0.035, 0.035]}>
+                  <sphereGeometry args={[0.014, 8, 6]} />
+                  <ToonMat color="#ffffff" emissive="#ffffff" emissiveIntensity={0.4} />
                 </mesh>
               </group>
             ))}
-            {/* sobrancelhas arqueadas */}
-            {[0.046, -0.046].map((x) => (
-              <mesh
-                key={`b${x}`}
-                position={[x, 0.205, 0.132]}
-                rotation={[0.1, 0, x > 0 ? -0.18 : 0.18]}
-                scale={[1.15, 0.22, 0.35]}
-              >
-                <boxGeometry args={[0.05, 0.014, 0.014]} />
-                <ToonMat color={HAIR_DARK}/>
+            {/* bochechas rosadas */}
+            {[-1, 1].map((side) => (
+              <mesh key={`c${side}`} position={[side * 0.3, 0.32, 0.38]} rotation={[0, side * 0.6, 0]} scale={[1.2, 0.7, 0.3]}>
+                <sphereGeometry args={[0.07, 12, 8]} />
+                <ToonMat color={CHEEK} transparent opacity={0.85} />
               </mesh>
             ))}
-            {/* nariz */}
-            <mesh position={[0, 0.145, 0.155]} rotation={[Math.PI / 2, 0, 0]}>
-              <coneGeometry args={[0.015, 0.038, 4]} />
-              <ToonMat color={SKIN_DARK}/>
+            {/* narizinho + sorriso */}
+            <mesh position={[0, 0.36, 0.49]} scale={[1, 0.8, 0.7]}>
+              <sphereGeometry args={[0.035, 10, 8]} />
+              <ToonMat color={SKIN_SHADE} />
             </mesh>
-            {/* boca */}
-            <mesh position={[0, 0.1, 0.148]} scale={[1.1, 0.55, 0.7]}>
-              <sphereGeometry args={[0.022, 6, 4]} />
-              <ToonMat color={LIP}/>
-            </mesh>
-            <mesh position={[0, 0.108, 0.152]} scale={[0.7, 0.25, 0.4]}>
-              <sphereGeometry args={[0.018, 5, 3]} />
-              <ToonMat color="#d47880"/>
-            </mesh>
-            {/* blush */}
-            {[0.088, -0.088].map((x) => (
-              <mesh key={x} position={[x, 0.132, 0.118]} scale={[1.1, 0.7, 0.5]}>
-                <sphereGeometry args={[0.03, 5, 4]} />
-                <ToonMat color={CHEEK}transparent opacity={0.55} />
-              </mesh>
-            ))}
-
-            {/* calota + occipital (receive-only: muitas esferas no shadow map) */}
-            <mesh position={[0, 0.2, -0.02]} scale={[1.08, 0.92, 1.12]}>
-              <sphereGeometry args={[0.155, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.58]} />
-              <ToonMat color={HAIR}side={THREE.DoubleSide} />
-            </mesh>
-            <mesh position={[0, 0.1, -0.14]} scale={[1.15, 0.95, 1.05]}>
-              <sphereGeometry args={[0.12, 7, 5]} />
-              <ToonMat color={HAIR}/>
-            </mesh>
-            <mesh position={[0, 0.05, -0.16]} scale={[0.95, 0.7, 0.75]}>
-              <sphereGeometry args={[0.1, 6, 4]} />
-              <ToonMat color={HAIR_DARK}/>
+            <mesh position={[0, 0.27, 0.465]} rotation={[0.25, 0, Math.PI]}>
+              <torusGeometry args={[0.055, 0.016, 6, 14, Math.PI]} />
+              <ToonMat color="#d0505e" />
             </mesh>
 
-            {/* franja partida — sem cobrir o eixo dos olhos */}
+            {/* cabelo: capacete arredondado cobrindo topo e nuca */}
+            <mesh position={[0, 0.5, -0.03]} scale={[1.1, 1.02, 1.08]}>
+              <sphereGeometry args={[0.5, 26, 18, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+              <ToonMat color={HAIR} />
+            </mesh>
+            <mesh position={[0, 0.42, -0.1]} scale={[1.08, 1, 1]}>
+              <sphereGeometry args={[0.49, 22, 16, Math.PI * 0.85, Math.PI * 1.3, Math.PI * 0.25, Math.PI * 0.6]} />
+              <ToonMat color={HAIR} />
+            </mesh>
+            {/* franja em gomos */}
             <group ref={hairFrontRef}>
-              <mesh position={[0.078, 0.228, 0.09]} rotation={[0.15, 0.5, 0.28]} scale={[0.55, 0.38, 0.42]}>
-                <sphereGeometry args={[0.08, 5, 4]} />
-                <ToonMat color={HAIR}/>
-              </mesh>
-              <mesh position={[-0.078, 0.228, 0.09]} rotation={[0.15, -0.5, -0.28]} scale={[0.55, 0.38, 0.42]}>
-                <sphereGeometry args={[0.08, 5, 4]} />
-                <ToonMat color={HAIR}/>
-              </mesh>
-              <mesh position={[0.1, 0.19, 0.1]} rotation={[0.35, 0.3, 0.4]} scale={[0.35, 0.55, 0.3]}>
-                <sphereGeometry args={[0.06, 4, 3]} />
-                <ToonMat color={HAIR_DARK}/>
-              </mesh>
-              <mesh position={[-0.1, 0.19, 0.1]} rotation={[0.35, -0.3, -0.4]} scale={[0.35, 0.55, 0.3]}>
-                <sphereGeometry args={[0.06, 4, 3]} />
-                <ToonMat color={HAIR_DARK}/>
-              </mesh>
-              <mesh position={[0, 0.268, 0.055]} scale={[0.85, 0.32, 0.45]}>
-                <sphereGeometry args={[0.072, 5, 3]} />
-                <ToonMat color={HAIR_LIGHT}/>
-              </mesh>
-            </group>
-
-            {/* volume aberto (some com touca) */}
-            <group ref={hairOpenRef}>
-              <mesh position={[0, 0.29, -0.02]} scale={[1.05, 0.7, 1.0]}>
-                <sphereGeometry args={[0.125, 6, 5]} />
-                <ToonMat color={HAIR}/>
-              </mesh>
-              <mesh position={[0, 0.26, 0.04]} scale={[0.95, 0.45, 0.55]}>
-                <sphereGeometry args={[0.1, 5, 4]} />
-                <ToonMat color={HAIR_LIGHT}/>
-              </mesh>
-              {[0.145, -0.145].map((x) => (
-                <mesh key={x} position={[x, 0.14, -0.02]} scale={[0.55, 1.15, 0.85]}>
-                  <sphereGeometry args={[0.11, 5, 4]} />
-                  <ToonMat color={HAIR}/>
+              {[-0.26, -0.09, 0.09, 0.26].map((x, i) => (
+                <mesh key={x} position={[x, 0.74 - Math.abs(x) * 0.35, 0.37 - Math.abs(x) * 0.25]} rotation={[0.55, 0, x * 0.9]} scale={[1, 0.72, 0.55]}>
+                  <sphereGeometry args={[0.15 - (i % 2) * 0.015, 14, 10]} />
+                  <ToonMat color={i % 2 ? HAIR_LIGHT : HAIR} />
                 </mesh>
               ))}
-              {/* tranças laterais */}
-              {[1, -1].map((side) => (
-                <group key={`braid${side}`} position={[side * 0.15, 0.05, -0.04]}>
-                  <mesh position={[0, -0.12, -0.02]} rotation={[0.15, 0, side * 0.08]}>
-                    <capsuleGeometry args={[0.042, 0.38, 3, 5]} />
-                    <ToonMat color={HAIR_DARK}/>
+            </group>
+            {/* maria-chiquinha com lacinhos */}
+            <group ref={hairOpenRef}>
+              {[-1, 1].map((side) => (
+                <group key={`p${side}`} position={[side * 0.5, 0.36, -0.12]}>
+                  <mesh position={[side * 0.08, -0.12, 0]} scale={[0.85, 1.15, 0.85]}>
+                    <sphereGeometry args={[0.17, 16, 12]} />
+                    <ToonMat color={HAIR} />
                   </mesh>
-                  <mesh position={[0, -0.38, -0.03]} rotation={[0.2, 0, side * 0.1]}>
-                    <capsuleGeometry args={[0.038, 0.32, 3, 5]} />
-                    <ToonMat color={HAIR}/>
+                  <mesh position={[0, 0.06, 0]}>
+                    <sphereGeometry args={[0.07, 10, 8]} />
+                    <ToonMat color={RIBBON} />
                   </mesh>
                 </group>
               ))}
-              {[0.13, -0.13].map((x) => (
-                <mesh
-                  key={`side${x}`}
-                  position={[x, -0.02, 0.02]}
-                  rotation={[0.15, 0, x > 0 ? 0.12 : -0.12]}
-                  scale={[0.45, 1.35, 0.55]}
-                >
-                  <sphereGeometry args={[0.09, 4, 4]} />
-                  <ToonMat color={HAIR_DARK}/>
+              {/* florzinha no cabelo */}
+              <group position={[0.3, 0.8, 0.22]} rotation={[0.4, 0.3, 0]}>
+                {[0, 1, 2, 3, 4].map((k) => (
+                  <mesh key={k} position={[Math.cos((k / 5) * Math.PI * 2) * 0.06, Math.sin((k / 5) * Math.PI * 2) * 0.06, 0]}>
+                    <sphereGeometry args={[0.045, 8, 6]} />
+                    <ToonMat color="#ffffff" />
+                  </mesh>
+                ))}
+                <mesh position={[0, 0, 0.02]}>
+                  <sphereGeometry args={[0.04, 8, 6]} />
+                  <ToonMat color={BUTTON} />
                 </mesh>
-              ))}
-              <mesh position={[0.13, 0.3, 0.02]} rotation={[0, 0, 0.5]}>
-                <boxGeometry args={[0.095, 0.04, 0.04]} />
-                <ToonMat color={SASH}/>
-              </mesh>
-              <mesh position={[0.13, 0.3, 0.02]} rotation={[0, 0, -0.5]}>
-                <boxGeometry args={[0.095, 0.04, 0.04]} />
-                <ToonMat color={SASH}/>
-              </mesh>
-              <mesh position={[-0.12, 0.27, 0.055]}>
-                <sphereGeometry args={[0.03, 4, 3]} />
-                <ToonMat color={BLOOM}/>
-              </mesh>
+              </group>
             </group>
-
-            {/* cabelo longo — 3 mechas (antes 6) */}
-            <group
-              name="HairBack"
-              position={[0, hoodOn ? 0.1 : 0.14, hoodOn ? -0.13 : -0.11]}
-              scale={hoodOn ? 0.88 : 1}
-            >
-              <mesh position={[0, -0.02, -0.02]} scale={[1.1, 0.75, 0.95]}>
-                <sphereGeometry args={[0.11, 6, 5]} />
-                <ToonMat color={HAIR}/>
-              </mesh>
-              <mesh position={[0, -0.28, -0.03]} rotation={[0.28, 0, 0]}>
-                <capsuleGeometry args={[0.105, 0.5, 2, 5]} />
-                <ToonMat color={HAIR}/>
-              </mesh>
-              <mesh position={[0.08, -0.34, 0]} rotation={[0.25, 0, 0.14]}>
-                <capsuleGeometry args={[0.058, 0.4, 2, 4]} />
-                <ToonMat color={HAIR_DARK}/>
-              </mesh>
-              <mesh position={[-0.08, -0.34, 0]} rotation={[0.25, 0, -0.14]}>
-                <capsuleGeometry args={[0.058, 0.4, 2, 4]} />
-                <ToonMat color={HAIR_DARK}/>
+            {/* coque de trás (balança com o passo) */}
+            <group name="HairBack" position={[0, 0.5, -0.42]}>
+              <mesh position={[0, -0.05, -0.06]}>
+                <sphereGeometry args={[0.17, 16, 12]} />
+                <ToonMat color={HAIR_LIGHT} />
               </mesh>
             </group>
 

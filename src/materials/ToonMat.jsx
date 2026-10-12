@@ -1,6 +1,7 @@
-import { getToonGradientMap } from './toonMaterial'
-
-/** Material toon para JSX — gradient map partilhada. */
+/**
+ * Material JSX padrão — Lambert macio (estilo fofo). Nome mantido por
+ * compatibilidade. Aceita as mesmas props de antes.
+ */
 export default function ToonMat({
   color = '#ffffff',
   emissive = '#000000',
@@ -9,11 +10,12 @@ export default function ToonMat({
   opacity,
   side,
   depthWrite,
+  // eslint-disable-next-line no-unused-vars
+  gradientMap,
   ...rest
 }) {
   return (
-    <meshToonMaterial
-      gradientMap={getToonGradientMap()}
+    <meshLambertMaterial
       color={color}
       emissive={emissive}
       emissiveIntensity={emissiveIntensity}

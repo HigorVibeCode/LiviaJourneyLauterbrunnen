@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react'
 import ToonMat from '../../materials/ToonMat'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
-import { Sparkles } from '@react-three/drei'
+import { Sparkles, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { makeToonMaterial } from '../../materials/toonMaterial'
 import {
@@ -19,17 +19,77 @@ import {
   makeRng,
   pathXAt,
   resolveOnPath,
+  GATES,
 } from '../../config/world'
+import { PAL } from '../../config/palette'
+import StaticBatch from './StaticBatch'
+import { heartGeometry, starGeometry, tint, mix } from './cuteShapes'
 import { useProgressStore } from '../../store/progressStore'
 import { playerPosition } from '../../store/playerStore'
 import Instanced from './Instanced'
 
-/** Muro de pedra/madeira ao lado do portão, fechando a passagem */
+/**
+ * Muro ao lado do portão, fechando a passagem — agora uma sebe fofa:
+ * cerca-viva roliça com flores + cerquinha branca (madeira), muro de pedrinhas
+ * arredondadas (pedra) ou muralha de neve fofa (gelo). Colliders iguais.
+ */
 export function BarrierWall({ z, gateWidth, halfWidth, height = 6, y = 0, color = '#6B4423' }) {
   const gapHalf = gateWidth / 2
   const segLen = halfWidth - gapHalf
+  const style = Object.values(GATES).find((g) => g.color === color)?.style ?? 'wood'
+
+  const deco = useMemo(() => {
+    if (segLen <= 0) return null
+    const rng = makeRng(Math.round(Math.abs(z) * 13 + gateWidth))
+    const blobs = []
+    const flowers = []
+    const pickets = []
+    const bodyH = height - 0.9
+    for (const side of [-1, 1]) {
+      const nTop = Math.max(4, Math.round(segLen / 2.1))
+      for (let i = 0; i < nTop; i++) {
+        const t = (i + 0.5) / nTop
+        const x = side * (gapHalf + 0.4 + (segLen - 0.4) * t)
+        blobs.push({ x, y: y + bodyH - 0.1 + rng() * 0.25, z: z + (rng() - 0.5) * 0.3, s: 1.15 + rng() * 0.35, k: i % 3 })
+        // bolotas laterais (dão volume à sebe)
+        if (i % 2 === 0) {
+          for (const f of [-1, 1]) {
+            blobs.push({ x: x + (rng() - 0.5), y: y + 1.2 + rng() * (bodyH - 2.4), z: z + f * 0.95, s: 0.75 + rng() * 0.3, k: (i + 1) % 3 })
+          }
+        }
+        // florzinhas nas duas faces
+        for (const f of [-1, 1]) {
+          if (rng() < 0.75) {
+            flowers.push({
+              x: x + (rng() - 0.5) * 1.6,
+              y: y + 1.0 + rng() * (bodyH - 1.2),
+              z: z + f * 1.12,
+              c: PAL.flowers[Math.floor(rng() * PAL.flowers.length)],
+              f,
+            })
+          }
+        }
+      }
+      // cerquinha branca na frente (só no estilo madeira)
+      if (style === 'wood') {
+        const n = Math.round(segLen / 1.15)
+        for (let i = 0; i < n; i++) {
+          const x = side * (gapHalf + 0.8 + (segLen - 1.2) * ((i + 0.5) / n))
+          pickets.push({ x, front: 1.32 })
+        }
+      }
+    }
+    return { blobs, flowers, pickets, bodyH }
+  }, [segLen, gapHalf, height, y, z, gateWidth, style])
 
   if (segLen <= 0) return null
+
+  const pal =
+    style === 'ice'
+      ? { body: PAL.snowShade, blob: [PAL.snow, '#eef6ff', PAL.snowShade] }
+      : style === 'stone'
+        ? { body: '#cdd7e2', blob: ['#dfe6ee', '#cbd5e0', '#e8edf3'] }
+        : { body: PAL.leafDark, blob: [PAL.leaf, PAL.leafLight, PAL.leafDark] }
 
   return (
     <group>
@@ -44,26 +104,63 @@ export function BarrierWall({ z, gateWidth, halfWidth, height = 6, y = 0, color 
         />
       </RigidBody>
 
-      {[-1, 1].map((side) => {
-        const panels = Math.max(3, Math.round(segLen / 5))
-        return Array.from({ length: panels }, (_, i) => {
-          const t = (i + 0.5) / panels
-          const x = side * (gapHalf + segLen * t)
-          const h = height - (i % 2) * 0.4
-          return (
-            <group key={`${side}-${i}`}>
-              <mesh position={[x, y + h / 2, z]} castShadow receiveShadow>
-                <boxGeometry args={[segLen / panels + 0.1, h, 0.35]} />
-                <ToonMat color={i % 2 ? shade(color, -16) : color}/>
+      <StaticBatch>
+        {[-1, 1].map((side) => (
+          <RoundedBox
+            key={side}
+            args={[segLen, deco.bodyH, 1.9]}
+            radius={0.7}
+            smoothness={2}
+            bevelSegments={2}
+            position={[side * (gapHalf + segLen / 2), y + deco.bodyH / 2, z]}
+          >
+            <ToonMat color={pal.body} />
+          </RoundedBox>
+        ))}
+        {deco.blobs.map((b, i) => (
+          <mesh key={`b${i}`} position={[b.x, b.y, b.z]} scale={[b.s, b.s * 0.8, b.s * 0.9]}>
+            <sphereGeometry args={[1, 10, 8]} />
+            <ToonMat color={pal.blob[b.k]} />
+          </mesh>
+        ))}
+        {style !== 'ice' &&
+          deco.flowers.map((f, i) => (
+            <group key={`f${i}`} position={[f.x, f.y, f.z]}>
+              <mesh scale={[1, 1, 0.6]}>
+                <sphereGeometry args={[0.28, 8, 6]} />
+                <ToonMat color={style === 'stone' ? PAL.leafLight : f.c} />
               </mesh>
-              <mesh position={[x, y + h + 0.25, z]} castShadow>
-                <boxGeometry args={[segLen / panels + 0.4, 0.4, 0.45]} />
-                <ToonMat color={shade(color, -30)}/>
-              </mesh>
+              {style !== 'stone' && (
+                <mesh position={[0, 0, f.f * 0.16]}>
+                  <sphereGeometry args={[0.11, 6, 5]} />
+                  <ToonMat color={PAL.flowerCenter} />
+                </mesh>
+              )}
             </group>
-          )
-        })
-      })}
+          ))}
+        {/* cerquinha branca de estacas com ponta redonda */}
+        {deco.pickets.map((p, i) => (
+          <group key={`p${i}`} position={[p.x, y, z + p.front]}>
+            <mesh position={[0, 0.65, 0]}>
+              <boxGeometry args={[0.34, 1.3, 0.14]} />
+              <ToonMat color="#ffffff" />
+            </mesh>
+            <mesh position={[0, 1.3, 0]} scale={[1, 1, 0.45]}>
+              <sphereGeometry args={[0.17, 8, 5]} />
+              <ToonMat color="#ffffff" />
+            </mesh>
+          </group>
+        ))}
+        {style === 'wood' &&
+          [-1, 1].map((side) =>
+            [0.45, 1.0].map((h) => (
+              <mesh key={`r${side}${h}`} position={[side * (gapHalf + 0.6 + (segLen - 0.8) / 2), y + h, z + 1.24]}>
+                <boxGeometry args={[segLen - 0.8, 0.16, 0.1]} />
+                <ToonMat color="#ffffff" />
+              </mesh>
+            )),
+          )}
+      </StaticBatch>
     </group>
   )
 }

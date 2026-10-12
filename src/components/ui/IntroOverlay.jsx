@@ -47,6 +47,14 @@ export default function IntroOverlay({ onDone }) {
     return (
       <div className="title-screen" role="dialog" aria-label={STORY_TITLE}>
         <div className="title-glow" aria-hidden />
+        <div className="title-deco" aria-hidden>
+          <span>🌿</span>
+          <span>🌸</span>
+          <span>🌼</span>
+          <span>🍀</span>
+          <span>🌷</span>
+          <span>🌿</span>
+        </div>
         <p className="title-kicker">Uma aventura nos Alpes suíços</p>
         <h1 className="title-name">
           A Jornada

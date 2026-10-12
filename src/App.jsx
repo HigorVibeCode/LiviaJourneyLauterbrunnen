@@ -101,7 +101,7 @@ function GameCanvas() {
     <Canvas
       shadows={preset.shadows}
       dpr={preset.dpr}
-      camera={{ position: [0, 6, 108], fov: 52, near: 0.4, far: 1000 }}
+      camera={{ position: [0, 6, 108], fov: 45, near: 0.4, far: 1000 }}
       gl={{
         alpha: false,
         antialias: !preset.postFx,

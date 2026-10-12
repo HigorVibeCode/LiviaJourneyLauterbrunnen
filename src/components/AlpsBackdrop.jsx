@@ -2,174 +2,155 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { makeRng } from '../config/world'
-import { playerPosition } from '../store/playerStore'
 import { skyState } from '../lib/skyState'
 import Instanced from './world/Instanced'
-import StaticBatch from './world/StaticBatch'
 
 /**
- * Alpes distantes — só visual, sem física.
- * Camadas em profundidade + névoa criam parallax e escala real do vale.
+ * Alpes de fundo no estilo fofo: montanhas arredondadas (perfil em sino)
+ * azul-lavanda com chapéu de neve, e nuvens de algodão bem brancas.
+ * Sem curvatura de mundo e sem neblina — ficam sempre lá no horizonte.
  */
-export default function AlpsBackdrop() {
-  const rows = useMemo(() => {
-    const rng = makeRng(555)
-    // Cores já claras: as camadas usam material não iluminado + fog,
-    // que é o que dá a perspectiva aérea dos Alpes (e é mais barato).
-    // Panorama à frente do mirante (z −380 em diante): quatro cristas em
-    // profundidade, para que do alto se veja "o resto dos Alpes".
-    // Camadas próximas ao vale ficam só nas laterais (flank) — senão um
-    // cone verde enorme tapa a vista da neve/escadaria no meio do caminho.
-    const layers = [
-      { z: -980, scale: 2.4, color: '#a8c4dc', snow: '#f8fcff', count: 8, flank: true },
-      { z: -820, scale: 2.0, color: '#9eb8d0', snow: '#f4f9fd', count: 7, flank: true },
-      { z: -740, scale: 1.7, color: '#94adc4', snow: '#f0f6fa', count: 6, flank: true },
-      { z: -500, scale: 1.35, color: '#8eb0a0', snow: '#eaf4f8', count: 6, flank: true },
-      { z: -360, scale: 1.1, color: '#88a898', snow: '#e6f0f6', count: 6, flank: true },
-      { z: 320, scale: 1.8, color: '#9cb4cc', snow: '#f2f8fc', count: 7 },
-      { z: 220, scale: 1.3, color: '#90a8a0', snow: '#eaf2f8', count: 6 },
-    ]
+function bellGeometry(radius, height, segs = 22) {
+  const pts = []
+  const n = 14
+  for (let i = 0; i <= n; i++) {
+    const t = i / n
+    // sino: base larga, topo arredondado
+    const r = radius * Math.sqrt(1 - t) * (1 - 0.15 * Math.sin(t * Math.PI))
+    pts.push(new THREE.Vector2(Math.max(0.001, r), t * height))
+  }
+  const g = new THREE.LatheGeometry(pts, segs)
+  g.computeVertexNormals()
+  return g
+}
 
-    return layers.map((layer, li) => ({
-      ...layer,
-      key: li,
-      peaks: Array.from({ length: layer.count }, (_, i) => {
-        const h = 46 + rng() * 40
+function makeFarMaterial(color) {
+  const m = new THREE.MeshLambertMaterial({ color, fog: false })
+  m.defines = { NO_CURVE: '' }
+  return m
+}
+
+export default function AlpsBackdrop() {
+  const geos = useMemo(
+    () => ({
+      body: bellGeometry(1, 1),
+      // chapéu de neve: mesmo sino, só o topo, um pouco maior
+      cap: (() => {
+        const pts = []
+        const n = 8
+        for (let i = 0; i <= n; i++) {
+          const t = 0.62 + (i / n) * 0.38
+          const r = 1.03 * Math.sqrt(1 - t) * (1 - 0.15 * Math.sin(t * Math.PI))
+          pts.push(new THREE.Vector2(Math.max(0.001, r), t * 1.01))
+        }
+        const g = new THREE.LatheGeometry(pts, 22)
+        g.computeVertexNormals()
+        return g
+      })(),
+    }),
+    [],
+  )
+  const mats = useMemo(
+    () => ({
+      near: makeFarMaterial('#9ec4ee'),
+      mid: makeFarMaterial('#b4d0f2'),
+      far: makeFarMaterial('#c8dcf6'),
+      snow: makeFarMaterial('#ffffff'),
+    }),
+    [],
+  )
+
+  const peaks = useMemo(() => {
+    const rng = makeRng(555)
+    const rows = [
+      // à frente do mirante: cordilheira grande
+      { z: -1260, n: 9, spread: 110, h: [120, 190], mat: 'far' },
+      { z: -1180, n: 7, spread: 95, h: [90, 150], mat: 'mid' },
+      // laterais ao longo do vale
+      ...Array.from({ length: 12 }, (_, i) => ({ z: 140 - i * 105, n: 2, flank: true, h: [80, 140], mat: i % 2 ? 'mid' : 'near' })),
+      // atrás da casa
+      { z: 260, n: 7, spread: 90, h: [80, 140], mat: 'mid' },
+    ]
+    const list = { near: [], mid: [], far: [], snow: [] }
+    rows.forEach((row) => {
+      for (let i = 0; i < row.n; i++) {
+        const h = row.h[0] + rng() * (row.h[1] - row.h[0])
+        const r = h * (0.62 + rng() * 0.2)
         let x
-        if (layer.flank) {
-          const side = i % 2 === 0 ? -1 : 1
-          x = side * (95 + rng() * 55) + (rng() - 0.5) * 18
-        } else {
-          x = (i - (layer.count - 1) / 2) * (72 + rng() * 34)
-        }
-        return {
-          x,
-          h,
-          z: (rng() - 0.5) * 70,
-          ry: rng() * Math.PI,
-        }
-      }),
-    }))
+        // bem longe da trilha: sem 'paredes' no céu
+        if (row.flank) x = (i === 0 ? -1 : 1) * (260 + rng() * 70)
+        else x = (i - (row.n - 1) / 2) * row.spread + (rng() - 0.5) * 30
+        const z = row.z + (rng() - 0.5) * 40
+        const y = -h * 0.12
+        list[row.mat].push({ x, y, z, sx: r, sy: h, sz: r, ry: rng() * Math.PI })
+        list.snow.push({ x, y, z, sx: r, sy: h, sz: r, ry: rng() * Math.PI })
+      }
+    })
+    return list
   }, [])
 
-  const layerRefs = useRef([])
-
-  const tinted = useRef(null)
+  // à noite as montanhas escurecem junto com o céu
   useFrame(() => {
-    const pz = playerPosition.z
-    layerRefs.current.forEach((g, i) => {
-      if (!g || !rows[i]) return
-      g.visible = Math.abs(rows[i].z - pz) <= 350
+    Object.values(mats).forEach((m) => {
+      if (!m.userData.base) m.userData.base = m.color.clone()
+      m.color.copy(m.userData.base).multiply(skyState.farTint)
     })
-    // montanhas sem neblina, mas escurecem à noite (vertex colors × tint)
-    if (!tinted.current) {
-      const mats = new Set()
-      layerRefs.current.forEach((g) =>
-        g?.traverse((o) => {
-          if (o.isMesh && o.material?.vertexColors) mats.add(o.material)
-        }),
-      )
-      if (mats.size) tinted.current = [...mats]
-    }
-    tinted.current?.forEach((m) => m.color.copy(skyState.farTint))
   })
 
   return (
     <group userData={{ noCull: true }}>
-      {rows.map((row, li) => (
-        <group
-          key={row.key}
-          ref={(el) => { layerRefs.current[li] = el }}
-          position={[0, -10, row.z]}
-          scale={row.scale}
-        >
-          <StaticBatch noNearFade>
-          {row.peaks.map((p, i) => (
-            <group key={i} position={[p.x, 0, p.z]} rotation={[0, p.ry, 0]}>
-              <mesh>
-                <coneGeometry args={[p.h * 0.66, p.h, 6]} />
-                <meshBasicMaterial color={row.color} fog={false} />
-              </mesh>
-              <mesh position={[0, p.h * 0.42, 0]}>
-                <coneGeometry args={[p.h * 0.27, p.h * 0.32, 6]} />
-                <meshBasicMaterial color={row.snow} fog={false} />
-              </mesh>
-              <mesh position={[-p.h * 0.32, -p.h * 0.14, p.h * 0.18]}>
-                <coneGeometry args={[p.h * 0.42, p.h * 0.68, 5]} />
-                <meshBasicMaterial color={shade(row.color, -14)} fog={false} />
-              </mesh>
-            </group>
-          ))}
-          </StaticBatch>
-        </group>
+      {['near', 'mid', 'far'].map((k) => (
+        <Instanced key={k} geometry={geos.body} material={mats[k]} items={peaks[k]} castShadow={false} receiveShadow={false} />
       ))}
-
+      <Instanced geometry={geos.cap} material={mats.snow} items={peaks.snow} castShadow={false} receiveShadow={false} />
       <Clouds />
     </group>
   )
 }
 
-/** Nuvens volumétricas fake (instanciadas) que derivam lentamente */
+/** Nuvens de algodão: grupos de bolinhas com fundo achatado, derivando devagar */
 function Clouds() {
   const ref = useRef(null)
-  const geometry = useMemo(() => new THREE.SphereGeometry(1, 6, 5), [])
-  const material = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        color: '#f6f9fc',
-        transparent: true,
-        opacity: 0.55,
-        depthWrite: false,
-        fog: false,
-      }),
-    [],
-  )
+  const geometry = useMemo(() => new THREE.SphereGeometry(1, 14, 10), [])
+  const material = useMemo(() => {
+    const m = new THREE.MeshLambertMaterial({ color: '#ffffff', emissive: '#e8f2ff', emissiveIntensity: 0.55, fog: false })
+    m.defines = { NO_CURVE: '' }
+    return m
+  }, [])
 
   const items = useMemo(() => {
     const rng = makeRng(1212)
     const out = []
-    for (let c = 0; c < 26; c++) {
-      const cx = (rng() * 2 - 1) * 220
-      const cy = 52 + rng() * 46
-      const cz = 160 - rng() * 1000
-      const blobs = 4 + Math.floor(rng() * 4)
-      for (let b = 0; b < blobs; b++) {
-        out.push({
-          x: cx + (rng() - 0.5) * 34,
-          y: cy + (rng() - 0.5) * 7,
-          z: cz + (rng() - 0.5) * 26,
-          s: 7 + rng() * 11,
-          sy: 0.5 + rng() * 0.3,
-        })
-      }
+    for (let c = 0; c < 34; c++) {
+      const side = rng() < 0.5 ? -1 : 1
+      const cx = side * (40 + rng() * 140)
+      const cy = 46 + rng() * 34
+      const cz = 180 - rng() * 1400
+      const s = 6 + rng() * 6
+      const puffs = [
+        [0, 0, 0, 1.25],
+        [-1.4, -0.3, 0.3, 0.95],
+        [1.4, -0.35, -0.2, 1],
+        [0.6, 0.55, 0.2, 0.85],
+        [-0.7, 0.45, -0.3, 0.75],
+      ]
+      puffs.forEach(([dx, dy, dz, k]) => {
+        out.push({ x: cx + dx * s, y: cy + dy * s, z: cz + dz * s, s: s * k, sy: s * k * 0.78 })
+      })
     }
     return out
   }, [])
 
-  const base = useMemo(() => new THREE.Color('#ffffff'), [])
   useFrame((state) => {
     if (!ref.current) return
-    ref.current.position.x = Math.sin(state.clock.elapsedTime * 0.012) * 40
-    material.color.copy(base).multiply(skyState.farTint)
+    ref.current.position.x = Math.sin(state.clock.elapsedTime * 0.01) * 30
+    material.emissive.set('#e8f2ff').multiply(skyState.farTint)
+    material.color.set('#ffffff').multiply(skyState.farTint)
   })
 
   return (
-    <group ref={ref} userData={{ noCull: true }}>
-      <Instanced
-        geometry={geometry}
-        material={material}
-        items={items}
-        castShadow={false}
-        receiveShadow={false}
-      />
+    <group ref={ref}>
+      <Instanced geometry={geometry} material={material} items={items} castShadow={false} receiveShadow={false} />
     </group>
   )
-}
-
-function shade(hex, amount) {
-  const n = parseInt(hex.slice(1), 16)
-  const r = Math.max(0, Math.min(255, ((n >> 16) & 255) + amount))
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amount))
-  const b = Math.max(0, Math.min(255, (n & 255) + amount))
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
 }

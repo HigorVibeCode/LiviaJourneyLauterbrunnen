@@ -17,107 +17,57 @@ const SUN_DIR = { x: 42, y: 58, z: 26 }
  * "come" o mundo antes do DistanceCuller esconder os objetos (sem pop-in).
  */
 const c = (hex) => new THREE.Color(hex)
+// Estilo fofo: muita luz do céu (hemisférica) para nada ficar escuro,
+// sol quente, céu azul-piscina. Cada região muda o "clima" de leve.
+const mood = (o) => ({
+  sun: 1.9,
+  sunColor: c('#fff4dc'),
+  ambient: 0.55,
+  hemi: 1.15,
+  fogFar: 1,
+  fogNear: 0.45,
+  stars: 0,
+  farTint: c('#ffffff'),
+  ...o,
+})
 const MOODS = {
-  meadow: {
-    top: c('#3a8ee6'),
-    horizon: c('#c4e6ff'),
-    sun: 2.35,
-    sunColor: c('#fff1d0'),
-    ambient: 0.42,
-    hemiSky: c('#cfe8ff'),
-    hemiGround: c('#6f9a52'),
-    hemi: 0.75,
-    fogFar: 1,
-    fogNear: 0.32,
-    stars: 0,
-    farTint: c('#ffffff'),
-  },
-  pasture: {
-    top: c('#4392e6'),
-    horizon: c('#d2ecff'),
-    sun: 2.4,
-    sunColor: c('#fff0c8'),
-    ambient: 0.42,
-    hemiSky: c('#d6ecff'),
-    hemiGround: c('#79a24e'),
-    hemi: 0.75,
-    fogFar: 1,
-    fogNear: 0.35,
-    stars: 0,
-    farTint: c('#ffffff'),
-  },
-  night: {
-    // noite de conto de fadas: azul profundo, lua forte — dá para ver o caminho
-    top: c('#070c2a'),
-    horizon: c('#2b3f78'),
-    sun: 1.05,
-    sunColor: c('#b9ccff'),
-    ambient: 0.4,
-    hemiSky: c('#6a86d8'),
-    hemiGround: c('#1e2a3e'),
-    hemi: 0.65,
-    fogFar: 0.72,
-    fogNear: 0.12,
+  meadow: mood({ top: c('#4fb2f2'), horizon: c('#d4f1ff'), hemiSky: c('#d9f1ff'), hemiGround: c('#9ad86e') }),
+  pasture: mood({ top: c('#55b8f4'), horizon: c('#ddf4ff'), hemiSky: c('#e0f3ff'), hemiGround: c('#b4dc6c') }),
+  night: mood({
+    // noite de pijama: azul aconchegante, lua forte, nada assustador
+    top: c('#1b2f6e'),
+    horizon: c('#5a74c0'),
+    sun: 1.25,
+    sunColor: c('#c8d6ff'),
+    ambient: 0.62,
+    hemiSky: c('#8aa2ee'),
+    hemiGround: c('#3d6a78'),
+    hemi: 1.0,
+    fogFar: 0.8,
+    fogNear: 0.25,
     stars: 1,
-    farTint: c('#4a5d92'),
-  },
-  water: {
-    top: c('#4a8ed6'),
-    horizon: c('#c6dfea'),
-    sun: 1.9,
-    sunColor: c('#ffeccc'),
-    ambient: 0.42,
-    hemiSky: c('#cfe6f2'),
-    hemiGround: c('#4f7f58'),
-    hemi: 0.72,
-    fogFar: 0.85,
-    fogNear: 0.22,
-    stars: 0,
-    farTint: c('#e4eef4'),
-  },
-  snow: {
-    top: c('#5ea2ea'),
-    horizon: c('#eaf4ff'),
-    sun: 2.05,
+    farTint: c('#7a90d4'),
+  }),
+  water: mood({ top: c('#45b0f0'), horizon: c('#d0f2ff'), hemiSky: c('#d4f2ff'), hemiGround: c('#7ccc8a') }),
+  snow: mood({
+    top: c('#6ab8f2'),
+    horizon: c('#eef8ff'),
     sunColor: c('#ffffff'),
-    ambient: 0.48,
-    hemiSky: c('#eaf4ff'),
-    hemiGround: c('#a8bccc'),
-    hemi: 0.8,
-    fogFar: 0.85,
-    fogNear: 0.2,
-    stars: 0,
-    farTint: c('#ffffff'),
-  },
-  flower: {
-    top: c('#4f8fe6'),
-    horizon: c('#ffe6ef'),
-    sun: 2.4,
-    sunColor: c('#ffe6b8'),
-    ambient: 0.44,
-    hemiSky: c('#ffe8f0'),
-    hemiGround: c('#7aa64e'),
-    hemi: 0.75,
-    fogFar: 1,
-    fogNear: 0.35,
-    stars: 0,
-    farTint: c('#fff2f6'),
-  },
-  summit: {
-    // fim de tarde dourado no mirante
-    top: c('#2e6fd0'),
-    horizon: c('#ffe0b0'),
-    sun: 2.5,
-    sunColor: c('#ffd59a'),
-    ambient: 0.44,
-    hemiSky: c('#ffe8c8'),
-    hemiGround: c('#8a9a80'),
-    hemi: 0.75,
+    hemiSky: c('#f0f8ff'),
+    hemiGround: c('#c8dcf0'),
+    ambient: 0.6,
+  }),
+  flower: mood({ top: c('#5fb6f4'), horizon: c('#ffe8f4'), hemiSky: c('#ffeef8'), hemiGround: c('#a8dc78') }),
+  summit: mood({
+    // fim de tarde de algodão-doce
+    top: c('#6aa8f0'),
+    horizon: c('#ffe2c4'),
+    sunColor: c('#ffe2b8'),
+    hemiSky: c('#fff0e0'),
+    hemiGround: c('#c0d8a8'),
     fogFar: 1.25,
-    fogNear: 0.4,
-    stars: 0,
-    farTint: c('#fff0dc'),
-  },
+    farTint: c('#fff2e6'),
+  }),
 }
 
 function moodAt(z) {
@@ -196,15 +146,15 @@ export default function Lighting() {
 
   return (
     <>
-      <hemisphereLight ref={hemiRef} args={['#cfe8ff', '#6f9a52', 0.75]} />
-      <ambientLight ref={ambientRef} intensity={0.42} color="#cfe8ff" />
+      <hemisphereLight ref={hemiRef} args={['#d9f1ff', '#9ad86e', 1.15]} />
+      <ambientLight ref={ambientRef} intensity={0.55} color="#d9f1ff" />
 
       <object3D ref={targetRef} />
       <directionalLight
         ref={lightRef}
         castShadow={preset.shadows}
-        intensity={2.35}
-        color="#fff1d0"
+        intensity={1.9}
+        color="#fff4dc"
         shadow-mapSize-width={preset.shadowMapSize}
         shadow-mapSize-height={preset.shadowMapSize}
         shadow-camera-near={1}
@@ -217,7 +167,7 @@ export default function Lighting() {
         shadow-normalBias={0.04}
       />
       {/* luz de preenchimento fria do lado oposto — volume nos personagens */}
-      <directionalLight position={[-30, 26, -18]} intensity={0.35} color="#9fc0e0" />
+      <directionalLight position={[-30, 26, -18]} intensity={0.3} color="#ffd8f0" />
     </>
   )
 }

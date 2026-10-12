@@ -54,13 +54,13 @@ const SAFE_UPDATE_INTERVAL = 0.25
 const STUCK_SPEED = 0.55
 const STUCK_TIME = 0.38
 const UNSTUCK_NUDGE = 3.2
-const CAM_DIST = 8.6
+const CAM_DIST = 11
 const CAM_MIN_DIST = 2.6
 const LOOK_HEIGHT = 1.45
 /** Altura fixa do pivô acima do chão analítico — nunca segue bounce do capsule */
 const CAM_STAND_CLEAR = 0.92
 const CAM_SKIN = 0.65
-const CAM_PITCH_MIN = 0.05
+const CAM_PITCH_MIN = 0.18
 const CAM_PITCH_MAX = 1.15
 const CAM_MOUSE_SENS = 0.0022
 const CAM_TOUCH_SENS = 0.0042
@@ -175,8 +175,8 @@ export default function Livia() {
   const gravityStuckRef = useRef(false)
   /** Órbita da câmera: yaw 0 = atrás no +Z (visão inicial do mapa) */
   // pitch mais baixo: mostra mais céu e horizonte (antes olhava muito para o chão)
-  const camOrbit = useRef({ yaw: 0, pitch: 0.3 })
-  const camOrbitTarget = useRef({ yaw: 0, pitch: 0.3 })
+  const camOrbit = useRef({ yaw: 0, pitch: 0.42 })
+  const camOrbitTarget = useRef({ yaw: 0, pitch: 0.42 })
   const camMobileRef = useRef(typeof window !== 'undefined' ? detectMobile() : false)
   const prevPosRef = useRef({ x: START.x, z: START.z })
   const stuckTimerRef = useRef(0)
@@ -1146,7 +1146,7 @@ export default function Livia() {
       // tela de título: câmera balança devagar mostrando o vale
       if (!useLoadingStore.getState().introDone) {
         orbitTarget.yaw = Math.sin(state.clock.elapsedTime * 0.12) * 0.55
-        orbitTarget.pitch = 0.3
+        orbitTarget.pitch = 0.36
       }
       if (camMobileRef.current) {
         const orbitT = 1 - Math.exp(-CAM_ORBIT_SMOOTH * dt)

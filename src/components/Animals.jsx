@@ -20,18 +20,51 @@ const ANIMAL_VIEW = 75
  * (em vez de um por animal), então dá para ter dezenas sem custo de CPU.
  */
 
-const SPECIES = {
-  rabbit: { body: '#c9bfae', dark: '#a89c88', size: 0.42, speed: 2.6, hop: true, ears: 'long' },
-  marmot: { body: '#8a6a44', dark: '#6b5232', size: 0.5, speed: 1.6, hop: false },
-  fox: { body: '#d4713a', dark: '#a8542a', size: 0.62, speed: 3.4, tail: true },
-  goat: { body: '#e8e4da', dark: '#c4bfb2', size: 0.8, speed: 1.9, horns: true },
-  sheep: { body: '#f2efe6', dark: '#d8d2c4', size: 0.85, speed: 1.5, fluffy: true },
-  cow: { body: '#f4f0e8', dark: '#3a3630', size: 1.25, speed: 1.2, horns: true, bell: true },
-  deer: { body: '#a87848', dark: '#7a5432', size: 1.15, speed: 3, antlers: true },
-  bear: { body: '#5c4028', dark: '#3f2b1a', size: 1.5, speed: 1.6 },
-  hare: { body: '#f2f4f6', dark: '#d4dce2', size: 0.44, speed: 2.8, hop: true, ears: 'long' },
-  ibex: { body: '#9a8a72', dark: '#6b5f4c', size: 0.9, speed: 2.1, horns: true },
-  reindeer: { body: '#8a7a68', dark: '#5c503f', size: 1.2, speed: 2.6, antlers: true },
+export const SPECIES = {
+  rabbit: {
+    body: '#f6dcbc', shade: '#e9c69c', belly: '#fff7ec', accent: '#ffb3c6',
+    size: 0.42, speed: 2.6, hop: true, ears: 'long', tail: 'puff',
+  },
+  marmot: {
+    body: '#eab676', shade: '#d99e5c', belly: '#fff0d8', accent: '#ff9db5',
+    size: 0.5, speed: 1.6, hop: false, ears: 'round', tail: 'stub', teeth: true,
+  },
+  fox: {
+    body: '#ff9a4a', shade: '#f0823a', belly: '#fffaf0', accent: '#ffd9c4',
+    size: 0.62, speed: 3.4, ears: 'pointy', tail: 'fox', snout: 'long',
+  },
+  goat: {
+    body: '#fffaf2', shade: '#efe4d6', belly: '#ffffff', accent: '#ffc2cf',
+    size: 0.8, speed: 1.9, horns: 'goat', ears: 'side', tail: 'stub', beard: true,
+  },
+  sheep: {
+    body: '#ffffff', shade: '#f1ecff', belly: '#ffe2d2', accent: '#ffb3c6',
+    size: 0.85, speed: 1.5, fluffy: true, ears: 'side', tail: 'stub',
+  },
+  cow: {
+    body: '#fffdf8', shade: '#f0e8de', belly: '#fffdf8', muzzle: '#ffc4d2', accent: '#ff9db5',
+    spots: '#e6b07c', size: 1.25, speed: 1.2, horns: 'cow', ears: 'side', tail: 'rope', bell: true,
+  },
+  deer: {
+    body: '#efae6e', shade: '#e09a58', belly: '#fff3e2', accent: '#ffc2cf',
+    spots: '#fff3e2', size: 1.15, speed: 3, antlers: true, ears: 'side', tail: 'puff',
+  },
+  bear: {
+    body: '#d99a62', shade: '#c9864e', belly: '#ffe9cc', accent: '#ffb3c6',
+    size: 1.5, speed: 1.6, ears: 'round', tail: 'stub',
+  },
+  hare: {
+    body: '#ffffff', shade: '#e6f0fb', belly: '#ffffff', accent: '#ffb3c6',
+    size: 0.44, speed: 2.8, hop: true, ears: 'long', tail: 'puff',
+  },
+  ibex: {
+    body: '#e2c29a', shade: '#d2ad82', belly: '#fff4e4', accent: '#ffc2cf',
+    size: 0.9, speed: 2.1, horns: 'ibex', ears: 'side', tail: 'stub', beard: true,
+  },
+  reindeer: {
+    body: '#d6a06c', shade: '#c48a56', belly: '#fff6e8', accent: '#ff5a6a',
+    size: 1.2, speed: 2.6, antlers: true, ears: 'side', tail: 'puff', ruff: true, redNose: true,
+  },
 }
 
 /** Fauna por bioma — cada fase tem a sua bicharada */
@@ -186,7 +219,34 @@ export default function Animals() {
   )
 }
 
-function Creature({ def, entries }) {
+const EYE = '#4a3a5e'
+const NOSE = '#8a5a78'
+const CHEEK = '#ffb0c4'
+const HORN = '#fff0c8'
+
+/** ponto na superfície de um elipsoide (semi-eixos a,b,c) na direção d */
+function onEllipsoid([dx, dy, dz], [a, b, c], inset = 0) {
+  const len = Math.hypot(dx, dy, dz) || 1
+  const nx = dx / len
+  const ny = dy / len
+  const nz = dz / len
+  const k = 1 / Math.sqrt((nx / a) ** 2 + (ny / b) ** 2 + (nz / c) ** 2)
+  return [nx * (k - inset), ny * (k - inset), nz * (k - inset)]
+}
+
+const WOOL = [
+  [0, 1, 0.1], [0, 0.9, 0.7], [0, 0.8, -0.7], [1, 0.5, 0.4], [-1, 0.5, 0.4],
+  [1, 0.4, -0.5], [-1, 0.4, -0.5], [0, 0.2, 1], [0, 0.3, -1], [1, -0.3, 0], [-1, -0.3, 0],
+]
+const COW_SPOTS = [
+  [1, 0.35, 0.3, 0.17], [-1, 0.2, -0.35, 0.19], [0.25, 1, -0.2, 0.15], [0.9, 0.1, -0.7, 0.12],
+  [-0.8, 0.5, 0.55, 0.12],
+]
+const DEER_SPOTS = [
+  [0.3, 1, 0.1], [-0.3, 1, -0.15], [0.45, 0.9, -0.45], [-0.45, 0.9, 0.35], [0.1, 1, -0.6],
+]
+
+export function Creature({ def, entries }) {
   const spec = SPECIES[def.type]
   const s = spec.size * def.scale
   const entry = useRef({ ...def, legs: [], root: null, head: null, tail: null })
@@ -201,8 +261,17 @@ function Creature({ def, entries }) {
     }
   }, [entries])
 
-  const legY = s * 0.62
-  const legLen = s * 0.62
+  // proporções de brinquedo (tudo em múltiplos de s)
+  const hipY = s * 0.36
+  const bodyY = hipY + s * 0.26
+  const axes = [s * 0.39, s * 0.345, s * 0.5]
+  const headR = s * 0.34
+  const hc = [0, s * 0.14, s * 0.16] // centro da cabeça, local ao pescoço
+  const faceZ = (x, y) => hc[2] + Math.sqrt(Math.max(0, headR * headR - x * x - y * y))
+  const pinkNose = ['rabbit', 'hare', 'cow', 'sheep', 'goat', 'marmot', 'ibex'].includes(def.type)
+  const noseColor = spec.redNose ? spec.accent : pinkNose ? spec.accent : NOSE
+  const legColor = spec.fluffy ? spec.belly : spec.shade
+  const ear = (x, y, z) => [hc[0] + x * s, hc[1] + y * s, hc[2] + z * s]
 
   return (
     <group
@@ -212,135 +281,323 @@ function Creature({ def, entries }) {
       }}
       scale={def.scale}
     >
-      {/* corpo */}
+      {/* corpo gordinho + sombra macia */}
       <StaticBatch>
-      <mesh castShadow={false} position={[0, legY + s * 0.42, 0]}>
-        <capsuleGeometry args={[s * 0.4, s * 0.72, 4, 7]} />
-        <ToonMat color={spec.body}/>
-      </mesh>
-      {spec.fluffy && (
-        <>
-          <mesh castShadow={false} position={[0, legY + s * 0.6, s * 0.1]}>
-            <sphereGeometry args={[s * 0.55, 6, 5]} />
-            <ToonMat color={spec.body}/>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} scale={[0.95, 1.35, 1]}>
+          <circleGeometry args={[s * 0.5, 14]} />
+          <meshBasicMaterial color="#3b5a3a" transparent opacity={0.18} depthWrite={false} />
+        </mesh>
+        <group position={[0, bodyY, 0]}>
+          <mesh scale={[axes[0], axes[1], axes[2]]}>
+            <sphereGeometry args={[1, 14, 10]} />
+            <ToonMat color={spec.fluffy ? spec.shade : spec.body} />
           </mesh>
-          <mesh castShadow={false} position={[0, legY + s * 0.55, -s * 0.4]}>
-            <sphereGeometry args={[s * 0.45, 6, 5]} />
-            <ToonMat color={spec.body}/>
-          </mesh>
-        </>
-      )}
-      {def.type === 'cow' && (
-        <>
-          <mesh position={[s * 0.28, legY + s * 0.62, s * 0.15]}>
-            <sphereGeometry args={[s * 0.26, 5, 4]} />
-            <ToonMat color={spec.dark}/>
-          </mesh>
-          <mesh position={[-s * 0.3, legY + s * 0.55, -s * 0.3]}>
-            <sphereGeometry args={[s * 0.22, 5, 4]} />
-            <ToonMat color={spec.dark}/>
-          </mesh>
-        </>
-      )}
+          {/* peito / barriguinha clara */}
+          {!spec.fluffy && spec.belly !== spec.body && (
+            <mesh position={[0, -s * 0.03, s * 0.34]} scale={[s * 0.25, s * 0.25, s * 0.2]}>
+              <sphereGeometry args={[1, 14, 10]} />
+              <ToonMat color={spec.belly} />
+            </mesh>
+          )}
+          {spec.ruff &&
+            [-1, 0, 1].map((i) => (
+              <mesh key={`r${i}`} position={[i * s * 0.12, s * 0.06 - Math.abs(i) * s * 0.06, s * 0.4]}>
+                <sphereGeometry args={[s * 0.15, 10, 8]} />
+                <ToonMat color={spec.belly} />
+              </mesh>
+            ))}
+          {spec.fluffy &&
+            WOOL.map((d, i) => (
+              <mesh key={`w${i}`} position={onEllipsoid(d, axes, s * 0.08)}>
+                <sphereGeometry args={[s * (i % 3 === 0 ? 0.27 : 0.24), 12, 10]} />
+                <ToonMat color={i % 4 === 1 ? spec.shade : spec.body} />
+              </mesh>
+            ))}
+          {def.type === 'cow' &&
+            COW_SPOTS.map(([x, y, z, r], i) => (
+              <mesh key={`c${i}`} position={onEllipsoid([x, y, z], axes, s * r * 0.8)}>
+                <sphereGeometry args={[s * r, 14, 10]} />
+                <ToonMat color={spec.spots} />
+              </mesh>
+            ))}
+          {def.type === 'deer' &&
+            DEER_SPOTS.map((d, i) => (
+              <mesh key={`d${i}`} position={onEllipsoid(d, axes, s * 0.03)}>
+                <sphereGeometry args={[s * 0.05, 8, 6]} />
+                <ToonMat color={spec.spots} />
+              </mesh>
+            ))}
+        </group>
       </StaticBatch>
 
-      {/* cabeça */}
+      {/* cabeção */}
       <group
         ref={(el) => {
           entry.current.head = el
         }}
-        position={[0, legY + s * 0.78, s * 0.62]}
+        position={[0, hipY + s * 0.55, s * 0.4]}
       >
         <StaticBatch>
-        <mesh castShadow={false}>
-          <boxGeometry args={[s * 0.44, s * 0.44, s * 0.55]} />
-          <ToonMat color={spec.body}/>
-        </mesh>
-        <mesh position={[0, -s * 0.05, s * 0.34]}>
-          <boxGeometry args={[s * 0.26, s * 0.2, s * 0.16]} />
-          <ToonMat color={spec.dark}/>
-        </mesh>
-        {[0.14, -0.14].map((o) => (
-          <mesh key={o} position={[o * s * 1.2, s * 0.1, s * 0.26]}>
-            <sphereGeometry args={[s * 0.055, 5, 4]} />
-            <ToonMat color="#20180f"/>
+          <mesh position={hc}>
+            <sphereGeometry args={[headR, 14, 12]} />
+            <ToonMat color={spec.fluffy ? spec.belly : spec.body} />
           </mesh>
-        ))}
-        {spec.ears === 'long' &&
-          [0.13, -0.13].map((o) => (
-            <mesh key={o} castShadow={false} position={[o * s, s * 0.42, -s * 0.05]} rotation={[-0.2, 0, o * 2]}>
-              <capsuleGeometry args={[s * 0.07, s * 0.44, 3, 5]} />
-              <ToonMat color={spec.dark}/>
+          {/* focinho */}
+          {spec.snout === 'long' ? (
+            <mesh position={[0, hc[1] - s * 0.07, hc[2] + s * 0.3]} scale={[0.85, 0.72, 1.3]}>
+              <sphereGeometry args={[s * 0.15, 12, 8]} />
+              <ToonMat color={spec.belly} />
             </mesh>
-          ))}
-        {!spec.ears &&
-          [0.2, -0.2].map((o) => (
-            <mesh key={o} position={[o * s, s * 0.26, -s * 0.05]}>
-              <coneGeometry args={[s * 0.1, s * 0.2, 4]} />
-              <ToonMat color={spec.dark}/>
+          ) : (
+            <mesh position={[0, hc[1] - s * 0.09, hc[2] + s * 0.26]} scale={[1.2, 0.85, 0.85]}>
+              <sphereGeometry args={[s * 0.15, 12, 8]} />
+              <ToonMat color={spec.muzzle ?? spec.belly} />
             </mesh>
-          ))}
-        {spec.horns &&
-          [0.18, -0.18].map((o) => (
-            <mesh key={o} castShadow={false} position={[o * s, s * 0.3, 0]} rotation={[0, 0, o * 3]}>
-              <coneGeometry args={[s * 0.07, s * 0.42, 5]} />
-              <ToonMat color="#d8cdb4"/>
-            </mesh>
-          ))}
-        {spec.antlers &&
-          [0.16, -0.16].map((o) => (
-            <group key={o} position={[o * s, s * 0.3, 0]}>
-              <mesh castShadow={false} rotation={[0, 0, o * 2.2]}>
-                <cylinderGeometry args={[s * 0.035, s * 0.05, s * 0.6, 4]} />
-                <ToonMat color="#8a6a44"/>
-              </mesh>
-              <mesh castShadow={false} position={[o * s * 0.25, s * 0.36, 0]} rotation={[0, 0, o * 3.6]}>
-                <cylinderGeometry args={[s * 0.025, s * 0.035, s * 0.34, 4]} />
-                <ToonMat color="#8a6a44"/>
-              </mesh>
-            </group>
-          ))}
-        {spec.bell && (
-          <mesh position={[0, -s * 0.22, s * 0.1]}>
-            <sphereGeometry args={[s * 0.09, 5, 4]} />
-            <ToonMat color="#c9a227"/>
+          )}
+          <mesh
+            position={
+              spec.snout === 'long'
+                ? [0, hc[1] - s * 0.05, hc[2] + s * 0.5]
+                : [0, hc[1] - s * 0.04, hc[2] + s * 0.39]
+            }
+            scale={[1.3, 0.9, 0.9]}
+          >
+            <sphereGeometry args={[s * (spec.redNose ? 0.07 : 0.05), 10, 8]} />
+            <ToonMat color={noseColor} />
           </mesh>
-        )}
+          {/* olhinhos com brilho */}
+          {[-1, 1].map((side) => {
+            const x = side * s * 0.14
+            const y = s * 0.06
+            return (
+              <group key={`e${side}`} position={[x, hc[1] + y, faceZ(x, y) - s * 0.01]}>
+                <mesh scale={[0.85, 1.15, 0.5]}>
+                  <sphereGeometry args={[s * 0.055, 10, 8]} />
+                  <ToonMat color={EYE} />
+                </mesh>
+                <mesh position={[s * 0.016, s * 0.024, s * 0.022]}>
+                  <sphereGeometry args={[s * 0.021, 6, 5]} />
+                  <ToonMat color="#ffffff" />
+                </mesh>
+              </group>
+            )
+          })}
+          {[-1, 1].map((side) => {
+            const x = side * s * 0.22
+            const y = -s * 0.07
+            return (
+              <mesh key={`k${side}`} position={[x, hc[1] + y, faceZ(x, y) - s * 0.03]} scale={[1, 0.65, 0.4]}>
+                <sphereGeometry args={[s * 0.06, 8, 6]} />
+                <ToonMat color={CHEEK} />
+              </mesh>
+            )
+          })}
+
+          {/* orelhas */}
+          {spec.ears === 'long' &&
+            [-1, 1].map((side) => (
+              <group key={`l${side}`} position={ear(side * 0.12, 0.36, -0.06)} rotation={[-0.2, 0, side * -0.18]}>
+                <mesh scale={[1, 1, 0.65]}>
+                  <capsuleGeometry args={[s * 0.075, s * 0.34, 4, 10]} />
+                  <ToonMat color={spec.body} />
+                </mesh>
+                <mesh position={[0, 0, s * 0.03]} scale={[0.55, 0.85, 0.4]}>
+                  <capsuleGeometry args={[s * 0.075, s * 0.34, 4, 8]} />
+                  <ToonMat color={spec.accent} />
+                </mesh>
+              </group>
+            ))}
+          {spec.ears === 'round' &&
+            [-1, 1].map((side) => (
+              <group key={`r${side}`} position={ear(side * 0.24, 0.25, -0.03)}>
+                <mesh scale={[1, 1, 0.6]}>
+                  <sphereGeometry args={[s * 0.1, 10, 8]} />
+                  <ToonMat color={spec.shade} />
+                </mesh>
+                <mesh position={[0, 0, s * 0.035]} scale={[0.6, 0.6, 0.35]}>
+                  <sphereGeometry args={[s * 0.1, 8, 6]} />
+                  <ToonMat color={spec.accent} />
+                </mesh>
+              </group>
+            ))}
+          {spec.ears === 'pointy' &&
+            [-1, 1].map((side) => (
+              <group key={`p${side}`} position={ear(side * 0.19, 0.3, -0.02)} rotation={[0, 0, side * -0.38]}>
+                <mesh scale={[1, 1, 0.6]}>
+                  <coneGeometry args={[s * 0.14, s * 0.26, 12]} />
+                  <ToonMat color={spec.body} />
+                </mesh>
+                <mesh position={[0, -s * 0.02, s * 0.045]} scale={[0.6, 0.7, 0.3]}>
+                  <coneGeometry args={[s * 0.14, s * 0.26, 10]} />
+                  <ToonMat color={spec.accent} />
+                </mesh>
+              </group>
+            ))}
+          {spec.ears === 'side' &&
+            [-1, 1].map((side) => (
+              <group key={`s${side}`} position={ear(side * 0.33, 0.1, -0.02)} rotation={[0, 0, side * -0.4]}>
+                <mesh scale={[1.6, 0.7, 0.5]}>
+                  <sphereGeometry args={[s * 0.1, 10, 8]} />
+                  <ToonMat color={spec.fluffy ? spec.belly : spec.shade} />
+                </mesh>
+                <mesh position={[side * s * 0.01, 0, s * 0.03]} scale={[1.1, 0.45, 0.3]}>
+                  <sphereGeometry args={[s * 0.1, 8, 6]} />
+                  <ToonMat color={spec.accent} />
+                </mesh>
+              </group>
+            ))}
+
+          {/* topete de lã */}
+          {spec.fluffy &&
+            [-1, 0, 1].map((i) => (
+              <mesh key={`t${i}`} position={ear(i * 0.1, 0.3 - Math.abs(i) * 0.04, 0.02)}>
+                <sphereGeometry args={[s * 0.12, 10, 8]} />
+                <ToonMat color={spec.body} />
+              </mesh>
+            ))}
+
+          {/* chifres */}
+          {spec.horns === 'cow' &&
+            [-1, 1].map((side) => (
+              <mesh key={`h${side}`} position={ear(side * 0.22, 0.27, -0.02)} rotation={[0, 0, side * -0.75]}>
+                <capsuleGeometry args={[s * 0.045, s * 0.1, 4, 8]} />
+                <ToonMat color={HORN} />
+              </mesh>
+            ))}
+          {spec.horns === 'goat' &&
+            [-1, 1].map((side) => (
+              <mesh key={`g${side}`} position={ear(side * 0.12, 0.33, -0.08)} rotation={[-0.65, 0, side * -0.15]}>
+                <capsuleGeometry args={[s * 0.05, s * 0.16, 4, 8]} />
+                <ToonMat color="#f2dfb4" />
+              </mesh>
+            ))}
+          {spec.horns === 'ibex' &&
+            [-1, 1].map((side) => (
+              <mesh
+                key={`i${side}`}
+                position={ear(side * 0.13, 0.15, -0.12)}
+                rotation={[0, Math.PI / 2, side * 0.18]}
+              >
+                <torusGeometry args={[s * 0.25, s * 0.06, 8, 14, 2.4]} />
+                <ToonMat color={spec.shade} />
+              </mesh>
+            ))}
+          {spec.antlers &&
+            [-1, 1].map((side) => (
+              <group
+                key={`a${side}`}
+                position={ear(side * 0.15, 0.28, -0.06)}
+                rotation={[-0.15, 0, side * -0.4]}
+                scale={def.type === 'reindeer' ? 1.3 : 1}
+              >
+                <mesh position={[0, s * 0.12, 0]}>
+                  <capsuleGeometry args={[s * 0.04, s * 0.2, 4, 8]} />
+                  <ToonMat color="#f5d9a8" />
+                </mesh>
+                <mesh position={[side * -s * 0.06, s * 0.16, s * 0.03]} rotation={[0.3, 0, side * 0.9]}>
+                  <capsuleGeometry args={[s * 0.035, s * 0.1, 4, 8]} />
+                  <ToonMat color="#f5d9a8" />
+                </mesh>
+                <mesh position={[0, s * 0.27, 0]}>
+                  <sphereGeometry args={[s * 0.05, 8, 6]} />
+                  <ToonMat color="#f5d9a8" />
+                </mesh>
+              </group>
+            ))}
+          {spec.beard && (
+            <mesh position={[0, hc[1] - s * 0.3, hc[2] + s * 0.18]} rotation={[Math.PI - 0.3, 0, 0]}>
+              <coneGeometry args={[s * 0.06, s * 0.16, 10]} />
+              <ToonMat color={spec.shade} />
+            </mesh>
+          )}
+          {spec.teeth &&
+            [-1, 1].map((side) => (
+              <mesh key={`d${side}`} position={[side * s * 0.022, hc[1] - s * 0.19, hc[2] + s * 0.32]}>
+                <boxGeometry args={[s * 0.04, s * 0.06, s * 0.02]} />
+                <ToonMat color="#ffffff" />
+              </mesh>
+            ))}
+          {spec.bell && (
+            <>
+              <mesh position={[0, hc[1] - s * 0.25, hc[2] - s * 0.06]} rotation={[Math.PI / 2 - 0.35, 0, 0]}>
+                <torusGeometry args={[s * 0.2, s * 0.035, 6, 18]} />
+                <ToonMat color="#ff6b6b" />
+              </mesh>
+              <mesh position={[0, hc[1] - s * 0.36, hc[2] + s * 0.12]}>
+                <sphereGeometry args={[s * 0.075, 10, 8]} />
+                <ToonMat color="#ffd23f" />
+              </mesh>
+            </>
+          )}
         </StaticBatch>
       </group>
 
-      {/* patas */}
+      {/* perninhas curtas */}
       {[
-        [s * 0.24, s * 0.34],
-        [-s * 0.24, s * 0.34],
-        [s * 0.24, -s * 0.34],
-        [-s * 0.24, -s * 0.34],
+        [s * 0.21, s * 0.27],
+        [-s * 0.21, s * 0.27],
+        [s * 0.21, -s * 0.27],
+        [-s * 0.21, -s * 0.27],
       ].map(([lx, lz], i) => (
         <group
           key={i}
           ref={(el) => {
             entry.current.legs[i] = el
           }}
-          position={[lx, legY, lz]}
+          position={[lx, hipY, lz]}
         >
-          <mesh castShadow={false} position={[0, -legLen / 2, 0]}>
-            <cylinderGeometry args={[s * 0.075, s * 0.06, legLen, 5]} />
-            <ToonMat color={spec.dark}/>
+          <mesh position={[0, -hipY / 2, 0]}>
+            <capsuleGeometry args={[s * 0.12, Math.max(0.01, hipY - s * 0.24), 4, 10]} />
+            <ToonMat color={legColor} />
           </mesh>
         </group>
       ))}
 
-      {/* cauda */}
+      {/* rabinho */}
       <group
         ref={(el) => {
           entry.current.tail = el
         }}
-        position={[0, legY + s * 0.5, -s * 0.7]}
+        position={[0, bodyY + s * 0.08, -axes[2] + s * 0.04]}
       >
-        <mesh castShadow={false} rotation={[spec.tail ? -0.4 : 0.6, 0, 0]}>
-          <capsuleGeometry args={[s * (spec.tail ? 0.14 : 0.06), s * (spec.tail ? 0.6 : 0.3), 3, 5]} />
-          <ToonMat color={spec.tail ? spec.dark : spec.body}/>
-        </mesh>
+        <StaticBatch>
+          {spec.tail === 'puff' && (
+            <mesh position={[0, 0, -s * 0.03]}>
+              <sphereGeometry args={[s * 0.11, 10, 8]} />
+              <ToonMat color={def.type === 'reindeer' || def.type === 'deer' ? spec.belly : '#ffffff'} />
+            </mesh>
+          )}
+          {spec.tail === 'stub' && (
+            <mesh position={[0, 0, -s * 0.03]}>
+              <sphereGeometry args={[s * 0.09, 10, 8]} />
+              <ToonMat color={spec.fluffy ? spec.body : spec.shade} />
+            </mesh>
+          )}
+          {spec.tail === 'fox' && (
+            <>
+              <mesh position={[0, s * 0.1, -s * 0.2]} rotation={[-0.9, 0, 0]} scale={[1, 1, 1]}>
+                <capsuleGeometry args={[s * 0.14, s * 0.26, 4, 10]} />
+                <ToonMat color={spec.body} />
+              </mesh>
+              <mesh position={[0, s * 0.25, -s * 0.38]}>
+                <sphereGeometry args={[s * 0.14, 10, 8]} />
+                <ToonMat color={spec.belly} />
+              </mesh>
+            </>
+          )}
+          {spec.tail === 'rope' && (
+            <>
+              <mesh position={[0, -s * 0.16, -s * 0.05]} rotation={[0.25, 0, 0]}>
+                <capsuleGeometry args={[s * 0.03, s * 0.28, 3, 6]} />
+                <ToonMat color={spec.shade} />
+              </mesh>
+              <mesh position={[0, -s * 0.34, -s * 0.1]}>
+                <sphereGeometry args={[s * 0.06, 8, 6]} />
+                <ToonMat color={spec.spots} />
+              </mesh>
+            </>
+          )}
+        </StaticBatch>
       </group>
     </group>
   )

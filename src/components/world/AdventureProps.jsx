@@ -11,6 +11,10 @@ import { QUALITY_PRESETS, useGameStore } from '../../store/gameStore'
 import { ChunkedInstanced } from './Instanced'
 import { CAMERA_OCCLUDER_COLLISION, CAMERA_OCCLUDER_SOLVER } from '../../physics/groups'
 import { makeToonMaterial } from '../../materials/toonMaterial'
+import { PAL } from '../../config/palette'
+
+/** árvores/pedras do pack (realistas) saem: o vale usa as árvores fofas da Vegetation */
+const DROP_PROPS = /tree|pine|maple|willow|dead|trunk|stump|rock|stone|boulder|bush|bridge/i
 
 const MODEL_URL = '/models/adventure_pack.glb'
 
@@ -19,26 +23,26 @@ const _center = new THREE.Vector3()
 
 /** Paleta alpina flat — as texturas do pack destuam do resto do mapa */
 const PACK_COLORS = {
-  tree: '#3d6b3a',
-  pine: '#2f5234',
-  maple: '#5a7a3a',
-  willow: '#4a6e3e',
-  dead: '#6a5a48',
-  bush: '#3f6a38',
-  flower: '#e8a0b4',
-  snowdrop: '#f0f4f8',
-  rock: '#8a8e94',
-  trunk: '#5c3a1e',
-  wood: '#6b4a2c',
-  barrel: '#7a5230',
-  box: '#8a6a3a',
-  fence: '#5a3a22',
-  lantern: '#4a3420',
+  tree: PAL.leaf,
+  pine: PAL.pine,
+  maple: PAL.autumn,
+  willow: PAL.leafLight,
+  dead: PAL.trunk,
+  bush: PAL.leaf,
+  flower: '#ff8fb8',
+  snowdrop: '#ffffff',
+  rock: PAL.rock,
+  trunk: PAL.trunk,
+  wood: PAL.wood,
+  barrel: '#d98b4e',
+  box: '#e8b06a',
+  fence: '#f4f0e6',
+  lantern: '#7f93ad',
   flame: '#ffb040',
-  tent: '#c45a3a',
-  mushroom: '#c07050',
-  reed: '#6a7a3a',
-  default: '#7a6a58',
+  tent: '#ff7a7a',
+  mushroom: '#ff6b6b',
+  reed: '#7cc86a',
+  default: '#e8c08a',
 }
 
 function colorForProp(name) {
@@ -246,7 +250,10 @@ export default function AdventureProps() {
   const density = (QUALITY_PRESETS[quality] ?? QUALITY_PRESETS.medium).density
 
   const library = useMemo(() => buildLibrary(scene), [scene])
-  const placements = useMemo(() => buildAdventurePlacements(density), [density])
+  const placements = useMemo(
+    () => buildAdventurePlacements(density).filter((p) => !DROP_PROPS.test(p.prop)),
+    [density],
+  )
 
   // LOD por distância fica a cargo do DistanceCuller (sem setState periódico)
   const { colliders, canopyOccluders, instanced, clones } = useMemo(

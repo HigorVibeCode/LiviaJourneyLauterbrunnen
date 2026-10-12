@@ -1,32 +1,23 @@
 import * as THREE from 'three'
 
-/** Gradient map partilhada — 4 bandas cel (sombra → luz). */
+/**
+ * Material padrão do jogo — estilo "fofo" (Animal Crossing):
+ * sombreamento Lambert macio (sem as faixas duras do toon antigo), cores
+ * claras, sombra que nunca fica preta (a luz hemisférica levanta tudo).
+ *
+ * Os nomes "toon" ficaram por compatibilidade com o resto do código.
+ */
 let gradientMap = null
 
+/** @deprecated mantido só para imports antigos */
 export function getToonGradientMap() {
   if (gradientMap) return gradientMap
-  const steps = 4
-  const data = new Uint8Array(steps * 4)
-  // sombra mais clara: com 0.22 os lados na sombra ficavam marrom-lamacentos
-  const levels = [0.46, 0.68, 0.86, 1.0]
-  for (let i = 0; i < steps; i++) {
-    const v = Math.round(levels[i] * 255)
-    data[i * 4] = v
-    data[i * 4 + 1] = v
-    data[i * 4 + 2] = v
-    data[i * 4 + 3] = 255
-  }
-  gradientMap = new THREE.DataTexture(data, steps, 1, THREE.RGBAFormat)
-  gradientMap.minFilter = THREE.NearestFilter
-  gradientMap.magFilter = THREE.NearestFilter
-  gradientMap.generateMipmaps = false
+  const data = new Uint8Array([140, 140, 140, 255, 255, 255, 255, 255])
+  gradientMap = new THREE.DataTexture(data, 2, 1, THREE.RGBAFormat)
   gradientMap.needsUpdate = true
   return gradientMap
 }
 
-/**
- * Material toon/cel partilhado — smooth normals, bandas via gradientMap.
- */
 export function makeToonMaterial({
   color = '#ffffff',
   emissive = '#000000',
@@ -35,22 +26,23 @@ export function makeToonMaterial({
   opacity = 1,
   side = THREE.FrontSide,
   nearFade = false,
+  flatShading = false,
 } = {}) {
-  const mat = new THREE.MeshToonMaterial({
+  const mat = new THREE.MeshLambertMaterial({
     color: new THREE.Color(color),
-    gradientMap: getToonGradientMap(),
     emissive: new THREE.Color(emissive),
     emissiveIntensity,
     transparent,
     opacity,
     side,
+    flatShading,
   })
   // some perto da câmera (árvores/props) — ver materials/nearFade.js
   if (nearFade) mat.defines = { ...(mat.defines ?? {}), NEAR_FADE: '' }
   return mat
 }
 
-/** Clona um toon existente com overrides de cor/emissive. */
+/** Clona um material existente com overrides de cor/emissive. */
 export function cloneToonMaterial(base, overrides = {}) {
   const mat = base.clone()
   if (overrides.color !== undefined) mat.color.set(overrides.color)
@@ -61,7 +53,6 @@ export function cloneToonMaterial(base, overrides = {}) {
   return mat
 }
 
-/** Substitui MeshStandardMaterial inline por toon (compat helper). */
 export function toonStandard(opts) {
   return makeToonMaterial(opts)
 }

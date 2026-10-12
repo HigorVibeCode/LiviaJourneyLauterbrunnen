@@ -33,9 +33,9 @@ export const BIOMES = {
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#5a9a48',
-    foliage: ['#2e6a32', '#3a7838', '#428040'],
-    rockColors: ['#7a7e84', '#83878d', '#6e7276'],
+    grassColor: '#7ccb5c',
+    foliage: ['#6cc85a', '#7fd36a', '#5fbf55', '#ffb7d0'],
+    rockColors: ['#c6d0da', '#b9c4cf', '#d2dbe4'],
   },
   pasture: {
     pines: 18,
@@ -55,9 +55,9 @@ export const BIOMES = {
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#5ea048',
-    foliage: ['#307030', '#3a8038', '#428840'],
-    rockColors: ['#7a7e84', '#8a8478', '#6e7276'],
+    grassColor: '#8fd25e',
+    foliage: ['#78cf5e', '#8ad86a', '#69c456', '#ffb04a'],
+    rockColors: ['#c6d0da', '#b9c4cf', '#d2dbe4'],
   },
   water: {
     pines: 48,
@@ -77,9 +77,9 @@ export const BIOMES = {
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#4a8a48',
-    foliage: ['#1e5a28', '#286832', '#307038'],
-    rockColors: ['#5f6b64', '#68746c', '#556158'],
+    grassColor: '#72c868',
+    foliage: ['#5cc66a', '#6fd27a', '#52bb60', '#8ddc6c'],
+    rockColors: ['#bcd2dc', '#aec6d2', '#c8dce6'],
   },
   snow: {
     pines: 48,
@@ -99,9 +99,9 @@ export const BIOMES = {
     snowPatches: 55,
     snowmen: 10,
     icicles: 36,
-    grassColor: '#a8a890',
-    foliage: ['#2a4034', '#304838', '#385040'],
-    rockColors: ['#9aa7b0', '#a8b4bc', '#8b98a2'],
+    grassColor: '#e8f2fb',
+    foliage: ['#4fb378', '#5cc086', '#46a86e'],
+    rockColors: ['#dbe6f2', '#cfdcea', '#e6eef8'],
   },
   night: {
     pines: 80,
@@ -122,9 +122,9 @@ export const BIOMES = {
     snowmen: 0,
     icicles: 0,
     // azul-esverdeado de luar (antes quase preto — não se via nada)
-    grassColor: '#3e6a5a',
-    foliage: ['#2f5a52', '#356458', '#3c6e60'],
-    rockColors: ['#3a3a48', '#2e2e3a', '#454558'],
+    grassColor: '#4b9584',
+    foliage: ['#3f9a8c', '#48a596', '#368c80'],
+    rockColors: ['#9aa6c8', '#8c98bc', '#a8b2d2'],
   },
   flower: {
     pines: 14,
@@ -144,9 +144,9 @@ export const BIOMES = {
     snowPatches: 0,
     snowmen: 0,
     icicles: 0,
-    grassColor: '#6a8a5e',
-    foliage: ['#3a5a40', '#486848', '#527850'],
-    rockColors: ['#8a8a78', '#9a9a86', '#7a7a6a'],
+    grassColor: '#8ed66c',
+    foliage: ['#7fd36a', '#ffb7d0', '#ffc6dc', '#6cc85a'],
+    rockColors: ['#d6dee8', '#c8d2de', '#e0e8f0'],
   },
   alpine: {
     pines: 12,
@@ -166,9 +166,9 @@ export const BIOMES = {
     snowPatches: 60,
     snowmen: 2,
     icicles: 8,
-    grassColor: '#6a8070',
-    foliage: ['#2a4034', '#344c3c', '#3c5444'],
-    rockColors: ['#93a0a8', '#a2aeb6', '#85929a'],
+    grassColor: '#a8dc84',
+    foliage: ['#4fb378', '#5cc086', '#46a86e'],
+    rockColors: ['#d0dae6', '#c2cede', '#dce4ee'],
   },
 }
 
@@ -183,17 +183,7 @@ const FRUIT_COLORS = ['#d8452f', '#e07090', '#e8a838', '#8a3fa8']
  * com toques de rosa e azul. Muito magenta fazia as flores parecerem
  * pedrinhas coloridas espalhadas na grama.
  */
-const FLOWER_COLORS = [
-  '#f6f4ea',
-  '#f6f4ea',
-  '#faf7ee',
-  '#efd85a',
-  '#efd85a',
-  '#f0c040',
-  '#e8829a',
-  '#c98ad8',
-  '#8fd0f0',
-]
+const FLOWER_COLORS = ['#ff7aa8', '#ffd45a', '#ffffff', '#b48cff', '#ff8a5c', '#6ec8ff', '#ff7aa8', '#ffd45a']
 
 /**
  * Gera todos os props de uma zona. Determinístico (mesma seed = mesmo mundo),
